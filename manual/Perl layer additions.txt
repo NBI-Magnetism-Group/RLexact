@@ -1,0 +1,8 @@
+requires 3 custom syms! - specific order
+remember to change job output directory in generic files
+possibly change time and mem in generic files for large jobs
+works with and without msym and spinflip sym.
+current records: with msym and spinflip for AFM in m=0 subspace: 40 spins
+		without mysm and without spinflip for transverse ising with field=0.5: ~30 spins
+additional output files without msym
+stepall_v2: neat!
