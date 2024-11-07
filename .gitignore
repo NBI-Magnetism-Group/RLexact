@@ -1,3 +1,16 @@
+# Matrix files
+*.bin
+
+# Output files
+*.log
+*.dat
+*.log
+*.sxx
+*.syy
+*.szz
+*.smp
+*.spm
+
 # Prerequisites
 *.d
 
@@ -50,3 +63,4 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+

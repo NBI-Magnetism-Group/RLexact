@@ -11,7 +11,8 @@
 ============================================
 */
 
-#include "/usr/include/sys/types.h"
+//#include "/usr/include/sys/types.h"
+#include <sys/types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -472,104 +473,112 @@ void Solve_Lanczos() {
   vec3 = shadow;
 
   if (mode == MODEW || mode == MODEN){
-  #ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_makesparse,START,"writing to file");
-  #endif
-      // Make sparse matrix (writing to file)
+    #ifdef VERBOSE_TIME_LV1
+      time_stamp(&time_makesparse,START,"writing to file");
+    #endif
+        // Make sparse matrix (writing to file)
     LogMessageChar("\nwriting sparse matrix to file: begin");
-      MakeSparse();
-      LogMessageChar("writing sparse matrix to file: end\n");
-  #ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_makesparse,STOP, "..");
-  #endif
+    MakeSparse();
+    LogMessageChar("writing sparse matrix to file: end\n");
+    #ifdef VERBOSE_TIME_LV1
+      time_stamp(&time_makesparse,STOP, "..");
+    #endif
   }
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single0,START,"dealing with the ground state");
-  time_stamp(&time_single,START,"finding the ground state");
-#endif
+  #ifdef VERBOSE_TIME_LV1
+    time_stamp(&time_single0,START,"dealing with the ground state");
+    time_stamp(&time_single,START,"finding the ground state");
+  #endif
         
   // Run Lanczos to find eigenenergies and identify the ground state
   if (mode==MODEGS || mode==MODEN) {
     if (Nq_choice > 0)
+    {
+      gs_energy=LARGE_NUMBER;
+      for (j=0; j<Nq_choice; j++)
       {
-      	gs_energy=LARGE_NUMBER;
-      	for (j=0; j<Nq_choice; j++)
-      	  {
-      	    q=&q_choice[j][0];
-      	    LogMessageChar("chosen q, q=(");
-      	    for (i=0; i<Nsym; i++) 
-      	      LogMessageCharInt(" ",q[i]);
-      #ifndef M_SYM
-      	    LogMessageCharDouble(" H= ",h);
-      #endif /* M_SYM */	   
-      	    LogMessageChar(") \n");
-      	    BuildCycle(q);
-            etmp=LowestLanczos(q,NULL,&Nener,NORMAL);
-      #ifdef WRITE_ENERGIES
-      	    WritehmQ(q);
-      	    WriteResults(Nener);
-      #endif /* WRITE_ENERGIES */
-      	    if (etmp<gs_energy)
-      	      {
-            		gs_energy=etmp;
-            		for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
-            		//      for (i=0; i<Nunique; i++)
-            		//	gs[i] = tmp[i];
-      	      }
-      	  }
+        q=&q_choice[j][0];
+        LogMessageChar("chosen q, q=(");
+        for (i=0; i<Nsym; i++) 
+          LogMessageCharInt(" ",q[i]);
+
+        #ifndef M_SYM
+          LogMessageCharDouble(" H= ",h);
+        #endif /* M_SYM */	   
+
+        LogMessageChar(") \n");
+        BuildCycle(q);
+        etmp=LowestLanczos(q,NULL,&Nener,NORMAL);
+
+        #ifdef WRITE_ENERGIES
+          WritehmQ(q);
+          WriteResults(Nener);
+        #endif /* WRITE_ENERGIES */
+
+        if (etmp<gs_energy)
+        {
+          gs_energy=etmp;
+          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
+          //      for (i=0; i<Nunique; i++)
+          //	gs[i] = tmp[i];
+        }
       }
+    }
     else //Nq_choice < 0
-      {
-	gs_energy=LARGE_NUMBER;
+    {
+      gs_energy=LARGE_NUMBER;
   
-  QLOOP_BEGIN
-#ifdef VERBOSE_TIME_LV2
-	  LogMessageChar("\nSolve_Lanzcos: GS q-loop, q=(");
-	  for (i=0; i<Nsym; i++) 
-	    LogMessageInt(q[i]);
-	  LogMessageChar(") \n");
-         time_stamp(&time_single2,START,"Ground state search for one q ");
-#endif /* VERBOSE_TIME_LV2 */
-
-    BuildCycle(q);
+      QLOOP_BEGIN
+  
+        #ifdef VERBOSE_TIME_LV2
+          LogMessageChar("\nSolve_Lanzcos: GS q-loop, q=(");
+          for (i=0; i<Nsym; i++) 
+            LogMessageInt(q[i]);
+          LogMessageChar(") \n");
+          time_stamp(&time_single2,START,"Ground state search for one q ");
+        #endif /* VERBOSE_TIME_LV2 */
     
- 	  etmp=LowestLanczos(q,NULL,&Nener,NORMAL); 
-		
-#ifdef WRITE_ENERGIES
-	  WritehmQ(q);
-	  WriteResults(Nener);
-#endif /* WRITE_ENERGIES */
-	  if (etmp<gs_energy)
-	    {
-	      gs_energy=etmp;
-	      for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
-	      //      for (i=0; i<Nunique; i++)
-	      //	gs[i] = tmp[i];
-	      //	gs[i] = evec[i];
-	    }
-#ifdef VERBOSE_TIME_LV2
-         time_stamp(&time_single2,STOP," ");
-#endif
-	QLOOP_END
-
-	if (mode==MODEGS) {
-	  Warning("YOU SHOULD SPECIFY Q-VALUES TO DETECT FOR MODEGS",0);
-	}
-	
-#ifdef VERBOSE_TIME_LV1
-         time_stamp(&time_single,STOP,"finding the ground state ");
-#endif
-
-      }  /* end if (Nq_choice > 0) */
+        BuildCycle(q);
+        etmp=LowestLanczos(q,NULL,&Nener,NORMAL); 
+    
+        #ifdef WRITE_ENERGIES
+          WritehmQ(q);
+          WriteResults(Nener);
+        #endif /* WRITE_ENERGIES */
+    
+        if (etmp<gs_energy)
+        {
+          gs_energy=etmp;
+          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
+          //      for (i=0; i<Nunique; i++)
+          //	gs[i] = tmp[i];
+          //	gs[i] = evec[i];
+        }
+    
+        #ifdef VERBOSE_TIME_LV2
+          time_stamp(&time_single2,STOP," ");
+        #endif
+    
+      QLOOP_END
+  
+      if (mode==MODEGS) {
+        Warning("YOU SHOULD SPECIFY Q-VALUES TO DETECT FOR MODEGS",0);
+      }
+  
+      #ifdef VERBOSE_TIME_LV1
+        time_stamp(&time_single,STOP,"finding the ground state ");
+      #endif
+  
+    }  /* end if (Nq_choice > 0) */
 	  
-	if (mode == MODEGS){
-	   // End of finding the ground state, write ground state and q-symmetry to file:
-	   WriteGSdata(gs_energy,q_gs);
-	   //Done with modegs
-	}
+	  if (mode == MODEGS)
+    {
+	     // End of finding the ground state, write ground state and q-symmetry to file:
+	     WriteGSdata(gs_energy,q_gs);
+	     //Done with modegs
+	  }
 	
-    } /* End of if(mode == MODEGS || mode == MODERC) */
+  } /* End of if(mode == MODEGS || mode == MODERC) */
 	
 	 // Now, reconstruct the groundstate.
 #ifdef VERBOSE_TIME_LV1

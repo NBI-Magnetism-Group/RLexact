@@ -14,9 +14,8 @@
 */
 
 /* #include"gcc.h" */
-#include "/usr/include/sys/types.h"
-
-#include "/usr/include/sys/types.h"
+//#include "/usr/include/sys/types.h"
+#include <sys/types.h>
 
 #include<complex>
 #include<stdio.h>
