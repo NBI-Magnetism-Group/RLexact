@@ -22,11 +22,11 @@
 #define FIND_EIGENSTATE
 #define WRITE_ENERGIES
 #define FIND_CROSS //Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w) 
-//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w) instead of S^xx (q,w) and S^yy(q,w). Requires FIND_CROSS also.
-//#define WRITE_STATES
+//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w) instead of S^xx (q,w) and S^yy(q,w). Requires MSYM and FIND_CROSS.
+#define WRITE_STATES
 //#define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 //#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM , Works only for MATRIX-mode, SJ 31/5/16
-//#define STRUCTURE  //doesnt currently work, SJ, 2/3/16
+//#define STRUCTURE  //doesnt currently work, SJ, 2/3/16 //Rename to Sqw_Q_VALUES AP 4/11/24 - Kim er næsten sikker
 
 // Dimensions of problem 
 #define NCOUP 400
@@ -205,9 +205,9 @@
 
 // General debugging requests from RLexact.C
 
-#define VERBOSE
-#define VERBOSE_TIME_LV1
-#define VERBOSE_TIME_LV2
+//#define VERBOSE
+//#define VERBOSE_TIME_LV1
+//#define VERBOSE_TIME_LV2
 
 
 // Debugging output requests from RLexact.c 
@@ -242,15 +242,15 @@
 // Debugging output requests from RLlanczos.c 
 //#define TEST_SEED 
 //#define TEST_EIGENVECTORS
-//#define TEST_FINDGROUND
+#define TEST_FINDGROUND
 //#define TEST_STATES 
 //#define TEST_ENERGIES
-//#define LANCZOS_MESSAGES
-//#define VERBOSE_LANCZOS
+#define LANCZOS_MESSAGES
+#define VERBOSE_LANCZOS
 //#define TEST_FINDMAG
 //#define DEBUG_SEED // WARNING: May cause premature stopping of lanczos algorithm
 //#define DEBUG_LANCSTEP
-//#define TEST_LANCCROSS
+#define TEST_LANCCROSS
 
 // Debugging output requests from RLtables.c 
 //#define TEST_TABLES    

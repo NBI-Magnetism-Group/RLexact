@@ -11,7 +11,8 @@
 ============================================
 */
 
-#include "/usr/include/sys/types.h"
+//#include "/usr/include/sys/types.h"
+#include <sys/types.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -121,10 +122,18 @@ unsigned long long SymOp(long long sym_index, unsigned long long bitmap)
     default: /* interpret added operators */
       new_state=0;
       sa=s-NSYM;
+      //Safely delete
+      //LogMessageCharInt(" SymOp ",sa);
+      //LogMessageCharInt(", state ",bitmap);
+    //
       if ((sa >= 0) && sa < Nsymadd)
       {
         for(j=0;j<Nspins;j++) 
           if(bitmap&(((unsigned long long)1)<<j)) new_state +=((unsigned long long)1)<<symadd[sa][j];
+	//Safely delete
+	//LogMessageCharInt("new state, ",new_state);
+	//LogMessageChar("\n");
+	//
         return(new_state);
       }
       else
@@ -218,16 +227,16 @@ unsigned long long tmp, start=SPIN_0_UP;
   for (i=0; i<Nsymadd; i++)
   {               /* Find translation period for added symmetry */
     tmp=start;
-//    LogMessageCharInt("Added symmetry : ",i);
-//    LogMessageCharInt(", round : ",0);
-//    LogMessageCharInt(", state : ",tmp);
-//    LogMessageChar("\n");    
+    LogMessageCharInt("Added symmetry : ",i);
+    LogMessageCharInt(", round : ",0);
+    LogMessageCharInt(", state : ",tmp);
+    LogMessageChar("\n");    
     for (j=1; (tmp=SymOp(Nsym+i,tmp)) != start && j<Nspins; j++)
     {
-//    LogMessageCharInt("Added symmetry : ",i);
-//    LogMessageCharInt(", round : ",j);
-//    LogMessageCharInt(", state : ",tmp);
-//    LogMessageChar("\n");    
+    LogMessageCharInt("Added symmetry : ",i);
+    LogMessageCharInt(", round : ",j);
+    LogMessageCharInt(", state : ",tmp);
+    LogMessageChar("\n");    
     }
     Nsv[NSYM+i]=j;
   }

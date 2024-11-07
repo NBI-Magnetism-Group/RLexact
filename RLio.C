@@ -13,7 +13,8 @@
 ============================================
 */
 
-#include "/usr/include/sys/types.h"
+//#include "/usr/include/sys/types.h"
+#include <sys/types.h>
 
 #include <stdio.h>
 #include <stdlib.h>

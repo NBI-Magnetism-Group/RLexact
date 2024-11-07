@@ -1,15 +1,15 @@
 /* Program file RLcross.C - 
-* Calculating cross sections 
-* Last change: SJ 09.11.16
-*
-============================================
-*
-* RLexact: The exact diagonalization package
-* Christian Rischel & Kim Lefmann, 26.02.94  
-* Version 4.0, September 2017
-*
-============================================
-*/
+ * Calculating cross sections 
+ * Last change: SJ 09.11.16
+ *
+ ============================================
+ *
+ * RLexact: The exact diagonalization package
+ * Christian Rischel & Kim Lefmann, 26.02.94  
+ * Version 4.0, September 2017
+ *
+ ============================================
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,18 +45,19 @@ void CrossLanczos(long long *);
 #endif /* LANCZOS */
 
 #ifdef NEVER //doesnt work, SJ 270616
-  void ApplySmpMsym(long long *, long long);
-  #ifdef MATRIX
-  void CrossMatrix();
-  int sym;
-  #endif /* MATRIX */
-  bool NonZero(unsigned long long, long long*);
+void ApplySmpMsym(long long *, long long);
+#ifdef MATRIX
+void CrossMatrix();
+int sym;
+#endif /* MATRIX */
+bool NonZero(unsigned long long, long long*);
 #endif /*NEVER*
 
 /* Global variables defined in RLexact.c */
 #ifdef M_SYM
-extern long long twom;
+  extern long long twom;
 #endif /* M_SYM */
+
 extern long long Nspins,Nunique,hamil_coup[NCOUP][2];
 extern long long Nuniq_k, Nsym;
 extern long long uniq_k[];
@@ -82,13 +83,13 @@ long long k[NSYM];
 //void CrossLanczos(int symvalue[NSYM])
 void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 {
- long long j,r,Nener;
- int maxflag;
+  long long j,r,Nener;
+  int maxflag;
 
- #ifdef TEST_CROSS
- #ifdef M_SYM
+#ifdef TEST_CROSS
+#ifdef M_SYM
   LogMessageCharInt("\n for twom =",twom);
- #endif
+#endif
   LogMessageCharInt("\nIn q = ",symvalue[1]);
   LogMessageChar("\n");
   for (int i = 0; i < Nunique; i++)
@@ -98,29 +99,29 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
     LogMessageCharDouble("+ i",imag(gs[i]));
     LogMessageChar("\n");
   }
-  #endif // TEST_CROSS
+#endif // TEST_CROSS
 
   /* Sort out which symmetry elements are in real-space */
   /* For a start: Consider only periodic boundary conditions */
   /* Apply S+-(k),S-+(k),Sz(k) to groundstate */
 
-    #ifndef FIND_CROSS_PM //otherwise not needed
-    //initialize
-    Nener =0;
-    for (int j = 0; j < Nunique; j++)
-    {
-      spgs[j]=zero; 
-      smgs[j]=zero; 
-    }
-    #endif
+#ifndef FIND_CROSS_PM //otherwise not needed
+                      //initialize
+  Nener =0;
+  for (int j = 0; j < Nunique; j++)
+  {
+    spgs[j]=zero; 
+    smgs[j]=zero; 
+  }
+#endif
 
-  //how many cross sections can be calucalted?
-  #ifdef M_SYM
-    maxflag = 1;
-  #endif
-  #ifndef M_SYM
-    maxflag = 3;
-  #endif
+  //how many cross sections can be calculated?
+#ifdef M_SYM
+  maxflag = 1;
+#endif
+#ifndef M_SYM
+  maxflag = 3;
+#endif
 
   for (int flag = 0; flag < maxflag; flag++) //first SZZ, then SXX, then SYY
   { 
@@ -130,24 +131,24 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
     {
       szxygs[j]=zero; 
     }
-    #ifdef TEST_CROSS
+#ifdef TEST_CROSS
     LogMessageCharInt("\n\nFlag:", flag);
     LogMessageChar("\n\n");
-    #endif
+#endif
 
     if (flag == 0) //SZZ
     {
       ApplySzq(symvalue);
     }
-    #ifndef M_SYM  
+#ifndef M_SYM  
 
-    #ifndef FIND_CROSS_PM //find in terms of S^xx and S^yy
+#ifndef FIND_CROSS_PM //find in terms of S^xx and S^yy
     if (flag == 1) //SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
     {     
       /* applysmp is calculated here, but also needed in flag==2 */
       ApplySmp(symvalue,0,spgs); //find s^+_q |gs>
       ApplySmp(symvalue,1,smgs); //find s^-_q |gs>
-    
+
       for (int i = 0; i < Nunique; i++)
       {
         szxygs[i]=(1.0/(2.0))*(spgs[i]+smgs[i]);
@@ -161,9 +162,9 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
         szxygs[i]=(1.0/(2.0*I))*(spgs[i]-smgs[i]);
       }
     }
-    #endif //not FIND_CROSS_PM
+#endif //not FIND_CROSS_PM
 
-    #ifdef FIND_CROSS_PM //find in terms of S^+- and S^-+
+#ifdef FIND_CROSS_PM //find in terms of S^+- and S^-+
     if (flag == 1) //SMP
     {
       ApplySmp(symvalue,0,szxygs); //find s^+_q |gs>
@@ -172,40 +173,40 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
     {
       ApplySmp(symvalue,1,szxygs); //find s^-_q |gs>
     }
-    #endif //FIND_CROSS_PM
+#endif //FIND_CROSS_PM
 
-    #endif  //MSYM
+#endif  //MSYM
 
     szqlength=lengthofvector(szxygs); //for output in cross files
 
-  #ifdef TEST_CROSS
-       LogMessageChar("\nCalling LowestLanczos\n");
-       for (int j = 0; j < Nunique; j++)
-      {
-        LogMessageCharInt("Unique ", unique[j]);
-        LogMessageCharDouble(", szxygs[j]=",real(szxygs[j]));
-        LogMessageCharDouble("+i",imag(szxygs[j]));
-        LogMessageCharDouble(", spgs[j]=",real(spgs[j]));
-        LogMessageCharDouble("+i",imag(spgs[j]));
-        LogMessageCharDouble(", smgs[j]=",real(smgs[j]));
-        LogMessageCharDouble("+i",imag(smgs[j]));
-        LogMessageChar("\n");
-      }
-  #endif // TEST_CROSS
+#ifdef TEST_CROSS
+    LogMessageChar("\nCalling LowestLanczos\n");
+    for (int j = 0; j < Nunique; j++)
+    {
+      LogMessageCharInt("Unique ", unique[j]);
+      LogMessageCharDouble(", szxygs[j]=",real(szxygs[j]));
+      LogMessageCharDouble("+i",imag(szxygs[j]));
+      LogMessageCharDouble(", spgs[j]=",real(spgs[j]));
+      LogMessageCharDouble("+i",imag(spgs[j]));
+      LogMessageCharDouble(", smgs[j]=",real(smgs[j]));
+      LogMessageCharDouble("+i",imag(smgs[j]));
+      LogMessageChar("\n");
+    }
+#endif // TEST_CROSS
 
     LowestLanczos(symvalue,NULL,&Nener,CROSS); 
     /*This will do the actual work! When done, global variables 
-    *energies and *Cross contains the relevant values for cross-section*/
+     *energies and *Cross contains the relevant values for cross-section*/
 
     WriteCross(Nener,symvalue,flag);
 
-    #ifdef TEST_CROSS
-      LogMessageChar("Data has been written to file\n");
-    #endif
+#ifdef TEST_CROSS
+    LogMessageChar("Data has been written to file\n");
+#endif
 
   } /*for flag*/
-    
-   return;
+
+  return;
 }
 #endif /* LANCZOS */
 
@@ -215,28 +216,28 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 // ReWritten by Kim, 14.07.00
 void ApplySzq(long long *q)
 {
-long long i,n,phase,cycle;
-unsigned long long state,gsstate,new_state;
-komplex res,factor;
-long long sym, T[NSYM],diffQ[NSYM];
+  long long i,n,phase,cycle;
+  unsigned long long state,gsstate,new_state;
+  komplex res,factor;
+  long long sym, T[NSYM],diffQ[NSYM];
 
-for (sym=0;sym<Nsym;sym++) 
-{
-  diffQ[sym]=q[sym]-q_gs[sym];
-  if (diffQ[sym]<0) 
+  for (sym=0;sym<Nsym;sym++) 
   {
-    diffQ[sym]+=Nsymvalue[sym];
-  }
+    diffQ[sym]=q[sym]-q_gs[sym];
+    if (diffQ[sym]<0) 
+    {
+      diffQ[sym]+=Nsymvalue[sym];
+    }
     if (symlist[sym]==SPIN_FLIP && diffQ[sym]==0)
     {
       for(i=0;i<Nunique;i++)
       {
-      szxygs[i]=zero;
-      return;
+        szxygs[i]=zero;
+        return;
       }
     }
 
-  #ifdef TEST_APPLYSZQ
+#ifdef TEST_APPLYSZQ
     LogMessageCharInt("ApplySzq: sym=",sym);
     LogMessageCharInt(", diffQ=",diffQ[sym]);
     LogMessageCharInt(", q=",q[sym]);
@@ -244,46 +245,46 @@ for (sym=0;sym<Nsym;sym++)
     LogMessageCharInt(", Nsym=",Nsym);
     LogMessageCharInt(", symlist=",symlist[sym]);
     LogMessageChar("\n");
-  #endif // TEST_APPLYSZQ
-} 
+#endif // TEST_APPLYSZQ
+  } 
 
-for (i=0; i<Nunique; i++)
-{
-  res=zero;
-  gsstate = unique[i];
-  #ifdef TEST_APPLYSZQ
-  LogMessageCharInt("\nNunique loop, i =",i);
-  LogMessageCharInt("Groundstate coefficients for unique",gsstate);
-  LogMessageCharDouble(" are",real(gs[i]));
-  LogMessageCharDouble("+ i",imag(gs[i]));
-  LogMessageCharInt(", Nocc[i]=",Nocc[i]);
-  LogMessageChar("\n");
-  #endif // TEST_APPLYSZQ
-// *** TODO: This works only with spin flip, or with an identity symmetry as 1st symmetry. Too specific solution. FIX THIS !!! ***
-  
-  if (Nocc[i] != 0) //check if gsstate is compatible with current q
-  { 
+  for (i=0; i<Nunique; i++)
+  {
+    res=zero;
+    gsstate = unique[i];
+#ifdef TEST_APPLYSZQ
+    LogMessageCharInt("\nNunique loop, i =",i);
+    LogMessageCharInt("Groundstate coefficients for unique",gsstate);
+    LogMessageCharDouble(" are",real(gs[i]));
+    LogMessageCharDouble("+ i",imag(gs[i]));
+    LogMessageCharInt(", Nocc[i]=",Nocc[i]);
+    LogMessageChar("\n");
+#endif // TEST_APPLYSZQ
+       // *** TODO: This works only with spin flip, or with an identity symmetry as 1st symmetry. Too specific solution. FIX THIS !!! ***
+
+    if (Nocc[i] != 0) //check if gsstate is compatible with current q
+    { 
       state = 1; //bitmap for transloop
       TRANSLOOP_BEGIN
-      phase=0;
+        phase=0;
       for (long long j=1; j<Nsym;j++) //sum over all symmetries except spin-flip/identity
       {  // Dirty non-general solution !!!
         phase += diffQ[j]*T[j]*Nspins/Nsymvalue[j]; //T[j] in fact means r_j?!! And diffQ[j]*Nspins/Nsumvalue[j] is q normalized to length of system!
-        //one uses diffQ because of theorem - to be calculated!
-        #ifdef TEST_APPLYSZQ
+                                                    //one uses diffQ because of theorem - to be calculated!
+#ifdef TEST_APPLYSZQ
         LogMessageCharInt("j =",j);
         LogMessageCharInt(", T[j] =",T[j]);
         LogMessageCharInt(", Nsymvalue = ",Nsymvalue[j]);
         LogMessageCharInt("phase =",phase);
-        #endif
+#endif
       }
 
-      #ifdef TEST_APPLYSZQ
+#ifdef TEST_APPLYSZQ
       LogMessageCharInt("\nNew_state =",new_state);
       LogMessageCharInt(", gsstate =",gsstate);
       LogMessageCharDouble(" with phase =",phase);
       LogMessageCharInt(" Also, new_state & gsstate =",(new_state & gsstate));
-      #endif
+#endif
 
       phase = phase%Nspins;
 
@@ -292,52 +293,52 @@ for (i=0; i<Nunique; i++)
         res += cosine[phase] + I*sine[phase]; //Note: cosine[k] = cos(2*PI*k/Nspins); 
       else 
         res -= cosine[phase] + I*sine[phase];
-      #ifdef TEST_APPLYSZQ
+#ifdef TEST_APPLYSZQ
       LogMessageCharInt("\nAfter if/else: phase =",phase);
       LogMessageCharDouble(". Res is now: ",real(res));
       LogMessageCharDouble("+ i",imag(res));
       LogMessageChar("\n");
-      #endif // TEST_APPLYSZQ
-    TRANSLOOP_END
-    
-    res /= (2*sqroot[Nspins]);
-    #ifdef TEST_APPLYSZQ
+#endif // TEST_APPLYSZQ
+      TRANSLOOP_END
+
+        res /= (2*sqroot[Nspins]);
+#ifdef TEST_APPLYSZQ
       LogMessageCharDouble("After Transloop res =",real(res));
       LogMessageCharDouble("+ i",imag(res));
       LogMessageChar("\n");
-    #endif // TEST_APPLYSZQ
+#endif // TEST_APPLYSZQ
 
-    szxygs[i] = gs[i]*res;
-  }
-  else //Nocc == 0
-  {
-    #ifdef TEST_APPLYSZQ
-    LogMessageChar("State is forbidden!\n");
-    #endif
-    szxygs[i] = zero;
-  }
+      szxygs[i] = gs[i]*res;
+    }
+    else //Nocc == 0
+    {
+#ifdef TEST_APPLYSZQ
+      LogMessageChar("State is forbidden!\n");
+#endif
+      szxygs[i] = zero;
+    }
 
-  #ifdef TEST_APPLYSZQ
-  //LogMessageCharInt ("ApplySzq output: m =",twom/2);
-  LogMessageCharInt(", unique ",i);
-  LogMessageCharInt(" corresponding to state ", unique[i]);
-  LogMessageCharDouble("with weight: ",real(szxygs[i]));
-  LogMessageCharDouble(" + i",imag(szxygs[i]));
-  LogMessageChar("\n");
-  #endif
-} 
+#ifdef TEST_APPLYSZQ
+    //LogMessageCharInt ("ApplySzq output: m =",twom/2);
+    LogMessageCharInt(", unique ",i);
+    LogMessageCharInt(" corresponding to state ", unique[i]);
+    LogMessageCharDouble("with weight: ",real(szxygs[i]));
+    LogMessageCharDouble(" + i",imag(szxygs[i]));
+    LogMessageChar("\n");
+#endif
+  } 
 
-return;
+  return;
 }
 
 #ifndef M_SYM
 /* ApplySmp applies the S+(q) or S-(q) operator (to the ground state vector).
-Last Change: Sofie 07.12.16
-The SMP parameter determines which operator to apply
-SPMcross=0 :  s_q^+ |gs>
-SPMcross=1 :  s_q^- |gs>
-Applysmp can be used to either get s^xx and s^yy or s^+- and s^-+.
-*/
+   Last Change: Sofie 07.12.16
+   The SMP parameter determines which operator to apply
+   SPMcross=0 :  s_q^+ |gs>
+   SPMcross=1 :  s_q^- |gs>
+   Applysmp can be used to either get s^xx and s^yy or s^+- and s^-+.
+   */
 void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
 {
   unsigned long long i,l,j;
@@ -348,7 +349,7 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
   long long ispossible;
   double norm;
   komplex res;
-    
+
 #ifdef TEST_APPLYSMP
   LogMessageCharInt("\nSPMcross =",SPMcross);
   LogMessageCharInt(", ApplySMP q =(",q[0]);
@@ -372,8 +373,8 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
         resultvec[i]=zero;
         return;
       }
-  }
-   #ifdef TEST_APPLYSMP
+    }
+#ifdef TEST_APPLYSMP
     LogMessageCharInt("ApplySzq: sym=",sym);
     LogMessageCharInt(", diffQ=",diffQ[sym]);
     LogMessageCharInt(", q=",q[sym]);
@@ -381,33 +382,33 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
     LogMessageCharInt(", Nsym=",Nsym);
     LogMessageCharInt(", symlist=",symlist[sym]);
     LogMessageChar("\n");
-  #endif // TEST_APPLYSMP
+#endif // TEST_APPLYSMP
   } 
-  
 
-for(i=0;i<Nunique;i++) /* Run through unique */
+
+  for(i=0;i<Nunique;i++) /* Run through unique */
   {    
     gsstate = unique[i];
-       
-   /* Check if unique is component of ground state. */
-      #ifdef TEST_APPLYSMP
-      LogMessageCharInt("\n\ngsstate:",gsstate);
-      LogMessageCharInt("Nocc[i] =",Nocc[i]);  
-      #endif 
-    
-      
+
+    /* Check if unique is component of ground state. */
+#ifdef TEST_APPLYSMP
+    LogMessageCharInt("\n\ngsstate:",gsstate);
+    LogMessageCharInt("Nocc[i] =",Nocc[i]);  
+#endif 
+
+
     /* Run through all translations of state */
     state = ((unsigned long long) 1); //bitmap for transloop
-    
+
     TRANSLOOP_BEGIN
-    
-   #ifdef TEST_APPLYSMP
-    LogMessageCharInt("\nnew_state:",new_state);
-    
+
+#ifdef TEST_APPLYSMP
+      LogMessageCharInt("\nnew_state:",new_state);
+
     LogMessageCharInt("; Raise: ",!(gsstate & new_state));
     LogMessageCharInt(" Lower ->",(gsstate & new_state) != 0 );
-  #endif 
-   /* Check if raising/lowering operation is possible */
+#endif 
+    /* Check if raising/lowering operation is possible */
     if (SPMcross == 0) //raise
     {
       ispossible = !(gsstate & new_state);
@@ -430,19 +431,19 @@ for(i=0;i<Nunique;i++) /* Run through unique */
         smp_state = (gsstate&~(new_state));
       }
 
-      #ifdef TEST_APPLYSMP
+#ifdef TEST_APPLYSMP
       LogMessageCharInt("smp_state=",smp_state);
-      #endif
+#endif
 
       u = FindUnique(smp_state,Tl); // Unique after updown operation; Tl is the translation of smp_state to unique
 
       l = LookUpU(u);  // Find position in table
-      #ifdef TEST_APPLYSMP
+#ifdef TEST_APPLYSMP
       LogMessageCharInt(", unique ",u);
       LogMessageCharInt("Tl[1] =",Tl[1]);
       LogMessageCharInt(", Nocc[l]=",Nocc[l]);
       //LogMessageCharInt(", Nocc_0[i]=",Nocc_0[i]);
-      #endif
+#endif
       if (Nocc[l] != 0)
       {
         phase=0;
@@ -452,7 +453,7 @@ for(i=0;i<Nunique;i++) /* Run through unique */
           phase += diffQ[k]*(T[k])*Nspins/Nsymvalue[k]; //
           phase1 += q[k]*Tl[k]*Nspins/Nsymvalue[k]; // Note that Tl = -p_j, therefore positive phase
 
-          #ifdef TEST_APPLYSMP
+#ifdef TEST_APPLYSMP
           LogMessageCharInt("\n k =",k);
           LogMessageCharInt(", T[k] =",T[k]);
           LogMessageCharInt(", diffQ[k] =",diffQ[k]);
@@ -460,49 +461,49 @@ for(i=0;i<Nunique;i++) /* Run through unique */
           LogMessageCharInt(", Nsymvalue = ",Nsymvalue[k]);
           LogMessageCharInt(", phase  =",phase);
           LogMessageCharInt(", phase1  =",phase1);
-          #endif
+#endif
         }
-      phase = phase%Nspins;
-      phase1 = phase1%Nspins;
-      #ifdef TEST_APPLYSMP
+        phase = phase%Nspins;
+        phase1 = phase1%Nspins;
+#ifdef TEST_APPLYSMP
         LogMessageCharInt("\nphase%Nspins=",phase);
         LogMessageCharDouble("cos(phase)=",cosine[phase]);
         LogMessageCharDouble("sin(phase)=",sine[phase]);
         LogMessageChar("\n");
-      #endif 
-      norm = sqroot[Nocc[l]]/sqroot[Nocc_0[i]]; //from definition of unique; use the Nocc in q=0 for the original state
-      norm /=sqroot[Nspins];
-      #ifdef TEST_APPLYSMP
-      LogMessageChar("Before:");
-      LogMessageCharDouble("This addition:",real(norm*(cosine[phase] + I*sine[phase])*gs[i]));
-      LogMessageCharDouble("+i",imag(norm*(cosine[phase] + I*sine[phase])*gs[i]));
-      #endif
-      /* Add element to new state */
-      resultvec[l] += norm*(cosine[phase] + I*sine[phase])*(cosine[phase1] + I*sine[phase1])*gs[i];  //Note: cosine[k] = cos(2*PI*k/Nspins); 
-      #ifdef TEST_APPLYSMP
-      LogMessageChar("\nAfter:");
-      LogMessageCharDouble("resultvec[l] =",real(resultvec[l]));
-      LogMessageCharDouble("+ i",imag(resultvec[l]));           
-      LogMessageChar("\n");
-      #endif
+#endif 
+        norm = sqroot[Nocc[l]]/sqroot[Nocc_0[i]]; //from definition of unique; use the Nocc in q=0 for the original state
+        norm /=sqroot[Nspins];
+#ifdef TEST_APPLYSMP
+        LogMessageChar("Before:");
+        LogMessageCharDouble("This addition:",real(norm*(cosine[phase] + I*sine[phase])*gs[i]));
+        LogMessageCharDouble("+i",imag(norm*(cosine[phase] + I*sine[phase])*gs[i]));
+#endif
+        /* Add element to new state */
+        resultvec[l] += norm*(cosine[phase] + I*sine[phase])*(cosine[phase1] + I*sine[phase1])*gs[i];  //Note: cosine[k] = cos(2*PI*k/Nspins); 
+#ifdef TEST_APPLYSMP
+        LogMessageChar("\nAfter:");
+        LogMessageCharDouble("resultvec[l] =",real(resultvec[l]));
+        LogMessageCharDouble("+ i",imag(resultvec[l]));           
+        LogMessageChar("\n");
+#endif
       } //if Nocc[l] 
     } //if( !(gsstate & new_state) ) 
-       
+
     TRANSLOOP_END
-   
-    //} // Nocc 
-  }         // Unique loop 
-  return;
+
+      //} // Nocc 
+}         // Unique loop 
+return;
 }
 #endif //NOT M_SYM
 
 #ifdef NEVER //Msym old
 /* ApplySmpMsym applies the S-S+(q) operator (to the ground state vector).
-Last Change: Kim 06.09.94 
-The SMP parameter determines which cross section to calculate:
-SPM=0 : S^+- = sum_e |<e| s_q^- |gs>|^2 , or
-SPM=1 : S^-+ = sum_e |<e| s_q^+ |gs>|^2
-*/
+   Last Change: Kim 06.09.94 
+   The SMP parameter determines which cross section to calculate:
+   SPM=0 : S^+- = sum_e |<e| s_q^- |gs>|^2 , or
+   SPM=1 : S^-+ = sum_e |<e| s_q^+ |gs>|^2
+   */
 void ApplySmp(long long *q, long long SPMcross)
 {
   unsigned long long i,l,j;
@@ -511,7 +512,7 @@ void ApplySmp(long long *q, long long SPMcross)
   long long phase;
   double norm;
   long long possible;
-    
+
 #ifdef TEST_APPLYSMP
   LogMessageCharInt("ApplySMP q =(",q[0]);
   LogMessageCharInt(",",q[1]);
@@ -521,24 +522,24 @@ void ApplySmp(long long *q, long long SPMcross)
 #endif
 
 
-for(i=0;i<Nunique;i++) /* Run through unique */
+  for(i=0;i<Nunique;i++) /* Run through unique */
   {    
     gsstate0 = unique[i];
-    
-   /* Check if unique is component of ground state. */
+
+    /* Check if unique is component of ground state. */
     if(Nocc[i] != 0) //check if gsstate is compatible with current q
     {
-      
+
       /* Run through possible spin-flips */
       for(j=0;j<Nspins;j++) 
       {
         mask = ((unsigned long long) 1)<<j;
-        #ifdef TEST_APPLYSMP
-          LogMessageCharInt("\n\ngsstate:",gsstate);
-          LogMessageCharInt(", mask:", mask);
-          LogMessageCharInt("; Raise: ->",!(gsstate&mask));
-          //LogMessageCharInt(" Lower ->",gsstate&mask);
-        #endif 
+#ifdef TEST_APPLYSMP
+        LogMessageCharInt("\n\ngsstate:",gsstate);
+        LogMessageCharInt(", mask:", mask);
+        LogMessageCharInt("; Raise: ->",!(gsstate&mask));
+        //LogMessageCharInt(" Lower ->",gsstate&mask);
+#endif 
         /* Check if raising operation is possible */
         if (SPMcross == int(SMP)) //raise
         {
@@ -560,11 +561,11 @@ for(i=0;i<Nunique;i++) /* Run through unique */
             smp_state = (gsstate&~(mask));
           }
 
-          
-          #ifdef TEST_APPLYSMP
+
+#ifdef TEST_APPLYSMP
           LogMessageCharInt("\n j=",j);
           LogMessageCharInt("smp_state=",smp_state);
-          #endif
+#endif
 
           u = FindUnique(smp_state,T); // Unique after updown operation
           l = LookUpU(u);  // Find position in table 
@@ -583,32 +584,32 @@ for(i=0;i<Nunique;i++) /* Run through unique */
             {
               phase = Nspins - phase;
             }
-          #ifdef TEST_APPLYSMP
-                  LogMessageCharDouble("Norm =",norm);
-                  LogMessageCharDouble(", phase =",phase);
-                  LogMessageChar("\n");
-          #endif 
+#ifdef TEST_APPLYSMP
+            LogMessageCharDouble("Norm =",norm);
+            LogMessageCharDouble(", phase =",phase);
+            LogMessageChar("\n");
+#endif 
             phase = phase %Nspins;
-          LogMessageCharDouble("Before: szxygs[l] =",real(szxygs[l]));
-          LogMessageCharDouble("+i",imag(szxygs[l]));  
-          double res_r=norm*(real(gs[i])*cosine[phase]-imag(gs[i])*sine[phase])+real(szxygs[l]);
-          double res_i=norm*(real(gs[i])*sine[phase]+imag(gs[i])*cosine[phase])+imag(szxygs[l]);
-          LogMessageCharDouble("\n Complex check: real part",res_r);
-          LogMessageCharDouble(", imag: ",res_i);
+            LogMessageCharDouble("Before: szxygs[l] =",real(szxygs[l]));
+            LogMessageCharDouble("+i",imag(szxygs[l]));  
+            double res_r=norm*(real(gs[i])*cosine[phase]-imag(gs[i])*sine[phase])+real(szxygs[l]);
+            double res_i=norm*(real(gs[i])*sine[phase]+imag(gs[i])*cosine[phase])+imag(szxygs[l]);
+            LogMessageCharDouble("\n Complex check: real part",res_r);
+            LogMessageCharDouble(", imag: ",res_i);
             /* Add element to new state */
             szxygs[l] = szxygs[l]+norm*(cosine[phase] + I*sine[phase])*gs[i];  //Note: cosine[k] = cos(2*PI*k/Nspins); 
-          #ifdef TEST_APPLYSMP
-          LogMessageCharDouble("\nAfter :cosine[phase] =",cosine[phase]);
-          LogMessageCharDouble(", sine[phase] =",sine[phase]);
-          LogMessageCharDouble(", gs[i] =",real(gs[i]));
-          LogMessageCharDouble("+i",imag(gs[i]));
-          LogMessageCharDouble("\nszxygs[l] =",real(szxygs[l]));
-          LogMessageCharDouble("+i",imag(szxygs[l]));
-          #endif
+#ifdef TEST_APPLYSMP
+            LogMessageCharDouble("\nAfter :cosine[phase] =",cosine[phase]);
+            LogMessageCharDouble(", sine[phase] =",sine[phase]);
+            LogMessageCharDouble(", gs[i] =",real(gs[i]));
+            LogMessageCharDouble("+i",imag(gs[i]));
+            LogMessageCharDouble("\nszxygs[l] =",real(szxygs[l]));
+            LogMessageCharDouble("+i",imag(szxygs[l]));
+#endif
           } // Nocc 
           else {szxygs[l]=zero;} //state is forbidden!
-          }     //if states
-        }      // j loop 
+        }     //if states
+      }      // j loop 
     }       // Nocc 
   }         // Unique loop 
   return;
@@ -617,9 +618,9 @@ for(i=0;i<Nunique;i++) /* Run through unique */
 
 #ifdef M_SYM
 /* ApplySmpMsym applies the S-S+(q) operator (to the ground state vector).
-Last Change: Kim 06.09.94 
-The which_q parameter determines if it is the S-(q)S+ operator 
-(which_q=0) or the S-S+(q) operator (which_q=1). */
+   Last Change: Kim 06.09.94 
+   The which_q parameter determines if it is the S-(q)S+ operator 
+   (which_q=0) or the S-S+(q) operator (which_q=1). */
 void ApplySmpMsym(long long *q, long long which_q)
 {
   unsigned long long i,l,j,k;
@@ -628,7 +629,7 @@ void ApplySmpMsym(long long *q, long long which_q)
   long long phase,n_flip,u_cycle,new_cycle;
   double norm;
   long long u_occ;
-    
+
 #ifdef TEST_APPLYSMP
   LogMessageCharInt("ApplySMP q =(",q[0]);
   LogMessageCharInt(",",q[1]);
@@ -636,85 +637,85 @@ void ApplySmpMsym(long long *q, long long which_q)
 #endif
 
 
-for(i=0;i<Nunique;i++) /* Run through unique */
+  for(i=0;i<Nunique;i++) /* Run through unique */
   {    
     gsstate = unique[i];
     u_occ = Nocc[i];
 
-   /* Check if unique is component of ground state. */
+    /* Check if unique is component of ground state. */
     if(Nocc[i] != 0) 
     {
       n_flip=0;
       /* Run through possible spin-flips */
       for(k=0;k<Nspins;k++) {
         for(j=0;j<Nspins;j++) {
-        
+
           downup = ((unsigned long long) 1)<<k;
           updown = ((unsigned long long) 1)<<j;
 #ifdef TEST_APPLYSMP
-  LogMessageCharInt("\ngsstate:",gsstate);
-  LogMessageCharInt(", downup:", downup);
-  LogMessageCharInt(", updown:",updown);
-  LogMessageCharInt(" - downup gsstate ->",!(gsstate&downup));
-  LogMessageCharInt(" updown gsstate ->",gsstate&updown);
+          LogMessageCharInt("\ngsstate:",gsstate);
+          LogMessageCharInt(", downup:", downup);
+          LogMessageCharInt(", updown:",updown);
+          LogMessageCharInt(" - downup gsstate ->",!(gsstate&downup));
+          LogMessageCharInt(" updown gsstate ->",gsstate&updown);
 #endif 
-/* Check if up-down operation is possible, including operation on the same spin */
-        if( ( !(gsstate & downup)) && (( gsstate & updown) || (k==j)) )
-        { 
-          n_flip++;
-          if (k==j)
-            smp_state = gsstate;
-          else
-            smp_state = (gsstate | downup)&(~updown);
+          /* Check if up-down operation is possible, including operation on the same spin */
+          if( ( !(gsstate & downup)) && (( gsstate & updown) || (k==j)) )
+          { 
+            n_flip++;
+            if (k==j)
+              smp_state = gsstate;
+            else
+              smp_state = (gsstate | downup)&(~updown);
 
 #ifdef TEST_APPLYSMP
-  LogMessageCharInt("\nk=",k);
-  LogMessageCharInt(" j=",j);
-  LogMessageCharInt("smp_state=",smp_state);
+            LogMessageCharInt("\nk=",k);
+            LogMessageCharInt(" j=",j);
+            LogMessageCharInt("smp_state=",smp_state);
 #endif
 
-          u = FindUnique(smp_state,T); // Unique after updown operation
-          l = LookUpU(u);  // Find position in table 
-          #ifdef TEST_APPLYSMP
-          LogMessageCharInt("SMP: Nocc[l]=",Nocc[l]);
-          LogMessageCharInt(", T=",T[1]);
-          LogMessageChar("\n");
-          #endif
-          if (Nocc[l] != 0)
-          {
-            norm = sqroot[Nocc[l]]/sqroot[u_occ];
-            
-            //WARNING: THESE PHASES ARE EXPLICITLY FOR ANTIFERROMAGNETS ONLY, BEWARE
-            // also, they do not quite work yet.
-            /* Determine phase shift and norm*/
-            if (which_q==1) {
-                    norm /= sqroot[2*(twom/2)*Nspins];  /* Sminus operator effect */
-                    phase = (2*Nspins*Nspins - k*q[1] + T[1]*(q[1]+q_gs[1]*Nspins/2) )%Nspins;
-                    if (phase > 0 && q_gs[1] == 1) {//skal de her vaere her??
-                      phase = Nspins - phase;  // PATCH for complex conjugation 
-                      }
-                    }
-            else if (which_q==0){
-                    norm /= sqroot[2*(twom/2+1)*Nspins];  /* Splus operator effect */
-                    phase = (2*Nspins*Nspins - j*q[1] + T[1]*(q[1]-q_gs[1]*Nspins/2) )%Nspins;
-                    if (phase > 0 && q_gs[1] == 1){
-                      phase = Nspins - phase;  // PATCH for complex conjugation 
-                      }
-                    }
+            u = FindUnique(smp_state,T); // Unique after updown operation
+            l = LookUpU(u);  // Find position in table 
+#ifdef TEST_APPLYSMP
+            LogMessageCharInt("SMP: Nocc[l]=",Nocc[l]);
+            LogMessageCharInt(", T=",T[1]);
+            LogMessageChar("\n");
+#endif
+            if (Nocc[l] != 0)
+            {
+              norm = sqroot[Nocc[l]]/sqroot[u_occ];
+
+              //WARNING: THESE PHASES ARE EXPLICITLY FOR ANTIFERROMAGNETS ONLY, BEWARE
+              // also, they do not quite work yet.
+              /* Determine phase shift and norm*/
+              if (which_q==1) {
+                norm /= sqroot[2*(twom/2)*Nspins];  /* Sminus operator effect */
+                phase = (2*Nspins*Nspins - k*q[1] + T[1]*(q[1]+q_gs[1]*Nspins/2) )%Nspins;
+                if (phase > 0 && q_gs[1] == 1) {//skal de her vaere her??
+                  phase = Nspins - phase;  // PATCH for complex conjugation 
+                }
+              }
+              else if (which_q==0){
+                norm /= sqroot[2*(twom/2+1)*Nspins];  /* Splus operator effect */
+                phase = (2*Nspins*Nspins - j*q[1] + T[1]*(q[1]-q_gs[1]*Nspins/2) )%Nspins;
+                if (phase > 0 && q_gs[1] == 1){
+                  phase = Nspins - phase;  // PATCH for complex conjugation 
+                }
+              }
 
 #ifdef TEST_APPLYSMP
-                  LogMessageCharDouble("Norm =",norm);
-                  LogMessageCharDouble(", phase =",phase);
-                  LogMessageChar("\n");
+              LogMessageCharDouble("Norm =",norm);
+              LogMessageCharDouble(", phase =",phase);
+              LogMessageChar("\n");
 #endif                  
-            /* Add element to new state */
-            szxygs[l] += norm*(cosine[phase] - I*sine[phase])*gs[i];
+              /* Add element to new state */
+              szxygs[l] += norm*(cosine[phase] - I*sine[phase])*gs[i];
 
-          } // Nocc 
-          else {szxygs[l]=zero;}
-        }   // Interchangable 
-      }     // Double k,j loop 
-    }
+            } // Nocc 
+            else {szxygs[l]=zero;}
+          }   // Interchangable 
+        }     // Double k,j loop 
+      }
     }       // Nocc 
   }         // Unique loop 
 
@@ -729,25 +730,25 @@ for(i=0;i<Nunique;i++) /* Run through unique */
 // WARNING: all symmetries are considered to be spatial periodic translations !!
 // Written by Kim, 14.07.00
 void CrossMatrix(long long symvalue[NSYM])
- {
+{
   long long i,j,q[NSYM];
   komplex res,basis_vector[NUNIQUE], szq_vector[NUNIQUE];
 
   QLOOP_BEGIN  //* These are the Q's in S(Q), perhaps do this differently? 
     for (i=0; i<Nuniq_k; basis_vector[i++]=1);
-//    ApplySzq(basis_vector,symvalue,q); // basis_vector is the trace of a diagonal matrix 
-    for (i=0; i<Nuniq_k; i++)
-     {
-      res=0;
-      for (j=0; j<Nuniq_k; j++)
-//        res+=basis_vector[j]*eigenstates[i][j]; // Multiplying with a diagonal matrix 
-//      sqz_vector=res*conj(res)
-;
-     }
+  //    ApplySzq(basis_vector,symvalue,q); // basis_vector is the trace of a diagonal matrix 
+  for (i=0; i<Nuniq_k; i++)
+  {
+    res=0;
+    for (j=0; j<Nuniq_k; j++)
+      //        res+=basis_vector[j]*eigenstates[i][j]; // Multiplying with a diagonal matrix 
+      //      sqz_vector=res*conj(res)
+      ;
+  }
   QLOOP_END
-  
-  return;
- }
+
+    return;
+}
 #endif /* MATRIX */
 
 bool NonZero(unsigned long long state, long long *q) {
@@ -761,31 +762,31 @@ bool NonZero(unsigned long long state, long long *q) {
   LogMessageCharInt(",",q[1]);
   LogMessageChar(")\n");
 
-TLOOP_BEGIN // goes through all symmetries defined, setting new_state and T[]
-  if (new_state==state) { // if we got back to the unique
-    eksponent =0;
-    for (long long i=0;i<Nsym;i++) {
-      eksponent+=q[i]*T[i]*Nspins/Nsymvalue[i];  // q_i*d_i*N/n_i
+  TLOOP_BEGIN // goes through all symmetries defined, setting new_state and T[]
+    if (new_state==state) { // if we got back to the unique
+      eksponent =0;
+      for (long long i=0;i<Nsym;i++) {
+        eksponent+=q[i]*T[i]*Nspins/Nsymvalue[i];  // q_i*d_i*N/n_i
 
-      LogMessageCharInt("i =",i);
-      LogMessageCharInt("T[i] =",T[i]);
-      LogMessageCharInt(", eksponent%Nspins =",eksponent%Nspins);
-      LogMessageChar("\n");
+        LogMessageCharInt("i =",i);
+        LogMessageCharInt("T[i] =",T[i]);
+        LogMessageCharInt(", eksponent%Nspins =",eksponent%Nspins);
+        LogMessageChar("\n");
 
+      }
+      if (eksponent%Nspins != 0) { // equiv. "if coefficient not 1"
+        LogMessageChar(" - Non Zero false!\n");
+        return false; // coefficient will add up to 0
+      }
     }
-    if (eksponent%Nspins != 0) { // equiv. "if coefficient not 1"
-      LogMessageChar(" - Non Zero false!\n");
-      return false; // coefficient will add up to 0
-    }
-  }
-TLOOP_END
-  LogMessageChar(" - Non Zero true!\n");
+  TLOOP_END
+    LogMessageChar(" - Non Zero true!\n");
   return true; // all coefficients were equal to one.
 }
 
 #endif /*NEVER*/
 
- double lengthofvector(komplex *v) {
+double lengthofvector(komplex *v) {
   double length=0.0;
   for (long long i=0;i<Nunique;i++) {
     length+=((real(v[i])*real(v[i]))+(imag(v[i])*imag(v[i])));

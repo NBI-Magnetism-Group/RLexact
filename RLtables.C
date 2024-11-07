@@ -10,7 +10,8 @@
 ============================================
 */
 
-#include "/usr/include/sys/types.h"
+//#include "/usr/include/sys/types.h"
+#include <sys/types.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -473,7 +474,7 @@ unsigned long long FillUnique(long long twom, int CountOnly)
 #endif
     while(bitmap<((unsigned long long)MAX_STATE)) {
 #ifdef TEST_FILLUNIQUE
-  LogMessageCharInt(" Looking at state ",bitmap);
+  LogMessageCharInt("\nLooking at state ",bitmap);
 #endif
       if(IsUnique(bitmap)) {
 #ifdef TEST_FILLUNIQUE
