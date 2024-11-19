@@ -40,9 +40,6 @@
   #define NRING 100
   #define NRINGSTR 10
 #endif
-//#define FILEREAD_TEST
-//#define MEMORY_DEBUG
-// TODO: These flags should start with TEST and move to the end of the file
 
 // Highest possible state
 // #ifdef LANCZOS
@@ -290,3 +287,8 @@
 
 // Debugging output requests from regcc.cpp
 //#define TEST_MULTIMATCH
+//#define TEST_FILEREAD
+//
+
+// Found in RLexact.h Previously named MEMORY_DEBUG, but not called anywhere.
+//#define TEST_MEMORY
