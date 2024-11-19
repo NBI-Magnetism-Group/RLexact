@@ -88,14 +88,14 @@ void filereader (char* filename, char* filedata, long long filesize) {
   datafile.seekg(0,ios::beg);
   datafile.read(filedata,filesize); // here we must have filesize from caller
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
   // write the read content of the file to stdout
   cerr << "Read the following from datafile " << filename << endl;
   for (long long i =0;i<filesize;i++) {
     cerr << filedata[i];
   }
   cerr << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
   datafile.close();
 }
 
@@ -138,7 +138,7 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
   realpat[l+6]=')';
   realpat[l+7]=0;
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
   cerr << "Transforming pattern ";
   for (long long n=0; n< l;n++) {
     cout << pattern[n];
@@ -148,20 +148,20 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
     cout << realpat[n];
   }
   cout << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
   // compile the patterns into comppat (the keyword), and comppat2 (the array matcher)
   regcomp (comppat, realpat,REG_NEWLINE|REG_ICASE);
   regcomp (comppat2, pattern2,0);
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
   cerr << "Now trying to match following text" << endl << "---INPUT BEGINS---" << endl;
   long long n = 0;
   while(input[n]!=0) {
     cout << input[n++];
   }
   cerr << "---INPUT ENDS---" << endl << "with pattern " << realpat << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
   // find a line containing the keyword
   long long found = regexec(comppat,input,2,resarray,0);
@@ -189,22 +189,22 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
     }
     parentes[i]=0;
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
     cerr << "Found ";
     long long n = 0;
     while(parentes[n]!=0) {
       cout << parentes[n++];
     }
     cout << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
     // then, start the parsing of the parentes variable and build the result array
     long long found2=0;
     while (!found2) { // as there is still more numbers left to parse
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
       cout << "Trying to match \"" << parentes << "\" with \"" << pattern2 << "\"" << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
       found2 = regexec(comppat2,parentes,2,resarray2,0); // find the first number in parentes
       if (found2 && (regexperr(found2,pattern2,false)==-1)) {
@@ -223,16 +223,16 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
 	}
 	charnumber[j]=0;
 	
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
 	cout << "sending \"" << charnumber <<"\" to the ascii to double parser"<< endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
 	// translate the number from ascii to double
 	number = atod(charnumber);
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
 	cout << "Received " << number << " from ascii to double parser" << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
 	result[	count++] = number; // put the number into the result array
 
@@ -308,28 +308,28 @@ long long multimatch (char* input, long long length, const char* pattern, double
 
     char *line = (char*) malloc((1+linesize)*sizeof(char));
     long long j =0;
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
     cout << "Now processing line: ";
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
     for (j=0;j<linesize;j++) {
       line[j]=myInput[resarray[1].rm_so+j]; // make a variable with the current line
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
       cout << line[j];
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
     }
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
       cout << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
 
     line[j]=0; // make sure its terminated
 
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
     cout << "Beginning matching of " << line << " with pattern " << pattern << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
     long long matches = matchlines(line,pattern,tempres,false); // match patern on line
-#ifdef FILEREAD_TEST
+#ifdef TEST_FILEREAD
     cout << "Ended matching of " << line << " with pattern " << pattern << endl;
-#endif /* FILEREAD_TEST */
+#endif /* TEST_FILEREAD */
     if (matches>0) { // matches positive if succesful
       if ((hits)==count) { // we already matched hits lines - error!
 	cerr << "too many matches for pattern " << pattern << " - " << hits << "count must be specified correctly" << endl;
