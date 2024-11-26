@@ -122,6 +122,11 @@ extern FILE  *outfilepm, *outfilemp;
 #endif
 extern double *cross;
 #endif /* FIND_CROSS */
+#ifdef MOTIVE
+extern long long Nunitcells[3];
+extern long long Nspins_in_uc;
+extern float **spin_positions;
+#endif //MOTIVE
 extern FILE *gscoinfile;
 extern FILE *outfile;
 extern FILE *logfile;
@@ -495,6 +500,40 @@ long long ReadCoupPattern(char *filename)
 #endif /* TEST_INPUT */   
   free(dummy);
   
+#ifdef MOTIVE
+  
+  Nspins_in_uc = Nspins;
+  dummy = (long long*) malloc(3*sizeof(long long));
+  matchlines(filedata, "Number of unit cells", dummy, true);
+  for (i=0;i<3;i++){
+    Nunitcells[i] = dummy[i];
+    Nspins_in_uc /= dummy[i];
+  }
+  free(dummy);
+
+#ifdef TEST_INPUT
+  LogMessageChar("Number of unit cells:");
+  for (i=0; i<3; i++) LogMessageCharInt(" ", Nunitcells[i]);
+  LogMessageChar("\n");
+  LogMessageCharInt("Number of spins in unit cell: ", Nspins_in_uc);
+  LogMessageChar("\n");
+#endif //TEST_INPUT
+  
+  dummy = (long long*) malloc(Nspins_in_uc*sizeof(long long));
+  spin_positions = (double**)malloc(Nspins_in_uc*sizeof(double*));
+  multimatch(filedata, filesize, "Relative position", spin_positions, 
+      dummy, Nspins_in_uc);
+  free(dummy);
+
+#ifdef TEST_INPUT
+  for (i=0; i<Nspins_in_uc;i++){
+      LogMessageChar3Vector("Spin pos.",spin_positions[i][X],
+                                        spin_positions[i][Y],
+                                        spin_positions[i][Z]);
+  }
+#endif //TEST_INPUT
+
+#endif //MOTIVE
 
 #ifdef STRUCTURE
   matchlines(filedata, "Dimensions", &Nsym_translations, true);

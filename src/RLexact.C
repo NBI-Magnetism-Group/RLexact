@@ -82,6 +82,11 @@ extern void ReadUniqueObservables();
 /* Global variables read from the input file */
 long long    Nspins;
        /* Number of spins in the system */
+#ifdef MOTIVE
+  long long Nunitcells[3];
+  long long Nspins_in_uc;
+  double **spin_positions;
+#endif //MOTIVE
 long long    Ncoup;
        /* Actual number of couplings */
 long long    Ncoupstr;

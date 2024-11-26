@@ -27,6 +27,7 @@
 //#define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 //#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM , Works only for MATRIX-mode, SJ 31/5/16
 //#define STRUCTURE  //doesnt currently work, SJ, 2/3/16 //Rename to Sqw_Q_VALUES AP 4/11/24 - Kim er næsten sikker
+#define MOTIVE //spin positions
 
 // Dimensions of problem 
 #define NCOUP 400
@@ -239,15 +240,15 @@
 // Debugging output requests from RLlanczos.c 
 //#define TEST_SEED 
 //#define TEST_EIGENVECTORS
-#define TEST_FINDGROUND
+//#define TEST_FINDGROUND
 //#define TEST_STATES 
 //#define TEST_ENERGIES
-#define LANCZOS_MESSAGES
-#define VERBOSE_LANCZOS
+//#define LANCZOS_MESSAGES
+//#define VERBOSE_LANCZOS
 //#define TEST_FINDMAG
 //#define DEBUG_SEED // WARNING: May cause premature stopping of lanczos algorithm
 //#define DEBUG_LANCSTEP
-#define TEST_LANCCROSS
+//#define TEST_LANCCROSS
 
 // Debugging output requests from RLtables.c 
 //#define TEST_TABLES    
@@ -271,7 +272,7 @@
 // Debugging output requests from RLio.c and RLutil.c
 //#define TEST_WRITECROSS
 //#define TEST_SPINFLIP
-//#define TEST_INPUT
+#define TEST_INPUT
 //#define TEST_ROTATION
 
 // Debugging output requests from RLcross.c 
