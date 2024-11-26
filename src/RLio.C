@@ -425,7 +425,7 @@ long long ReadCoupPattern(char *filename)
 #endif /* TEST_INPUT */ 
   
 // ********* Input symmetry info ********************
-  matchlines(filedata, "Hardcoded symmetry", symlist, false);
+  matchlines(filedata, "Hardcoded symmetries", symlist, false);
 #ifdef TEST_INPUT
   LogMessageCharInt("Number of hardcoded symmetries scanned:",Nsym); 
 #endif /* TEST_INPUT */   
