@@ -394,7 +394,7 @@ long long ReadCoupPattern(char *filename)
 
 // ******** Mandatory input: Read number of lines to input **********
   matchlines(filedata, "Number of couplings", &Ncoup, true);
-  matchlines(filedata, "Number of couplingstrength", &Ncoupstr, true);
+  matchlines(filedata, "Number of coupling strength", &Ncoupstr, true);
 #ifdef RING_EXCHANGE
   matchlines(filedata, "Number of rings", &Nring, true);
   matchlines(filedata, "Number of ringstrength", &Nringstr, true);
@@ -425,7 +425,7 @@ long long ReadCoupPattern(char *filename)
 #endif /* TEST_INPUT */ 
   
 // ********* Input symmetry info ********************
-  matchlines(filedata, "Hardcoded symmetries", symlist, false);
+  matchlines(filedata, "Hardcoded symmetry", symlist, false);
 #ifdef TEST_INPUT
   LogMessageCharInt("Number of hardcoded symmetries scanned:",Nsym); 
 #endif /* TEST_INPUT */   
@@ -589,7 +589,9 @@ long long ReadCoupPattern(char *filename)
   else
     fatalerror(" Field direction not well defined",0);
 #ifdef TEST_INPUT
-  LogMessageChar3Vector("Normalized field direction:", field[X], field[Y], field[Z]);
+  LogMessageChar3Vector("Normalized field direction:",  field[X],
+                                                        field[Y],
+                                                        field[Z]);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */    
   //FillRotationMatrix(field); //doesnt work and unnecessary, SJ 20.02.17
@@ -606,7 +608,8 @@ long long ReadCoupPattern(char *filename)
 
   dummy= (long long*) malloc(Ncoupstr*sizeof(long long));
   double** dummyresdouble = (double**) malloc(Ncoupstr*sizeof(double*));
-  multimatch(filedata,filesize,"Coupling strength vector",dummyresdouble , dummy, Ncoupstr);
+  multimatch(filedata,filesize,"Coupling strength vector", dummyresdouble,
+                                                           dummy, Ncoupstr);
 
   for (long long k=0;k<Ncoupstr;k++) {
     hamzz[k]=dummyresdouble[k][0];
@@ -626,7 +629,8 @@ long long ReadCoupPattern(char *filename)
 #ifdef RING_EXCHANGE
   dummy= (long long*) malloc(Nringstr*sizeof(long long));
   double** dummyresdouble1 = (double**) malloc(Nringstr*sizeof(double*));
-  multimatch(filedata,filesize,"Ring strength",dummyresdouble1 , dummy, Nringstr);
+  multimatch(filedata,filesize,"Ring strength", dummyresdouble1, dummy,
+                                                                 Nringstr);
 
   for (long long k=0;k<Nringstr;k++) {
     hamring[k]=dummyresdouble1[k][0];
@@ -672,7 +676,9 @@ long long ReadCoupPattern(char *filename)
     RotateVector(r_vector[k]);
     geom_13[k] = 1.0-3.0*SQR(r_vector[k][Z]);
 #ifdef TEST_ROTATION
-  LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],r_vector[k][Y],r_vector[k][Z]);
+  LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
+                                                      r_vector[k][Y],
+                                                      r_vector[k][Z]);
   LogMessageChar("\n");
 #endif /* TEST_ROTATION */
 #endif /* DIPOLE */
@@ -681,7 +687,8 @@ long long ReadCoupPattern(char *filename)
 #ifdef RING_EXCHANGE
   dummy = (long long*) malloc(Nring*sizeof(long long));
   long long **dummyresring = (long long**) malloc(Nring*sizeof(long long*));
-  multimatch(filedata,filesize,"Coupling ring vector",dummyresring , dummy, Nring);
+  multimatch(filedata,filesize,"Coupling ring vector", dummyresring, dummy,
+                                                                     Nring);
 
   for (long long k=0;k<Nring;k++) {
     ring_coup[k][0]=dummyresring[k][0];
@@ -734,8 +741,9 @@ void TransformCoup(long long j)
 #ifdef FIND_CROSS
 #ifdef LANCZOS
 long long SortCross (long long Nener) {
-  /* Finds and sums crosssections for same energies, and sorts energies and cross by energy */
-  /* Could be optimized greatly, but MAX_LANCZOS is small: no point */
+  /* Finds and sums crosssections for same energies, and sorts energies and
+   * cross by energy.
+   * Could be optimized greatly, but MAX_LANCZOS is small: no point */
   long long XS = 0; // number of unique crosssections
   bool newener;
 
@@ -781,7 +789,8 @@ void time_stamp(time_t *tim, long long flag, const char *string)
   if (flag == STOP)
   {
    *tim += clock();
-   fprintf(logfile," %s done, %lg seconds used\n", string, *tim/(double)CLOCKS_PER_SEC);
+   fprintf(logfile," %s done, %lg seconds used\n",
+            string, *tim/(double)CLOCKS_PER_SEC);
   } 
 
   return;
@@ -895,7 +904,8 @@ void WriteStates(komplex **hamil)
    {
     fprintf(outfile,"( ");
     for (j=0; j<Nuniq_k; j++)
-      fprintf(outfile,"( %lg +i %lg ), ",real(hamil[j+1][i+1]),imag(hamil[j+1][i+1]));
+      fprintf(outfile,"( %lg +i %lg ), ", real(hamil[j+1][i+1]),
+                                          imag(hamil[j+1][i+1]));
     fprintf(outfile,") \n");
    }
   
@@ -957,7 +967,8 @@ void WriteResults(long long N)
  {
 /* Output the energies and other observables of the eigenstates */
   long long i,q;
-  #ifndef WRITE_MAGNETISATION //otherwise the energy and magnetisation pairs get mixed up
+  #ifndef WRITE_MAGNETISATION 
+  //otherwise the energy and magnetisation pairs get mixed up
     Bubblesort(energies,NULL,N);
   #endif
 
@@ -977,8 +988,8 @@ void WriteResults(long long N)
 	     magnetisation[i]=0;
       }
       #ifdef WRITE_MAGNETISATION
-      #ifdef MATRIX
-      fprintf(outfile,", mag_z= %9.6g ",magnetisation[i]); //only meaningful for matrix-calculations
+      #ifdef MATRIX //only meaningful for matrix-calculations
+      fprintf(outfile,", mag_z= %9.6g ",magnetisation[i]); 
       #endif //MATRIX
       #endif //WRITE_MAGNETISATION
 #endif  /* FIND_MAG */
@@ -1039,7 +1050,7 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
 
 #ifdef M_SYM
-  fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]-q_gs[0]);
+  fprintf(crossfile, "[\n m= %g, q= (%lld",double(twom)/2,symvalue[0]-q_gs[0]);
   //fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]);
 #else
   fprintf(crossfile, "[ \n h= %g, q= (%lld",double(h),symvalue[0]-q_gs[0]);
@@ -1063,7 +1074,8 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   }
   #endif
 
-  long long Xsections = SortCross(Nener); // destroys *energies and *Cross. Maybe not so smart?
+  long long Xsections = SortCross(Nener); 
+  //destroys *energies and *Cross. Maybe not so smart?
   
   for (long long i = 0;i<Nener;i++) 
   {
