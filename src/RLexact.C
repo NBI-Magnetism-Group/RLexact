@@ -436,7 +436,7 @@ for (h=hstart; h<= hend; h+=hstep)
   }
   BuildCycle(q_write);
   WriteUniqueObservables();
-  #endif /* M_SYM */
+  #endif /* not M_SYM */
    } 
    else 
    {
@@ -523,13 +523,15 @@ void Solve_Lanczos() {
         if (etmp<gs_energy)
         {
           gs_energy=etmp;
-          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
+          for (sym=0; sym<Nsym; sym++){
+            q_gs[sym] = q[sym];
+          }
           //      for (i=0; i<Nunique; i++)
           //	gs[i] = tmp[i];
         }
       }
     }
-    else //Nq_choice < 0
+    else //Nq_choice <= 0 -> Search all q
     {
       gs_energy=LARGE_NUMBER;
   
@@ -554,7 +556,9 @@ void Solve_Lanczos() {
         if (etmp<gs_energy)
         {
           gs_energy=etmp;
-          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
+          for (sym=0; sym<Nsym;sym++){
+            q_gs[sym] = q[sym];
+          }
           //      for (i=0; i<Nunique; i++)
           //	gs[i] = tmp[i];
           //	gs[i] = evec[i];
@@ -565,7 +569,7 @@ void Solve_Lanczos() {
         #endif
     
       QLOOP_END
-  
+
       if (mode==MODEGS) {
         Warning("YOU SHOULD SPECIFY Q-VALUES TO DETECT FOR MODEGS",0);
       }

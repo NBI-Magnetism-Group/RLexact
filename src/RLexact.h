@@ -203,9 +203,9 @@
 
 // General debugging requests from RLexact.C
 
-//#define VERBOSE
-//#define VERBOSE_TIME_LV1
-//#define VERBOSE_TIME_LV2
+#define VERBOSE
+#define VERBOSE_TIME_LV1
+#define VERBOSE_TIME_LV2
 
 
 // Debugging output requests from RLexact.c 
@@ -243,12 +243,13 @@
 //#define TEST_FINDGROUND
 //#define TEST_STATES 
 //#define TEST_ENERGIES
+//#define TEST_LANCZOS_VECTOR
 //#define LANCZOS_MESSAGES
 //#define VERBOSE_LANCZOS
 //#define TEST_FINDMAG
 //#define DEBUG_SEED // WARNING: May cause premature stopping of lanczos algorithm
 //#define DEBUG_LANCSTEP
-//#define TEST_LANCCROSS
+#define TEST_LANCCROSS
 
 // Debugging output requests from RLtables.c 
 //#define TEST_TABLES    
@@ -257,7 +258,7 @@
 //#define TEST_ISUNIQUE
 //#define TEST_FINDUNIQUE  
 //#define TEST_FINDUNIQUE_DETAIL
-//#define TEST_FILLUNIQUE 
+#define TEST_FILLUNIQUE 
 //#define TEST_READUNIQUE 
 //#define TEST_FILLUNIQUE_LIST
 //#define TEST_FILLUNIQUEOBSERVABLES
@@ -270,7 +271,7 @@
 //#define TEST_SYMCOUPLING   
 
 // Debugging output requests from RLio.c and RLutil.c
-//#define TEST_WRITECROSS
+#define TEST_WRITECROSS
 //#define TEST_SPINFLIP
 #define TEST_INPUT
 //#define TEST_ROTATION
@@ -280,7 +281,7 @@
 //#define PRINT_ENERGIES  
 //#define TEST_APPLYSMP
 //#define TEST_APPLYSZQ 
-//#define TEST_CROSS
+#define TEST_CROSS
 
 
 // Debugging output requests from Diagonal.C 

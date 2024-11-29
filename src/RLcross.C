@@ -91,6 +91,7 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
   LogMessageCharInt("\n for twom =",twom);
 #endif
   LogMessageCharInt("\nIn q = ",symvalue[1]);
+  for (int i = 2;i<Nsym;i++) LogMessageCharInt(", ",symvalue[i]);
   LogMessageChar("\n");
   for (int i = 0; i < Nunique; i++)
   {

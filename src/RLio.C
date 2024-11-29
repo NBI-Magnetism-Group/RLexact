@@ -1075,8 +1075,9 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   LogMessageCharInt(", m =",twom/2);
   #endif
   LogMessageCharDouble(", gs_energy=",gs_energy);
+
   LogMessageCharInt(", q_gs = (",q_gs[0]);
-  LogMessageCharInt(",",q_gs[1]);
+  for (long long i=1;i<Nsym;i++) LogMessageCharInt(",",q_gs[i]);
   LogMessageChar(")");
   for (int i = 0; i < Nsym; i++)
   {

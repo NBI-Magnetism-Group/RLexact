@@ -100,10 +100,11 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
   second = vec2; 
   third = vec3; 
 
-  if(flag==CROSS) 
+  if(flag==CROSS) //flag bliver ikke brugt... /ABP
     MakeSeedCross(first,CROSS);
   else
     MakeSeed(first);
+  //Kopierer szxygs ind i first
 
   scale = Normalize(first); 
 
@@ -194,8 +195,7 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
       cross[i] = 2*PI*sqrabs(scale*z[1][i+1]);  // TODO: check if this works!
 #ifdef TEST_LANCCROSS
       LogMessageChar("k = [ ");
-      for (j=0; j<Nsym; j++)
-	       LogMessageInt(k[i]);
+      for (j=0; j<Nsym; j++) LogMessageInt(k[i]);
       LogMessageChar("] \n");
       LogMessageCharInt("Overlap from smpzq to exited state ", i);
       LogMessageCharDouble(" with energy ", energies[i]);
@@ -204,8 +204,8 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
       LogMessageCharInt("\n r =",r);
       LogMessageCharDouble(", scale =",scale);
       LogMessageCharDouble(" Cross section: ",cross[i]);
-      LogMessageChar("\n");
       LogMessageCharInt(", Nvec =",Nvec);
+      LogMessageChar("\n");
 #endif //TEST_LANCCROSS
       
     }
