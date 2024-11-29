@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
    }
  }
    
-#else //NOT MSYM
+#else //NOT M_SYM
 #ifdef VERBOSE
  LogMessageChar("M_SYM not encountered \n");
  LogMessageCharInt("Unique mode is: ", unimode);

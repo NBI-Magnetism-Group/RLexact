@@ -340,9 +340,9 @@ long long ReadCoupPattern(char *filename)
   double r,rx,ry,rz;
   double Dip[NCOUPSTR];
 #endif /* DIPOLE */
-#ifndef MSYM
+#ifndef M_SYM
   double B2;
-#endif /* MSYM */
+#endif /* M_SYM */
   char test[80];
   long long filesize; // of inputfile
 
@@ -1071,7 +1071,7 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
 #ifdef TEST_WRITECROSS
   LogMessageChar("In WriteCross, ");
-  #ifdef MSYM
+  #ifdef M_SYM
   LogMessageCharInt(", m =",twom/2);
   #endif
   LogMessageCharDouble(", gs_energy=",gs_energy);

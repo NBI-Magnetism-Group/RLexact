@@ -175,7 +175,7 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
     }
 #endif //FIND_CROSS_PM
 
-#endif  //MSYM
+#endif  //M_SYM
 
     szqlength=lengthofvector(szxygs); //for output in cross files
 
