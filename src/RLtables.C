@@ -720,6 +720,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
 
 #ifdef TEST_FINDUNIQUE
   LogMessageCharInt(" FindUnique called with state ",state);
+      LogMessageChar("\n");
 #endif
 
   min=state;
@@ -741,6 +742,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
       for(sym=0;sym<Nsym;sym++) 
 	LogMessageInt(Tvec[sym]);
       LogMessageCharInt(") State: ",new_state);
+      LogMessageChar("\n");
 #endif
 
     }
@@ -748,6 +750,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
 
 #ifdef TEST_FINDUNIQUE
   LogMessageCharInt(" Found u = ", min);
+      LogMessageChar("\n");
 #endif
   
   return min;
