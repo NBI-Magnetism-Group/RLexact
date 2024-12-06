@@ -80,6 +80,8 @@ extern double* dvector(long long,long long);
 /* Global variables defined in RLexact.c */
 extern long long    Nspins,Nsym,Nsymadd,Nunique,Nuniq_k;
 extern long long    **symadd;
+extern long long    Ndimensions;
+extern long long    *TransIds;
 extern long long    hamil_coup[NCOUP][2], Ncoup; 
 #ifdef RING_EXCHANGE
 extern long long    ring_coup[NCOUP][4], Nring; 
@@ -423,10 +425,24 @@ long long ReadCoupPattern(char *filename)
   matchlines(filedata, "Hardcoded symmetries", symlist, false);
 #ifdef TEST_INPUT
   LogMessageCharInt("Number of hardcoded symmetries scanned:",Nsym); 
+  LogMessageChar("\n");
 #endif /* TEST_INPUT */   
   long long* dummy = (long long*) malloc(Nsymadd*sizeof(long long));
   symadd = (long long**) malloc(Nsymadd*sizeof(long long*));
  multimatch(filedata,filesize,"Custom symmetry", symadd, dummy, Nsymadd);
+ 
+ matchlines(filedata, "Number of dimensions", &Ndimensions, true);
+ TransIds = (long long*) malloc(Ndimensions*sizeof(long long));
+ matchlines(filedata, "Translation indices", TransIds, 1);
+
+#ifdef TEST_INPUT
+ LogMessageCharInt("Number of dimensions:", Ndimensions);
+ LogMessageChar("\n");
+ LogMessageChar("Translations at indices:");
+ for (int i=0; i<Ndimensions;i++) LogMessageInt(TransIds[i]);
+ LogMessageChar("\n");
+#endif
+ 
 
   #ifdef TEST_SPINFLIP
     LogMessageCharInt("Testing for spin flip sym. Matching symlist with SPIN_FLIP=",SPIN_FLIP);

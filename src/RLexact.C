@@ -104,6 +104,10 @@ long long    Nsymadd;
 long long    symlist[NSYM];  /* Symmetries to be used in problem */
 long long    **symadd;  /* Specification of additional
 		     symmetries to be used in problem */
+long long Ndimensions;
+       /* How many dimensions are used */
+long long *TransIds;
+       /* Index of the translation symmetries in symlist */
 long long    Nq_choice;
        /* number of symmetry vectors to be chosen */
 long long    **q_choice;
