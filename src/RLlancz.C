@@ -100,11 +100,12 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
   second = vec2; 
   third = vec3; 
 
-  if(flag==CROSS) //flag bliver ikke brugt... /ABP
+  if(flag==CROSS) 
+  //flag bliver ikke brugt i MakeSeedCross() /ABP
+  //Kopierer szxygs ind i first
     MakeSeedCross(first,CROSS);
   else
     MakeSeed(first);
-  //Kopierer szxygs ind i first
 
   scale = Normalize(first); 
 
