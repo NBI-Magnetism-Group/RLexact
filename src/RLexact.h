@@ -26,7 +26,6 @@
 #define WRITE_STATES
 //#define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 //#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM , Works only for MATRIX-mode, SJ 31/5/16
-//#define STRUCTURE  //doesnt currently work, SJ, 2/3/16 //Rename to Sqw_Q_VALUES AP 4/11/24 - Kim er næsten sikker
 #define MOTIVE //spin positions
 
 // Dimensions of problem 

@@ -173,23 +173,6 @@ long long   Nelem;
 long long    *mag;
        /* m-value for the unique states, TODO: should be int */ 
 #endif /* M_SYM */
-#ifdef STRUCTURE
-long long    Nstruct;
-       /* Number of structure factors calculated */ 
-komplex phaseq[NSPINS][NSPINS]; 
-double **qvec;
-double **structq;
-       /* Structure factors for the unique states */
-double **position;
-       /* Position of all spins */
-double dummy;
-long long Nsym_translations;
-       /* Number of translation symmetries (dimensionality) */ 
-double **Sym_translation;
-       /* vectors of translations */ 
-double **Sym_translation_inv;
-       /* inverse translations */ 
-#endif  /* STRUCTURE */
 komplex **hamilton;
        /* The Hamiltonian matrix, dynamically allocated */
 komplex *vec1,*vec2,*vec3;
@@ -240,9 +223,6 @@ double *energies;
 #ifdef FIND_MAG
 double *magnetisation;
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-double **Szzq;
-#endif  /* STRUCTURE */
 #ifdef MATRIX 
 double *cross;
 #endif /* Matrix*/
@@ -856,10 +836,6 @@ void allocate()
 #ifdef FIND_MAG
   magnetisation = dvector(0,MAX_LANCZOS-1);
 #endif /*FIND_MAG*/
-#ifdef STRUCTURE
-  Szzq =     dmatrix(0,Nstruct,0,Nunique-1);
-  structq =     dmatrix(0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS
     cross = dvector(0,MAX_LANCZOS-1);
 #endif /* FIND_CROSS */
@@ -892,10 +868,6 @@ void allocate()
 #ifdef FIND_MAG
   magnetisation = dvector(0,Nunique-1);
 #endif /*FIND_MAG*/
-#ifdef STRUCTURE
-  Szzq =     dmatrix(0,Nstruct,0,Nunique-1);
-  structq =     dmatrix(0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS
     cross =    dvector(1,Nunique);
 #endif  /* FIND_CROSS */
@@ -922,10 +894,6 @@ void deallocate()
 #ifdef FIND_MAG
   freedvector(magnetisation,0,MAX_LANCZOS-1);
 #endif /* M_SYM */
-#ifdef STRUCTURE
-  freedmatrix(Szzq,0,Nstruct,0,Nunique-1);
-  freedmatrix(structq,0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS   
     freedvector(cross,0,MAX_LANCZOS-1);
 #endif /* FIND_CROSS */
@@ -955,10 +923,6 @@ void deallocate()
 #ifdef FIND_MAG
   freedvector(magnetisation, 0, Longest_Matrix - 1);
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-	freedmatrix(Szzq, 0, Nstruct, 0, Longest_Matrix - 1);Lon
-	freedmatrix(structq, 0, Nstruct, 0, Longest_Matrix - 1);
-#endif  /* STRUCTURE */
 
 #endif  /* MATRIX */
 

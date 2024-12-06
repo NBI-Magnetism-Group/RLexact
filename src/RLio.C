@@ -103,13 +103,6 @@ extern double *energies;
 extern double *magnetisation;
 extern double maggs;
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-extern double **Szzq, **position;
-extern long long Nstruct;
-extern double **qvec;
-extern long long Nsym_translations;
-extern double **Sym_translation;
-#endif  /* STRUCTURE */
 extern long long Nq_choice;
 extern long long **q_choice;
 #ifdef FIND_CROSS
@@ -175,9 +168,6 @@ long long intro()
 #ifdef FIND_MAG
   OutMessageChar(" Magnetization,");
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-  OutMessageChar(" Szz(q),");
-#endif  /* STRUCTURE */
 #ifdef CROSS
   OutMessageChar(" S^zz(q,w),");
   #ifndef M_SYM
@@ -535,66 +525,6 @@ long long ReadCoupPattern(char *filename)
 
 #endif //MOTIVE
 
-#ifdef STRUCTURE
-  matchlines(filedata, "Dimensions", &Nsym_translations, true);
-  dummy = (long long*) malloc(Nsym_translations*sizeof(long long));
-  Sym_translation=(double**)malloc(Nsym_translations*sizeof(double*));
-  multimatch(filedata,filesize,"Translation vector", Sym_translation, dummy, Nsym_translations);
-#ifdef TEST_INPUT
-  LogMessageCharInt("Nsym_translations (dimensionality):",Nsym_translations); 
-  LogMessageChar("\n");
-  for (i=0; i<Nsym_translations; i++)
-  {
-    LogMessageCharInt("Vector no: ",i);
-    LogMessageChar("[");
-    for (j=0; j<Nsym_translations; j++)
-      LogMessageInt(Sym_translation[i][j]);
-    LogMessageChar("] \n");
-  }
-#endif /* TEST_INPUT */
-  free(dummy);
-
-
-  dummy = (long long*) malloc(Nspins*sizeof(long long));
-  position = (double**)malloc(Nspins*sizeof(double*));
-  multimatch(filedata,filesize,"Spin position", position, dummy, Nspins);
-#ifdef TEST_INPUT
-  for (i=0; i<Nspins; i++)
-    {
-      LogMessageCharInt(" spin:",i);
-      LogMessageChar("position (");
-      for (j=0; j<Nsym_translations; j++)
-	{
-	  LogMessageInt(position[i][j]);
-	}
-      LogMessageChar(" ) \n");
-    }
-#endif /* TEST_INPUT */
-  free(dummy);
-
-  matchlines(filedata, "Number of structurefactors", &Nstruct, true);
-#ifdef TEST_INPUT
-  LogMessageCharInt(" Nstruct:", Nstruct);
-  LogMessageChar("\n");
-#endif /* TEST_INPUT */
-  dummy = (long long*) malloc(Nstruct*sizeof(long long));
-  qvec=(double**)malloc(Nstruct*sizeof(double*));
-  multimatch(filedata,filesize,"Q vector", qvec, dummy, Nstruct);
-
-#ifdef TEST_INPUT
-  for (i=0; i<Nstruct; i++) {
-    
-    LogMessageCharInt(" qvec no. ",i);
-    LogMessageChar("(");
-    for (j=0; j<Nsym_translations; j++)
-      {
-	LogMessageInt(qvec[i][j]);
-      }
-    LogMessageChar(" ) \n");
-  }
-#endif /* TEST_INPUT */
-  free(dummy);
-#endif  /* STRUCTURE */
 
 #ifdef M_SYM
   matchlines(filedata, "M start", &mstart, true);
@@ -1033,15 +963,6 @@ void WriteResults(long long N)
       #endif //WRITE_MAGNETISATION
 #endif  /* FIND_MAG */
 
-#ifdef STRUCTURE
-      for (q=0; q<Nstruct; q++) {
-	// throw away rounding errors
-	if (abs(Szzq[q][i])<SMALL_NUMBER) {
-	  Szzq[q][i]=0;
-	}
-        fprintf(outfile,"Szzq= %g ",Szzq[q][i]);
-      }
-#endif  /* STRUCTURE */
       fprintf(outfile, "\n");
     }
   fprintf(outfile, "] \n");

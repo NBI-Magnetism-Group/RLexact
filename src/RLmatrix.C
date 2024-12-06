@@ -31,10 +31,6 @@ double Matrix_gs(komplex**, long long*, long long *, komplex *);
 void CalculateMatrixM(komplex**, double *);
 double CalculateM(komplex *);
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-void CalculateMatrixSzzq(komplex **, double **);
-double CalculateSzzq(komplex *);
-#endif /* STRUCTURE */
 
 /* Functions declared elsewhere */
 void BuildCycle(long long *);
@@ -66,10 +62,6 @@ extern long long *mag;
 #ifdef FIND_MAG
 extern double *magnetisation;
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-extern long long Nstruct;
-extern double **Szzq, **structq;
-#endif /* STRUCTURE */
 #ifdef CROSS
 extern double *cross, *sz;
 #endif /* CROSS */
@@ -173,9 +165,6 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *
 #endif //TEST_MATRIXMAG
 #endif  /* FIND_MAG */
 
-#ifdef STRUCTURE
-  CalculateMatrixSzzq(hamil, Szzq);
-#endif  /* STRUCTURE */
 
 #ifdef MATRIX_MESSAGES
   LogMessageChar(" Matrix_gs, Hamilton diagonalized \n");
@@ -288,56 +277,6 @@ double CalculateM(komplex *state) //currently obsolete SJ 100616
 }
 #endif /* FIND_MAG */
 
-#ifdef STRUCTURE
-void CalculateMatrixSzzq(komplex **matrix, double **Szzqmatrix)
-{
-  long long v,q;
-
-  for (q=0; q<Nstruct; q++)
-   {
-   for (v=0; v<Nuniq_k; v++)  /* Sum over eigenvectors */
-    {
-      Szzqmatrix[q][v]=CalculateSzzq(matrix[v+1]);
-    }
-   }
-
-  return;
-}
-
-double CalculateSzzq( komplex *state)
-{   
-  /* TODO: make proper definition of q */
-  long long j,q;
-   double sum=0;
-      for (j=0; j<Nuniq_k; j++) /* Sum over unique components */
-	{
-	  sum += structq[q][uniqk[j]]*SQR(abs(state[j+1])); 
-#ifdef TEST_CALC_SZZQ
-	  LogMessageCharInt("j=",j);
-	  LogMessageCharDouble("structq=",structq[q][uniqk[j]]);
-	  LogMessageCharDouble("norm=",abs(state[j+1]));
-#endif /* TEST_CALC_SZZQ */
-	}
-    return sum;
-}
-#endif /* STRUCTURE */
-
-  
-/* CrossMatrix() finds inelastic neutron scattering cross-sections, S(q,w) for matrix version */
-/* Uses routines in file RLcrossMatrix.c */
-
-/*  DO NOT WORK !! */
-#ifdef FIND_CROSS
-/* long long CrossMatrix(long long *k)
-{ 
-  double scale;
-  unsigned long long i,r;
-  long long j;
-
-  return r;
-} 
-*/
-#endif /* FIND_CROSS */
 
 
 
