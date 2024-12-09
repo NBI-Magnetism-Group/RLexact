@@ -253,7 +253,7 @@
 // Debugging output requests from RLtables.c 
 //#define TEST_TABLES    
 //#define TEST_INVERTMATRIX
-//#define TEST_OCC
+#define TEST_OCC
 //#define TEST_ISUNIQUE
 //#define TEST_FINDUNIQUE  
 //#define TEST_FINDUNIQUE_DETAIL
@@ -279,7 +279,7 @@
 //#define PRINT_STATES 
 //#define PRINT_ENERGIES  
 //#define TEST_APPLYSMP
-//#define TEST_APPLYSZQ 
+#define TEST_APPLYSZQ 
 #define TEST_CROSS
 
 

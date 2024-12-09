@@ -17,6 +17,7 @@
 #include <complex>
 #include <RLexact.h>
 #include <nr.h>
+#include <math.h> //TODO: Remove when tables implemented /ABP
 
 #ifdef FIND_CROSS
 
@@ -29,6 +30,8 @@ extern long long LookUpU(unsigned long long);
 extern void LogMessageChar(const char *);
 extern void LogMessageInt(long long);
 extern void LogMessageImag(const double, const double);
+extern void LogMessageKomlex(const komplex);
+extern void LogMessageCharKomplex(const char *, const komplex);
 extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
@@ -59,6 +62,10 @@ bool NonZero(unsigned long long, long long*);
 #endif /* M_SYM */
 
 extern long long Nspins,Nunique,hamil_coup[NCOUP][2];
+extern long long *TransIds;
+extern long long Ndimensions;
+extern long long Nspins_in_uc;
+extern double **spin_positions;
 extern long long Nuniq_k, Nsym;
 extern long long uniq_k[];
 extern long long *Nocc, *Nocc_0;
@@ -265,8 +272,79 @@ void ApplySzq(long long *q)
 
     if (Nocc[i] != 0) //check if gsstate is compatible with current q
     { 
-      state = 1; //bitmap for transloop
-      TRANSLOOP_BEGIN
+       
+      state = 1;
+      komplex spin_pos_res;
+      double phase;
+      LogMessageChar("\n");
+      for (int i = 0; i < 3; i++){
+      LogMessageChar3Vector("Nunitcells, TransIds[i], q[TransIds[i]]: ",
+                        Nsymvalue[TransIds[i]], TransIds[i], q[TransIds[i]]);
+      }
+
+      //Loop over spins in u.c.
+      for (int jpp = 0; jpp<Nspins_in_uc; jpp++){
+        new_state = state;
+        spin_pos_res = zero;
+        LogMessageCharInt("\nChecking at position (Index 1) ", state);
+
+        //Loop over unit cells
+        for (double x=0; x<Nsymvalue[TransIds[X]]; x++){
+          for (double y=0; y<Nsymvalue[TransIds[Y]]; y++){
+            for (double z=0; z<Nsymvalue[TransIds[Z]]; z++){
+              
+              phase = (
+                    q[TransIds[X]]*x/Nsymvalue[TransIds[X]]+
+                    q[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ //y is always 0 if Ndim<2
+                    q[TransIds[Z]]*z/Nsymvalue[TransIds[Z]]);//z is always 0 if Ndim<3
+                                                    
+              LogMessageChar3Vector("\n\t(x,y,z):", x,y,z);
+              LogMessageCharDouble("\n\tphase: ",phase);
+
+              if (new_state&gsstate){
+                LogMessageChar("\nSpin UP");
+                spin_pos_res += exp(I*2.0*PI*phase);
+              }
+              else{
+                LogMessageChar("\nSpin DOWN");
+                spin_pos_res -= exp(I*2.0*PI*phase);
+              }
+              LogMessageCharKomplex("\nspin_pos_res:",spin_pos_res);
+              LogMessageChar("\n");
+              if (Ndimensions == 3){
+                new_state = SymOp(TransIds[Z], new_state);
+                LogMessageCharInt("Going to (z)", new_state);
+              }
+            }
+            if (Ndimensions >= 2){
+              new_state = SymOp(TransIds[Y], new_state);
+              LogMessageCharInt("Going to (y)", new_state);
+            }
+          }
+          if (Ndimensions >= 1){
+            new_state = SymOp(TransIds[X], new_state);
+            LogMessageCharInt("Going to (x)", new_state);
+          }
+        }
+
+        double pos_phase = 0;
+        for (int i = 0; i < Ndimensions; i++){
+          pos_phase += 
+              q[TransIds[i]]*spin_positions[jpp][i]/Nsymvalue[TransIds[i]];
+        }
+        LogMessageCharDouble("pos_phase:",pos_phase);
+        
+        spin_pos_res *= exp(I*2.0*PI*pos_phase);
+
+        res += spin_pos_res;
+
+        state = state << 1; //Goto next spin in u.c.
+      }
+
+      
+
+
+      /*TRANSLOOP_BEGIN
         phase=0;
       for (long long j=1; j<Nsym;j++) //sum over all symmetries except spin-flip/identity
       {  // Dirty non-general solution !!!
@@ -301,12 +379,12 @@ void ApplySzq(long long *q)
       LogMessageChar("\n");
 #endif // TEST_APPLYSZQ
       TRANSLOOP_END
+      */
 
         res /= (2*sqroot[Nspins]);
 #ifdef TEST_APPLYSZQ
-      LogMessageCharDouble("After Transloop res =",real(res));
+      LogMessageCharDouble("\nAfter Transloop res =",real(res));
       LogMessageCharDouble("+ i",imag(res));
-      LogMessageChar("\n");
 #endif // TEST_APPLYSZQ
 
       szxygs[i] = gs[i]*res;
@@ -322,7 +400,7 @@ void ApplySzq(long long *q)
 #ifdef TEST_APPLYSZQ
     //LogMessageCharInt ("ApplySzq output: m =",twom/2);
     LogMessageCharInt(", unique ",i);
-    LogMessageCharInt(" corresponding to state ", unique[i]);
+    LogMessageCharInt("\ncorresponding to state ", unique[i]);
     LogMessageCharDouble("with weight: ",real(szxygs[i]));
     LogMessageCharDouble(" + i",imag(szxygs[i]));
     LogMessageChar("\n");
