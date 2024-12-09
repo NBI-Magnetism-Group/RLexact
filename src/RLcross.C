@@ -270,7 +270,9 @@ void ApplySzq(long long *q)
     LogMessageCharInt(", Nocc[i]=",Nocc[i]);
     LogMessageChar("\n");
 #endif // TEST_APPLYSZQ
-       // *** TODO: This works only with spin flip, or with an identity symmetry as 1st symmetry. Too specific solution. FIX THIS !!! ***
+       // *** TODO: This works only with spin flip,
+       // or with an identity symmetry as 1st symmetry. Too specific solution.
+       // FIX THIS !!! ***
 
     if (Nocc[i] != 0) //check if gsstate is compatible with current q
     { 
@@ -299,11 +301,11 @@ void ApplySzq(long long *q)
           for (double y=0; y<Nsymvalue[TransIds[Y]]; y++){
             for (double z=0; z<Nsymvalue[TransIds[Z]]; z++){
               phase = (
-                    q[TransIds[X]]*x/Nsymvalue[TransIds[X]]+
+                    diffQ[TransIds[X]]*x/Nsymvalue[TransIds[X]]+
                     //y is always 0 if Ndim<2
-                    q[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ 
+                    diffQ[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ 
                     //z is always 0 if Ndim<3
-                    q[TransIds[Z]]*z/Nsymvalue[TransIds[Z]]);
+                    diffQ[TransIds[Z]]*z/Nsymvalue[TransIds[Z]]);
                                                     
 
 #ifdef TEST_APPLYSZQ
@@ -365,7 +367,7 @@ void ApplySzq(long long *q)
         for (int i = 0; i < Ndimensions; i++){ //Add position dependent phase
                                                //to all u.c.
           pos_phase += 
-              q[TransIds[i]]*spin_positions[jpp][i]/Nsymvalue[TransIds[i]];
+              diffQ[TransIds[i]]*spin_positions[jpp][i]/Nsymvalue[TransIds[i]];
         }
 #ifdef TEST_APPLYSZQ
         LogMessageCharDouble("pos_phase:",pos_phase);
@@ -454,6 +456,7 @@ void ApplySzq(long long *q)
    SPMcross=0 :  s_q^+ |gs>
    SPMcross=1 :  s_q^- |gs>
    Applysmp can be used to either get s^xx and s^yy or s^+- and s^-+.
+   *resultvec is either spgs or smgs.
    */
 void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
 {
