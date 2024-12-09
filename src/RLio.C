@@ -431,8 +431,10 @@ long long ReadCoupPattern(char *filename)
  multimatch(filedata,filesize,"Custom symmetry", symadd, dummy, Nsymadd);
  
  matchlines(filedata, "Number of dimensions", &Ndimensions, true);
- TransIds = (long long*) malloc(Ndimensions*sizeof(long long));
+ TransIds = (long long*) malloc(3*sizeof(long long));
+ for (int i = 0;i<3;i++) TransIds[i] = 0; //Ugly,but needed for loop in RLcross.
  matchlines(filedata, "Translation indices", TransIds, 1);
+
 
 #ifdef TEST_INPUT
  LogMessageCharInt("Number of dimensions:", Ndimensions);

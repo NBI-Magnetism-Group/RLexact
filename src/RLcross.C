@@ -224,10 +224,12 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 // ReWritten by Kim, 14.07.00
 void ApplySzq(long long *q)
 {
-  long long i,n,phase,cycle;
+  long long i,n,cycle;
+  //long long phase;
   unsigned long long state,gsstate,new_state;
-  komplex res,factor;
+  komplex res,factor, spin_pos_res;
   long long sym, T[NSYM],diffQ[NSYM];
+  double phase; //Potentially int, if RLtables is implemented /ABP
 
   for (sym=0;sym<Nsym;sym++) 
   {
@@ -274,65 +276,100 @@ void ApplySzq(long long *q)
     { 
        
       state = 1;
-      komplex spin_pos_res;
-      double phase;
+
+#ifdef TEST_APPLYSZQ
       LogMessageChar("\n");
-      for (int i = 0; i < 3; i++){
+      for (int i = 0; i < Ndimensions; i++){
       LogMessageChar3Vector("Nunitcells, TransIds[i], q[TransIds[i]]: ",
                         Nsymvalue[TransIds[i]], TransIds[i], q[TransIds[i]]);
       }
+#endif //TEST_APPLYSZQ
 
       //Loop over spins in u.c.
       for (int jpp = 0; jpp<Nspins_in_uc; jpp++){
         new_state = state;
         spin_pos_res = zero;
-        LogMessageCharInt("\nChecking at position (Index 1) ", state);
 
+#ifdef TEST_APPLYSZQ
+        LogMessageCharInt("\nChecking at position (bitmap) ", state);
+#endif //TEST_APPLYSZQ
+       
         //Loop over unit cells
         for (double x=0; x<Nsymvalue[TransIds[X]]; x++){
           for (double y=0; y<Nsymvalue[TransIds[Y]]; y++){
             for (double z=0; z<Nsymvalue[TransIds[Z]]; z++){
-              
               phase = (
                     q[TransIds[X]]*x/Nsymvalue[TransIds[X]]+
-                    q[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ //y is always 0 if Ndim<2
-                    q[TransIds[Z]]*z/Nsymvalue[TransIds[Z]]);//z is always 0 if Ndim<3
+                    //y is always 0 if Ndim<2
+                    q[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ 
+                    //z is always 0 if Ndim<3
+                    q[TransIds[Z]]*z/Nsymvalue[TransIds[Z]]);
                                                     
+
+#ifdef TEST_APPLYSZQ
               LogMessageChar3Vector("\n\t(x,y,z):", x,y,z);
               LogMessageCharDouble("\n\tphase: ",phase);
-
-              if (new_state&gsstate){
-                LogMessageChar("\nSpin UP");
+#endif //TEST_APPLYSZQ
+       
+              if (new_state&gsstate){ //Add or subtract depending on Sz
                 spin_pos_res += exp(I*2.0*PI*phase);
+
+#ifdef TEST_APPLYSZQ
+                LogMessageChar("\nSpin UP");
+#endif //TEST_APPLYSZQ
+
               }
               else{
-                LogMessageChar("\nSpin DOWN");
                 spin_pos_res -= exp(I*2.0*PI*phase);
+
+#ifdef TEST_APPLYSZQ
+                LogMessageChar("\nSpin DOWN");
+#endif //TEST_APPLYSZQ
+       
               }
+
+
+#ifdef TEST_APPLYSZQ
               LogMessageCharKomplex("\nspin_pos_res:",spin_pos_res);
               LogMessageChar("\n");
+#endif //TEST_APPLYSZQ
+
               if (Ndimensions == 3){
                 new_state = SymOp(TransIds[Z], new_state);
+
+#ifdef TEST_APPLYSZQ
                 LogMessageCharInt("Going to (z)", new_state);
+#endif //TEST_APPLYSZQ
+
               }
             }
             if (Ndimensions >= 2){
               new_state = SymOp(TransIds[Y], new_state);
+
+#ifdef TEST_APPLYSZQ
               LogMessageCharInt("Going to (y)", new_state);
+#endif //TEST_APPLYSZQ
+
             }
           }
           if (Ndimensions >= 1){
             new_state = SymOp(TransIds[X], new_state);
+
+#ifdef TEST_APPLYSZQ
             LogMessageCharInt("Going to (x)", new_state);
+#endif //TEST_APPLYSZQ
           }
         }
 
         double pos_phase = 0;
-        for (int i = 0; i < Ndimensions; i++){
+        for (int i = 0; i < Ndimensions; i++){ //Add position dependent phase
+                                               //to all u.c.
           pos_phase += 
               q[TransIds[i]]*spin_positions[jpp][i]/Nsymvalue[TransIds[i]];
         }
+#ifdef TEST_APPLYSZQ
         LogMessageCharDouble("pos_phase:",pos_phase);
+#endif //TEST_APPLYSZQ
         
         spin_pos_res *= exp(I*2.0*PI*pos_phase);
 
