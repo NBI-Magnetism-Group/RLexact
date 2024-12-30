@@ -194,6 +194,7 @@
 		    for (sym=1; ++T[sym]==Nsymvalue[sym]; )   \
 	              if (sym<Nsym-1) { T[sym++]=0;           \
                                 new_state=SymOp(sym,new_state);}}      /* while */
+
 #define QLOOP_BEGIN for(sym=0;sym<Nsym;sym++) q[sym]=0;       \
                     sym=0;                                    \
                     while(q[Nsym-1]<Nsymvalue[Nsym-1]) {
@@ -254,19 +255,19 @@
 //#define TEST_TABLES    
 //#define TEST_INVERTMATRIX
 #define TEST_OCC
-//#define TEST_ISUNIQUE
-//#define TEST_FINDUNIQUE  
+#define TEST_ISUNIQUE
+#define TEST_FINDUNIQUE  
 //#define TEST_FINDUNIQUE_DETAIL
 #define TEST_FILLUNIQUE 
 //#define TEST_READUNIQUE 
-//#define TEST_FILLUNIQUE_LIST
+#define TEST_FILLUNIQUE_LIST
 //#define TEST_FILLUNIQUEOBSERVABLES
 //#define TEST_COUNT 
 //#define TEST_LOOKUP   
 //#define TEST_CHECKPHASE 
 
 // Debugging output requests from RLsymm.c 
-//#define TEST_SYM
+#define TEST_SYM
 //#define TEST_SYMCOUPLING   
 
 // Debugging output requests from RLio.c and RLutil.c

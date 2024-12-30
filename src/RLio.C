@@ -82,6 +82,7 @@ extern long long    Nspins,Nsym,Nsymadd,Nunique,Nuniq_k;
 extern long long    **symadd;
 extern long long    Ndimensions;
 extern long long    *TransIds;
+extern long long    Trans_Qmax[3];
 extern long long    hamil_coup[NCOUP][2], Ncoup; 
 #ifdef RING_EXCHANGE
 extern long long    ring_coup[NCOUP][4], Nring; 
@@ -529,6 +530,17 @@ long long ReadCoupPattern(char *filename)
                                         spin_positions[i][Z]);
   }
 #endif //TEST_INPUT
+
+
+  matchlines(filedata, "Qmax translation", Trans_Qmax, true);
+#ifdef TEST_INPUT
+ LogMessageChar3Vector("Qmax translation", Trans_Qmax[X],
+                                           Trans_Qmax[Y],
+                                           Trans_Qmax[Z]);
+
+#endif
+
+
 
 #endif //MOTIVE
 

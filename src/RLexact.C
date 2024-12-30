@@ -85,6 +85,9 @@ long long    Nspins;
 #ifdef MOTIVE
   long long Nspins_in_uc;
   double **spin_positions;
+  long long Trans_Qmax[3];
+#else
+  long long Trans_Qmax = {1,1,1};
 #endif //MOTIVE
 long long    Ncoup;
        /* Actual number of couplings */
@@ -661,21 +664,45 @@ if (mode==MODEQ) {
   #endif
 
 } else if (mode==MODEN) {
-  QLOOP_BEGIN
 
-  #ifdef TEST_SPINFLIP
-  LogMessageCharInt("spinflip_GSvalue =",spinflip_GSvalue);
-  LogMessageCharInt("spinflip_number =",spinflip_number);
-  LogMessageCharInt("q[spinflip_number] =",q[spinflip_number]);
-  #endif
-  if (spinflip_GSvalue != q[spinflip_number] ) //consistent with spinflip not present also
+  // Set maxloop for translation symmetries before QLOOP
+  // Nsymvalue[transID].
+  //
+  // Depending on symmetries, optimization can be made using selection rules
+  // like SPINFLIP below.
+
+  long long Nqvalue[Nsym];
+  for (int i = 0;i<Nsym;i++) Nqvalue[i] = Nsymvalue[i];
+  for (int i = 0;i<Ndimensions;i++) Nqvalue[TransIds[i]] *= Trans_Qmax[i];
+
+  for (int i=0; i<Nsym;i++){
+    LogMessageCharInt("\n",i);
+    LogMessageCharInt("Nqvalue",Nqvalue[i]);
+    LogMessageCharInt("Nsymvalue",Nsymvalue[i]);
+  }
+  
+  /*for (int i=0; i<Ndimensions; i++){
+   //Trans_symvalue_dummy[TransIds[i]] = Nsymvalue[TransIds[i]];
+   Nsymvalue[TransIds[i]] *= Trans_Qmax[i]; //Nsymvalue bruges i loop for AppSz
+  }*/
+  for (sym=0;sym<Nsym;sym++) q[sym]=0;
+  sym=0;
+  while(q[Nsym-1]<Nqvalue[Nsym-1]){
+    //QLOOP_BEGIN
+
+#ifdef TEST_SPINFLIP
+    LogMessageCharInt("spinflip_GSvalue =",spinflip_GSvalue);
+    LogMessageCharInt("spinflip_number =",spinflip_number);
+    LogMessageCharInt("q[spinflip_number] =",q[spinflip_number]);
+#endif
+    if (spinflip_GSvalue != q[spinflip_number] ) //consistent with spinflip not present also
     {
 #ifdef VERBOSE_TIME_LV2
       time_stamp(&time_single2,START,"Cross section for one q-value in loop");    
       LogMessageChar("\nCrossection q-loop, q=(");
       for (i=0; i<Nsym; i++) 
       {
-	       LogMessageCharInt(" ",q[i]);
+        LogMessageCharInt(" ",q[i]);
       }
       LogMessageChar(") \n");
 
@@ -692,8 +719,13 @@ if (mode==MODEQ) {
       time_stamp(&time_single2,STOP," ");
 #endif
     }
-  QLOOP_END
+    //QLOOP_END
+    for (sym=0;++q[sym]==Nqvalue[sym]; ){
+      if (sym<Nsym-1) q[sym++]=0;
     }
+  }
+    //for (int i=0; i <Ndimensions; i++) Nsymvalue[TransIds[i]] /= Trans_Qmax[i];
+  }
 #ifdef VERBOSE_TIME_LV1
       time_stamp(&time_single,STOP,"\nCross sections ");
 #endif
