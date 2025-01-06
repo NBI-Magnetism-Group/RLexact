@@ -107,7 +107,7 @@
   #define abs(a) sqrt(real(a)*real(a) + imag(a)*imag(a))
   #define sqrabs(a) (real(a)*real(a) + imag(a)*imag(a))
   #define eksp(a) exp(real(a))*(cos(imag(a))+I*sin(imag(a))) 
-  #define conj(a)  real(a)-I*imag(a)
+  #define conj(a)  (real(a)-I*imag(a))
   #define skrt(a) (sqrt(abs(a))*(cos(Arg(a)/2.0)+I*sin(Arg(a)/2.0) ) )
 //#define skrt(a) (sqrt(real(a))*(cos(Arg(a)/2.0)+I*sin(Arg(a)/2.0) ) )
 
