@@ -1049,7 +1049,32 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   LogMessageChar("\n");
 #endif
 
+#ifdef CSVOUT
+// Print header
+#ifdef M_SYM
+  fprintf(crossfile, "m,");
+#else
+  fprintf(crossfile, "h,");
+#endif
 
+  for (int i=0;i<Nsym;i++) fprintf(crossfile, "q%d,", i);
+  fprintf(crossfile, "E,S\n");
+
+//This doesn't sort the array as below, but this shouldn't be needed as
+//CSV-out is mainly for loading into other software and plotting/looking
+//at data there.
+  for (long long i = 0;i<Nener;i++) 
+  {
+#ifdef M_SYM
+  fprintf(crossfile,"%g,",double(twom)/2);
+#else
+  fprintf(crossfile,"%g,",double(h));
+#endif
+  for (int i=0;i<Nsym;i++) fprintf(crossfile,"%lld,", symvalue[i]-q_gs[i]);
+
+  fprintf (crossfile,"%g,%g\n",energies[i]-gs_energy,cross[i]);
+  }
+#else
 
 #ifdef M_SYM
   fprintf(crossfile, "[\n m= %g, q= (%lld",double(twom)/2,symvalue[0]-q_gs[0]);
@@ -1088,7 +1113,7 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
   }
   fprintf (crossfile,"]\n\n");
-
+#endif //CSVOUT
   return;
 }
 #endif /* LANCZOS */
