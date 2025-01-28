@@ -136,6 +136,7 @@ extern int spinflip_number;
 extern int spinflip_present;
 /* Lanczos variables defines in RLlanz.C */
 extern double Ritz_conv;
+extern unsigned long long *unique; 
 
 /* Regional variables defined here */
 FILE *infile;
@@ -899,9 +900,13 @@ void WriteState(const char *msg, komplex *state)
   long long i;
 
   fprintf(outfile,"%s \n",msg);
-  for(i=0;i<Nunique;i++)
-    fprintf(outfile,"  %g + i * %g \n",real(state[i]),imag(state[i]));
-
+  for(i=0;i<Nunique;i++){
+#ifdef CSVOUT
+    fprintf(outfile,"%g,%g,%lld\n",real(state[i]),imag(state[i]),unique[i]);
+#else
+    fprintf(outfile,"  %g + i * %g\n",real(state[i]),imag(state[i]),unique[i]);
+#endif
+  }
   return;
  }
 
