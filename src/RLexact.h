@@ -11,21 +11,27 @@
 ============================================
 */
 
-// Phyxsics of problem 
+// Physics of problem 
 #define M_SYM
 //#define DIPOLE     
 //#define RING_EXCHANGE
 
 // Calculation of problem and output requests 
 #define LANCZOS 
-//#define MATRIX   
+//#define MATRIX    #Note FIND_CROSS currently only supports LANCZOS
 #define FIND_EIGENSTATE
 #define WRITE_ENERGIES
 #define FIND_CROSS //Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w) 
-//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w) instead of S^xx (q,w) and S^yy(q,w). Requires MSYM and FIND_CROSS.
-#define WRITE_STATES
+//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w)
+//                      instead of S^xx (q,w) and S^yy(q,w).
+//                      Requires MSYM and FIND_CROSS.
+
+#define WRITE_STATES //Prints groundstate in dat-file
+//                      and all eigenstates if MATRIX
+
 //#define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
-//#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM , Works only for MATRIX-mode, SJ 31/5/16
+//#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM,
+//                              Works only for MATRIX-mode, SJ 31/5/16
 #define MOTIVE //spin positions
 
 // Dimensions of problem 
@@ -278,8 +284,8 @@
 //#define TEST_ROTATION
 
 // Debugging output requests from RLcross.c 
-//#define PRINT_STATES 
-//#define PRINT_ENERGIES  
+//#define PRINT_STATES DOESN'T EXIST ANYMORE
+//#define PRINT_ENERGIES  DOESN'T EXIST ANYMORE
 //#define TEST_APPLYSMP
 //#define TEST_APPLYSZQ 
 //#define TEST_CROSS
