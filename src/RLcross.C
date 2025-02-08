@@ -220,8 +220,6 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 
 
 /* ApplySzq applies the Sz(q) operator to a state vector */
-/* ToDo: Must ensure that the unique is valid under the new q-symmetry */
-// ReWritten by Kim, 14.07.00
 void ApplySzq(long long *q)
 {
   long long i,n,cycle;
@@ -380,46 +378,6 @@ void ApplySzq(long long *q)
         state = state << 1; //Goto next spin in u.c.
       }
 
-      
-
-
-      /*TRANSLOOP_BEGIN
-        phase=0;
-      for (long long j=1; j<Nsym;j++) //sum over all symmetries except spin-flip/identity
-      {  // Dirty non-general solution !!!
-        phase += diffQ[j]*T[j]*Nspins/Nsymvalue[j]; //T[j] in fact means r_j?!! And diffQ[j]*Nspins/Nsumvalue[j] is q normalized to length of system!
-                                                    //one uses diffQ because of theorem - to be calculated!
-#ifdef TEST_APPLYSZQ
-        LogMessageCharInt("j =",j);
-        LogMessageCharInt(", T[j] =",T[j]);
-        LogMessageCharInt(", Nsymvalue = ",Nsymvalue[j]);
-        LogMessageCharInt("phase =",phase);
-#endif
-      }
-
-#ifdef TEST_APPLYSZQ
-      LogMessageCharInt("\nNew_state =",new_state);
-      LogMessageCharInt(", gsstate =",gsstate);
-      LogMessageCharDouble(" with phase =",phase);
-      LogMessageCharInt(" Also, new_state & gsstate =",(new_state & gsstate));
-#endif
-
-      phase = phase%Nspins;
-
-      //mask for spin up or down
-      if (new_state & gsstate) 
-        res += cosine[phase] + I*sine[phase]; //Note: cosine[k] = cos(2*PI*k/Nspins); 
-      else 
-        res -= cosine[phase] + I*sine[phase];
-#ifdef TEST_APPLYSZQ
-      LogMessageCharInt("\nAfter if/else: phase =",phase);
-      LogMessageCharDouble(". Res is now: ",real(res));
-      LogMessageCharDouble("+ i",imag(res));
-      LogMessageChar("\n");
-#endif // TEST_APPLYSZQ
-      TRANSLOOP_END
-      */
-
         res /= (2*sqroot[Nspins]);
 #ifdef TEST_APPLYSZQ
       LogMessageCharDouble("\nAfter Transloop res =",real(res));
@@ -451,23 +409,21 @@ void ApplySzq(long long *q)
 
 #ifndef M_SYM
 /* ApplySmp applies the S+(q) or S-(q) operator (to the ground state vector).
-   Last Change: Sofie 07.12.16
+   Last Change: Asbjørn 2025.02.6
    The SMP parameter determines which operator to apply
    SPMcross=0 :  s_q^+ |gs>
    SPMcross=1 :  s_q^- |gs>
-   Applysmp can be used to either get s^xx and s^yy or s^+- and s^-+.
+   ApplySmp can be used to either get s^xx and s^yy or s^+- and s^-+.
    *resultvec is either spgs or smgs.
    */
 void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
 {
-  unsigned long long i,l,j;
-  long long sym, diffQ[NSYM];
-  int T[NSYM],Tl[NSYM];
-  unsigned long long gsstate,new_state,u,state,smp_state;
-  long long phase, phase1;
+  long long diffQ[NSYM];
+  int Tl[NSYM];
+  unsigned long long gsstate, state, new_state,smp_state,l,u;
   long long ispossible;
-  double norm;
-  komplex res;
+  komplex res, phase_pp;
+  komplex norm;
 
 #ifdef TEST_APPLYSMP
   LogMessageCharInt("\nSPMcross =",SPMcross);
@@ -478,7 +434,7 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
   LogMessageChar(")\n");
 #endif
 
-  for (sym=0;sym<Nsym;sym++) 
+  for (long long sym=0;sym<Nsym;sym++) 
   {
     diffQ[sym]=q[sym]-q_gs[sym];
     if (diffQ[sym]<0) 
@@ -487,14 +443,14 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
     }
     if (symlist[sym]==SPIN_FLIP && diffQ[sym]==0)
     {
-      for(i=0;i<Nunique;i++)
+      for(int i=0;i<Nunique;i++)
       {
         resultvec[i]=zero;
         return;
       }
     }
 #ifdef TEST_APPLYSMP
-    LogMessageCharInt("ApplySzq: sym=",sym);
+    LogMessageCharInt("ApplySmp: sym=",sym);
     LogMessageCharInt(", diffQ=",diffQ[sym]);
     LogMessageCharInt(", q=",q[sym]);
     LogMessageCharInt(", q_gs=",q_gs[sym]);
@@ -505,113 +461,167 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
   } 
 
 
-  for(i=0;i<Nunique;i++) /* Run through unique */
+  for(int i=0;i<Nunique;i++) /* Run through unique */
   {    
     gsstate = unique[i];
-
-    /* Check if unique is component of ground state. */
+    norm = gs[i]/(sqroot[Nspins] * sqroot[Nocc_0[i]]); 
+                                                   
 #ifdef TEST_APPLYSMP
     LogMessageCharInt("\n\ngsstate:",gsstate);
-    LogMessageCharInt("Nocc[i] =",Nocc[i]);  
+    LogMessageCharInt(", Nocc[i] =",Nocc[i]);  
+    LogMessageCharInt(", Nocc_0[i] =",Nocc_0[i]);  
+    LogMessageChar("\n");
 #endif 
 
 
     /* Run through all translations of state */
     state = ((unsigned long long) 1); //bitmap for transloop
 
-    TRANSLOOP_BEGIN
-
+    for (int jpp=0; jpp<Nspins_in_uc; jpp++){
 #ifdef TEST_APPLYSMP
-      LogMessageCharInt("\nnew_state:",new_state);
-
-    LogMessageCharInt("; Raise: ",!(gsstate & new_state));
-    LogMessageCharInt(" Lower ->",(gsstate & new_state) != 0 );
-#endif 
-    /* Check if raising/lowering operation is possible */
-    if (SPMcross == 0) //raise
-    {
-      ispossible = !(gsstate & new_state);
-      //LogMessageCharInt("Raise ispossible ",ispossible );
-    }
-    else //lower
-    {
-      ispossible = (gsstate & new_state) != 0;
-      //LogMessageCharInt("Lower ispossible ",ispossible);
-    }
-
-    if( ispossible )
-    { 
-      if (SPMcross == 0) //raise
-      {
-        smp_state=(gsstate | new_state);
-      }
-      else //lower
-      {
-        smp_state = (gsstate&~(new_state));
-      }
-
-#ifdef TEST_APPLYSMP
-      LogMessageCharInt("smp_state=",smp_state);
+      LogMessageCharInt("\nSpinmask = ",state);
 #endif
-
-      u = FindUnique(smp_state,Tl); // Unique after updown operation; Tl is the translation of smp_state to unique
-
-      l = LookUpU(u);  // Find position in table
-#ifdef TEST_APPLYSMP
-      LogMessageCharInt(", unique ",u);
-      LogMessageCharInt("Tl[1] =",Tl[1]);
-      LogMessageCharInt(", Nocc[l]=",Nocc[l]);
-      //LogMessageCharInt(", Nocc_0[i]=",Nocc_0[i]);
-#endif
-      if (Nocc[l] != 0)
-      {
-        phase=0;
-        phase1=0;
-        for (long long k=1; k<Nsym;k++) //sum over all symmetries except spin-flip/identity
-        {  // Dirty non-general solution !!!
-          phase += diffQ[k]*(T[k])*Nspins/Nsymvalue[k]; //
-          phase1 += q[k]*Tl[k]*Nspins/Nsymvalue[k]; // Note that Tl = -p_j, therefore positive phase
-
-#ifdef TEST_APPLYSMP
-          LogMessageCharInt("\n k =",k);
-          LogMessageCharInt(", T[k] =",T[k]);
-          LogMessageCharInt(", diffQ[k] =",diffQ[k]);
-          LogMessageCharInt(", q[k] =",q[k]);
-          LogMessageCharInt(", Nsymvalue = ",Nsymvalue[k]);
-          LogMessageCharInt(", phase  =",phase);
-          LogMessageCharInt(", phase1  =",phase1);
-#endif
+        double pos_phase = 0;
+        for (int i = 0; i < Ndimensions; i++){ //Add position dependent phase
+                                               //to all u.c.
+          pos_phase += 
+              diffQ[TransIds[i]]*spin_positions[jpp][i]/Nsymvalue[TransIds[i]];
         }
-        phase = phase%Nspins;
-        phase1 = phase1%Nspins;
 #ifdef TEST_APPLYSMP
-        LogMessageCharInt("\nphase%Nspins=",phase);
-        LogMessageCharDouble("cos(phase)=",cosine[phase]);
-        LogMessageCharDouble("sin(phase)=",sine[phase]);
+        LogMessageCharDouble(", pos_phase", pos_phase);
         LogMessageChar("\n");
+#endif
+        phase_pp = exp(I*2.0*PI*pos_phase);
+
+        //Loop over all unit cells
+        new_state = state;
+        //Note that TransIds[Y/Z] = 0 unless defined. This then needs to be
+        //either an identity or spinflip (Nsymvalue == 1).
+        for (double x=0; x<Nsymvalue[TransIds[X]]; x++){
+          for (double y=0; y<Nsymvalue[TransIds[Y]]; y++){
+            for (double z=0; z<Nsymvalue[TransIds[Z]]; z++){
+#ifdef TEST_APPLYSMP
+                LogMessageCharInt("\nnew_state:",new_state);
+            
+                LogMessageCharInt("; Raise: ",!(gsstate & new_state));
+                LogMessageCharInt(" Lower ->",(gsstate & new_state) != 0 );
 #endif 
-        norm = sqroot[Nocc[l]]/sqroot[Nocc_0[i]]; //from definition of unique; use the Nocc in q=0 for the original state
-        norm /=sqroot[Nspins];
-#ifdef TEST_APPLYSMP
-        LogMessageChar("Before:");
-        LogMessageCharDouble("This addition:",real(norm*(cosine[phase] + I*sine[phase])*gs[i]));
-        LogMessageCharDouble("+i",imag(norm*(cosine[phase] + I*sine[phase])*gs[i]));
-#endif
-        /* Add element to new state */
-        resultvec[l] += norm*(cosine[phase] + I*sine[phase])*(cosine[phase1] + I*sine[phase1])*gs[i];  //Note: cosine[k] = cos(2*PI*k/Nspins); 
-#ifdef TEST_APPLYSMP
-        LogMessageChar("\nAfter:");
-        LogMessageCharDouble("resultvec[l] =",real(resultvec[l]));
-        LogMessageCharDouble("+ i",imag(resultvec[l]));           
-        LogMessageChar("\n");
-#endif
-      } //if Nocc[l] 
-    } //if( !(gsstate & new_state) ) 
 
-    TRANSLOOP_END
+                //Is it possible to raise/lower spin jpp in unitcell xyz?
+                if (SPMcross == 0) //raise
+                {
+                  ispossible = !(gsstate & new_state);
+                }
+                else //lower
+                {
+                  ispossible = (gsstate & new_state) != 0;
+                }
+            
+                if( ispossible )
+                { 
+                  if (SPMcross == 0) //raise
+                  {
+                    smp_state=(gsstate | new_state);
+                  }
+                  else //lower
+                  {
+                    smp_state = (gsstate&~(new_state));
+                  }
+                
+              u = FindUnique(smp_state,Tl); // Unique after updown operation;
+                                            // Tl is the translation needed
+                                            // from smp_state to unique
+        
+              l = LookUpU(u);  // Find position in table
+        #ifdef TEST_APPLYSMP
+              LogMessageCharInt("Changing to unique ",u);
+              LogMessageCharInt("Tl: (",Tl[0]);
+              for (int i = 1; i<Nsym; i++){
+                LogMessageCharInt(", ",Tl[i]);
+              }
+              LogMessageChar(")");
+              LogMessageCharInt(", Nocc[l]=",Nocc[l]);
+              LogMessageCharInt(", Nocc_0[i]=",Nocc_0[i]);
+              LogMessageChar("\n");
+        #endif
+              //Does this new unique exist in the current q-subspace?
+              if (Nocc[l] != 0) {
+                komplex tmp = phase_pp*norm*sqroot[Nocc[l]];
 
-      //} // Nocc 
-}         // Unique loop 
+#ifdef TEST_APPLYSMP
+                LogMessageCharKomplex("Partial result: ", tmp);
+                LogMessageChar("\n");
+#endif
+                double dummy_phase = 
+                    diffQ[TransIds[X]]*x/Nsymvalue[TransIds[X]]+
+                    //y is always 0 if Ndim<2
+                    diffQ[TransIds[Y]]*y/Nsymvalue[TransIds[Y]]+ 
+                    //z is always 0 if Ndim<3
+                    diffQ[TransIds[Z]]*z/Nsymvalue[TransIds[Z]];
+
+#ifdef TEST_APPLYSMP
+                LogMessageCharDouble("Phase from unit cell: ",dummy_phase);
+                LogMessageChar("\n");
+#endif
+                //Calculate phase for unit cell at (x,y,z)
+                tmp *= exp(2.0*I*PI*(dummy_phase));
+
+
+
+                //Calculate phase component for raising/lowering this spin
+                dummy_phase = 0;
+                for (int i = 0; i<Nsym; i++){
+                    dummy_phase += 1.0 * q[i]*Tl[i]/Nsymvalue[i];
+                }
+#ifdef TEST_APPLYSMP
+                LogMessageCharDouble("Translation phase: ",dummy_phase);
+                LogMessageChar("\n");
+#endif
+                tmp *= exp(2.0*I*PI*dummy_phase);
+
+#ifdef TEST_APPLYSMP
+                LogMessageCharKomplex("Contribution from this operation: ",
+                    tmp/gs[i]);
+                LogMessageChar("\n");
+#endif
+
+                resultvec[l] += tmp;
+                
+              }
+
+
+          //End of this unit cell. Whereto next?
+              if (Ndimensions == 3){
+                new_state = SymOp(TransIds[Z], new_state);
+
+#ifdef TEST_APPLYSMP
+                LogMessageCharInt("Going to (z)", new_state);
+#endif //TEST_APPLYSMP
+
+              }
+            }
+            if (Ndimensions >= 2){
+              new_state = SymOp(TransIds[Y], new_state);
+
+#ifdef TEST_APPLYSMP
+              LogMessageCharInt("Going to (y)", new_state);
+#endif //TEST_APPLYSMP
+
+            }
+          }
+          if (Ndimensions >= 1){
+            new_state = SymOp(TransIds[X], new_state);
+
+#ifdef TEST_APPLYSMP
+            LogMessageCharInt("Going to (x)", new_state);
+#endif //TEST_APPLYSMP
+          }
+        }
+    }
+        state = state << 1; //Goto next spin in u.c.
+    }//for spin jpp in unit cell
+    }//for Nunique
+
 return;
 }
 #endif //NOT M_SYM
