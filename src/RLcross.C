@@ -882,6 +882,7 @@ void CrossMatrix(long long symvalue[NSYM])
 
 bool NonZero(unsigned long long state, long long *q) {
   // simple implementation of routine to determine if state is value in q-space q
+  // NEVER used? - ABP 2025.02.21
   unsigned long long new_state;
   long long eksponent;
   long long sym, T[NSYM];
