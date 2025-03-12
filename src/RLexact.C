@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-  if (rank == 0) {
+
  time_t time_total,time_single0, time_single, time_single2;
  infile_name=(char*)malloc(30*sizeof(char));
 
@@ -259,8 +259,9 @@ int main(int argc, char* argv[])
    name_on_commandline=true;
  }
 
+
  if (intro() == -1)
-   return 0;
+   return 1;
  srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
  time_stamp(&time_total,START,"diagonalization \n");
 
@@ -268,6 +269,7 @@ int main(int argc, char* argv[])
  time_stamp(&time_single,START,"filling basic arrays");
 #endif
 
+if (rank == 0) {
   BuildTables();
  InitSym();
 
@@ -455,7 +457,7 @@ LogMessageChar("deallocated correctly!");
 }
 std::cout << "Rank " << rank << " finished!" << std::endl;
 MPI_Finalize();
-return 1;
+return 0;
 } //end main()
 
 /* ----------------------------------------------------------------------------------*/

@@ -26,6 +26,9 @@
 #include <cnr.h>
 #include <RLexact.h>
 
+#include <mpi.h>
+extern int rank, nprocs;
+
 /* Functions defined in this file */
 long long intro();
 long long ReadCoupPattern(char *);
@@ -154,6 +157,7 @@ long long intro()
   char gscoinfile_name[30];
   char qstr[2];
 
+  if (rank==0){
   OutMessageChar("Welcome to the Exact Diagonalization Program, RLexact \n");
 #ifdef MATRIX
   OutMessageChar(" Matrix"); 
@@ -184,15 +188,27 @@ long long intro()
   #endif  /* CROSS */
   OutMessageChar(" Energy.\n");
   OutMessageChar(" For more information, see the manual.\n");
-  if (!name_on_commandline) {
-    OutMessageChar(" Please type the name of the input file : ");
-    scanf("%s",infile_name);
-    OutMessageChar(" ... \n");
   }
 
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,FILEEND);
+  if (!name_on_commandline) {
+    int namelen;
+    if (rank==0){
+      OutMessageChar(" Please type the name of the input file : ");
+      scanf("%s",infile_name);
+      OutMessageChar(" ... \n");
+      namelen = strlen(infile_name)+1;
+    }
+    MPI_Bcast(&namelen, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(infile_name, namelen, MPI_CHAR, 0, MPI_COMM_WORLD);
+  }
+
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,FILEEND);
   errno=0;
+  if (snprintf(outfile_name,29, "%s-%d%s", infile_name, rank, FILEEND)>=30) {
+    fatalerror("infile_name too large",errno);
+    return -1;
+  }
   outfile=fopen(outfile_name,"w");
   if (outfile == NULL)
     {
@@ -200,9 +216,13 @@ long long intro()
       return -1;
     }
   fflush(outfile);
-  strcpy(logfile_name,infile_name);
-  strcat(logfile_name,LOGFILEEND);
+  //strcpy(logfile_name,infile_name);
+  //strcat(logfile_name,LOGFILEEND);
   errno=0;
+  if (snprintf(logfile_name, 29, "%s-%d%s", infile_name, rank, LOGFILEEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   logfile=fopen(logfile_name,"w");
   if (logfile == NULL)
     {
@@ -210,6 +230,8 @@ long long intro()
       return -1;
     }
 
+  //TODO Change this to MPI
+if (rank==0){
   ReadCoupPattern(infile_name); // this function does the actual file-input handling
 
 #ifdef FIND_CROSS
@@ -313,6 +335,7 @@ long long intro()
 
 
  
+}
  return 0;  /* All is OK */
  }
 
