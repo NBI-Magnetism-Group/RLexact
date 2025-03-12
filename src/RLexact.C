@@ -24,6 +24,9 @@
 #include <RLexact.h>
 #include <cnr.h>
 
+#include <mpi.h>
+int rank, nprocs;
+
 /* Functions declared in this file */
 #ifdef LANCZOS 
 void Solve_Lanczos();
@@ -244,6 +247,10 @@ double maggs;
 
 int main(int argc, char* argv[])
 {
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+  if (rank == 0) {
  time_t time_total,time_single0, time_single, time_single2;
  infile_name=(char*)malloc(30*sizeof(char));
 
@@ -445,6 +452,9 @@ time_stamp(&time_total, STOP, "\n Total execution");
 outro();
 deallocate();
 LogMessageChar("deallocated correctly!");
+}
+std::cout << "Rank " << rank << " finished!" << std::endl;
+MPI_Finalize();
 return 1;
 } //end main()
 

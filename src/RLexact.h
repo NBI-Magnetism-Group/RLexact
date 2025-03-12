@@ -166,8 +166,8 @@
 #define X 0
 #define Y 1
 #define Z 2
-#define REAL 0
-#define IMAG 1
+//#define REAL 0
+//#define IMAG 1 //Not used and clashed with OpenMPI
 #define NORMAL 0
 #define RECONSTRUCT 1
 #define CROSS 2
