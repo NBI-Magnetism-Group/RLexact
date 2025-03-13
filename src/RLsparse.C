@@ -42,6 +42,8 @@ extern double sine[],cosine[];
 extern double h;
 extern double field[3];
 
+extern int rank;
+
 // Functions defined elsewhere
 extern long long LookUpU(unsigned long long);
 void fatalerror(const char *, long long);
