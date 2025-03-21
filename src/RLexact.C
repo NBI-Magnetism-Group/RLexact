@@ -60,6 +60,7 @@ extern void WriteState(const char*,komplex*);
 extern void WriteStates(komplex**);
 extern void WriteGSdata(double,long long*);
 extern void WriteGSstate(komplex*);
+extern void WriteQvalue(long long *);
 extern void ReadGSdata(double*,long long*,komplex*);
 extern void ReadGSenergy(double*, long long *);
 #ifndef FIND_MAG
@@ -647,7 +648,11 @@ void Solve_Lanczos() {
       MPI_Bcast(&Nener, 1, MPI_LONG_LONG_INT, gs_rank, MPI_COMM_WORLD);
 #ifdef WRITE_STATES
         // print the groundstate vector to outfile
+      if (gs_rank == rank){
+        WriteQvalue(q_gs);
         WriteState("Groundstate",gs);
+        }
+      MPI_Barrier(MPI_COMM_WORLD);
 #endif /* WRITE_STATES */
       if ((mode == MODERC)&&(rank==0)){
 		//write reconstructed ground state to .gs file:

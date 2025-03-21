@@ -1323,5 +1323,5 @@ void WriteQvalue(long long *qvec){
   for(i=0; i<Nsym; i++){
     fprintf(outfile,", %lld",qvec[i]);
   }
-fprintf(outfile,")");
+fprintf(outfile,")\n");
 }
