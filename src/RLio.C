@@ -26,6 +26,9 @@
 #include <cnr.h>
 #include <RLexact.h>
 
+#include <mpi.h>
+extern int rank, nprocs;
+
 /* Functions defined in this file */
 long long intro();
 long long ReadCoupPattern(char *);
@@ -80,6 +83,9 @@ extern double* dvector(long long,long long);
 /* Global variables defined in RLexact.c */
 extern long long    Nspins,Nsym,Nsymadd,Nunique,Nuniq_k;
 extern long long    **symadd;
+extern long long    Ndimensions;
+extern long long    *TransIds;
+extern long long    Trans_Qmax[3];
 extern long long    hamil_coup[NCOUP][2], Ncoup; 
 #ifdef RING_EXCHANGE
 extern long long    ring_coup[NCOUP][4], Nring; 
@@ -103,13 +109,6 @@ extern double *energies;
 extern double *magnetisation;
 extern double maggs;
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-extern double **Szzq, **position;
-extern long long Nstruct;
-extern double **qvec;
-extern long long Nsym_translations;
-extern double **Sym_translation;
-#endif  /* STRUCTURE */
 extern long long Nq_choice;
 extern long long **q_choice;
 #ifdef FIND_CROSS
@@ -122,6 +121,10 @@ extern FILE  *outfilepm, *outfilemp;
 #endif
 extern double *cross;
 #endif /* FIND_CROSS */
+#ifdef MOTIVE
+extern long long Nspins_in_uc;
+extern float **spin_positions;
+#endif //MOTIVE
 extern FILE *gscoinfile;
 extern FILE *outfile;
 extern FILE *logfile;
@@ -136,6 +139,7 @@ extern int spinflip_number;
 extern int spinflip_present;
 /* Lanczos variables defines in RLlanz.C */
 extern double Ritz_conv;
+extern unsigned long long *unique; 
 
 /* Regional variables defined here */
 FILE *infile;
@@ -153,6 +157,7 @@ long long intro()
   char gscoinfile_name[30];
   char qstr[2];
 
+  if (rank==0){
   OutMessageChar("Welcome to the Exact Diagonalization Program, RLexact \n");
 #ifdef MATRIX
   OutMessageChar(" Matrix"); 
@@ -170,9 +175,6 @@ long long intro()
 #ifdef FIND_MAG
   OutMessageChar(" Magnetization,");
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-  OutMessageChar(" Szz(q),");
-#endif  /* STRUCTURE */
 #ifdef CROSS
   OutMessageChar(" S^zz(q,w),");
   #ifndef M_SYM
@@ -186,15 +188,27 @@ long long intro()
   #endif  /* CROSS */
   OutMessageChar(" Energy.\n");
   OutMessageChar(" For more information, see the manual.\n");
-  if (!name_on_commandline) {
-    OutMessageChar(" Please type the name of the input file : ");
-    scanf("%s",infile_name);
-    OutMessageChar(" ... \n");
   }
 
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,FILEEND);
-  errno=0;
+  if (!name_on_commandline) {
+    int namelen;
+    if (rank==0){
+      OutMessageChar(" Please type the name of the input file : ");
+      scanf("%s",infile_name);
+      OutMessageChar(" ... \n");
+      namelen = strlen(infile_name)+1;
+    }
+    MPI_Bcast(&namelen, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(infile_name, namelen, MPI_CHAR, 0, MPI_COMM_WORLD);
+  }
+
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,FILEEND);
+  errno=1;
+  if (snprintf(outfile_name,29, "%s-%d%s", infile_name, rank, FILEEND)>=30) {
+    fatalerror("infile_name too large",errno);
+    return -1;
+  }
   outfile=fopen(outfile_name,"w");
   if (outfile == NULL)
     {
@@ -202,9 +216,13 @@ long long intro()
       return -1;
     }
   fflush(outfile);
-  strcpy(logfile_name,infile_name);
-  strcat(logfile_name,LOGFILEEND);
-  errno=0;
+  //strcpy(logfile_name,infile_name);
+  //strcat(logfile_name,LOGFILEEND);
+  errno=1;
+  if (snprintf(logfile_name, 29, "%s-%d%s", infile_name, rank, LOGFILEEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   logfile=fopen(logfile_name,"w");
   if (logfile == NULL)
     {
@@ -215,11 +233,11 @@ long long intro()
   ReadCoupPattern(infile_name); // this function does the actual file-input handling
 
 #ifdef FIND_CROSS
-
+if (rank==0){
   if (mode==MODEQ || mode==MODERC) {
     strcpy(gscoinfile_name,infile_name);
     strcat(gscoinfile_name,GSCOEND);
-    errno=0;
+    errno=1;
     gscoinfile=fopen(gscoinfile_name,"r");
     if (gscoinfile == NULL)
       {
@@ -232,7 +250,7 @@ long long intro()
   if (mode==MODEGS) {
     strcpy(gscofile_name,infile_name);
     strcat(gscofile_name,COEND);
-    errno=0;
+    errno=1;
     gscofile=fopen(gscofile_name,"w");
     if (gscofile == NULL)
       {
@@ -244,7 +262,7 @@ long long intro()
   if (mode==MODERC) {
     strcpy(gscofile_name,infile_name);
     strcat(gscofile_name,COEND);
-    errno=0;
+    errno=1;
     gscofile=fopen(gscofile_name,"a");
     if (gscofile == NULL)
       {
@@ -253,10 +271,16 @@ long long intro()
       }
     fflush(gscofile);
   }
+  } //Not MODEN - Perl scripts are lost so I don't know how/if these should be
+    //parallelised. ABP - 2025/03/12
 
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,SZZEND);
-  errno=0;
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,SZZEND);
+  errno=1;
+  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SZZEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   if ((outfilezz=fopen(outfile_name,"w")) == NULL)
    {
     fatalerror("Cannot open output file for Szz, sorry!",errno);
@@ -265,9 +289,13 @@ long long intro()
   fflush(outfilezz);
 
 #ifndef FIND_CROSS_PM
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,SXXEND);
-  errno=0;
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,SXXEND);
+  errno=1;
+  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SXXEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   if ((outfilexx=fopen(outfile_name,"w")) == NULL)
    {
     fatalerror("Cannot open output file for S+-, sorry!",errno);
@@ -275,9 +303,13 @@ long long intro()
    }
   fflush(outfilexx);
 
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,SYYEND);
-  errno=0;
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,SYYEND);
+  errno=1;
+  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SYYEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   if ((outfileyy=fopen(outfile_name,"w")) == NULL)
    {
     fatalerror("Cannot open output file for S-+, sorry!",errno);
@@ -287,9 +319,13 @@ long long intro()
 #endif
 
 #ifdef FIND_CROSS_PM
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,SPMEND);
-  errno=0;
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,SPMEND);
+  errno=1;
+  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SPMEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
   if ((outfilepm=fopen(outfile_name,"w")) == NULL)
    {
     fatalerror("Cannot open output file for S+-, sorry!",errno);
@@ -297,9 +333,13 @@ long long intro()
    }
   fflush(outfilepm);
 
-  strcpy(outfile_name,infile_name);
-  strcat(outfile_name,SMPEND);
-  errno=0;
+  //strcpy(outfile_name,infile_name);
+  //strcat(outfile_name,SMPEND);
+  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SMPEND)>=30){
+    fatalerror("infile_name too large", errno);
+    return -1;
+  }
+  errno=1;
   if ((outfilemp=fopen(outfile_name,"w")) == NULL)
    {
     fatalerror("Cannot open output file for S-+, sorry!",errno);
@@ -312,7 +352,6 @@ long long intro()
 #ifdef TEST_INPUT
   LogMessageChar("All filenames are OK. \n");
 #endif /* TEST_INPUT */
-
 
  
  return 0;  /* All is OK */
@@ -335,15 +374,17 @@ long long ReadCoupPattern(char *filename)
   double r,rx,ry,rz;
   double Dip[NCOUPSTR];
 #endif /* DIPOLE */
-#ifndef MSYM
+#ifndef M_SYM
   double B2;
-#endif /* MSYM */
+#endif /* M_SYM */
   char test[80];
   long long filesize; // of inputfile
+  char *filedata;
 
-  filesize = filesizer(filename);
-  char *filedata = (char*)malloc(filesize*sizeof(char));
-  filereader(filename,filedata,filesize); // the entire file is now in filedata
+  if (rank==0){
+    filesize = filesizer(filename);
+    filedata = (char*)malloc(filesize*sizeof(char));
+    filereader(filename,filedata,filesize); // the entire file is now in filedata
 
 #ifdef TEST_INPUT
   LogMessageChar("Input file opened...\n");
@@ -354,8 +395,11 @@ long long ReadCoupPattern(char *filename)
   LogMessageCharInt(" Nspins:",Nspins);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */
+  }
+  MPI_Bcast(&Nspins, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 // *********** Mandatory input: Mode *************
+if (rank==0){
   matchlines(filedata, "Mode", &mode, true);
 #ifdef TEST_INPUT
   switch(mode) {
@@ -372,7 +416,10 @@ long long ReadCoupPattern(char *filename)
     fatalerror("Unknown mode",mode);
   }
 #endif /* TEST_INPUT */
+}
+MPI_Bcast(&mode, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
+  if (rank == 0){
 // *********** Mandatory input: Unique mode *************
   matchlines(filedata, "Unimode", &unimode, true);
 #ifdef TEST_INPUT
@@ -390,15 +437,26 @@ long long ReadCoupPattern(char *filename)
     fatalerror("Unknown unique mode",unimode);
   }
 #endif /* TEST_INPUT */
-
+  }
+MPI_Bcast(&unimode, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 // ******** Mandatory input: Read number of lines to input **********
+if (rank == 0){
   matchlines(filedata, "Number of couplings", &Ncoup, true);
-  matchlines(filedata, "Number of couplingstrength", &Ncoupstr, true);
+  matchlines(filedata, "Number of coupling strength", &Ncoupstr, true);
+}
+MPI_Bcast(&Ncoup, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+MPI_Bcast(&Ncoupstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
 #ifdef RING_EXCHANGE
+if (rank == 0) {
   matchlines(filedata, "Number of rings", &Nring, true);
   matchlines(filedata, "Number of ringstrength", &Nringstr, true);
+}
+MPI_Bcast(&Nring, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+MPI_Bcast(&Nringstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 #endif /* RING_EXCHANGE */
+
 #ifdef TEST_INPUT
   LogMessageCharInt("Ncoup:", Ncoup);
   LogMessageCharInt("Ncoupstr:", Ncoupstr);
@@ -410,6 +468,7 @@ long long ReadCoupPattern(char *filename)
 #endif /* RING_EXCHANGE */
 #endif /* TEST_INPUT */
 
+  if (rank == 0){
   matchlines(filedata, "Number of hardcoded symmetries", &Nsym, true);
   matchlines(filedata, "Number of custom symmetries", &Nsymadd, true);
   matchlines(filedata, "Construct symmetries", &symconstruct, true);
@@ -417,21 +476,64 @@ long long ReadCoupPattern(char *filename)
    {
     fatalerror("At least one symmetry must be defined; use for instance IDENTITY",IDENTITY);
    }
+  }
+MPI_Bcast(&Nsym, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+MPI_Bcast(&Nsymadd, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+MPI_Bcast(&symconstruct, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
 #ifdef TEST_INPUT
   LogMessageCharInt("Number of hardcoded symmetries: Nsym=", Nsym);
   LogMessageCharInt("\nNumber of custom symmetries: Nsymadd=", Nsymadd);
   LogMessageCharInt("\nsymconstruct:",symconstruct);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */ 
+
   
 // ********* Input symmetry info ********************
+if (rank == 0) {
   matchlines(filedata, "Hardcoded symmetries", symlist, false);
+}
+MPI_Bcast(&symlist, Nsym, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
 #ifdef TEST_INPUT
   LogMessageCharInt("Number of hardcoded symmetries scanned:",Nsym); 
+  LogMessageChar("\n");
 #endif /* TEST_INPUT */   
-  long long* dummy = (long long*) malloc(Nsymadd*sizeof(long long));
+
   symadd = (long long**) malloc(Nsymadd*sizeof(long long*));
+  for (int i = 0;i<Nsymadd;i++)
+      symadd[i] = (long long*)malloc(Nspins*sizeof(long long));
+
+if (rank==0){
+  long long* dummy = (long long*) malloc(Nsymadd*sizeof(long long));
  multimatch(filedata,filesize,"Custom symmetry", symadd, dummy, Nsymadd);
+ free(dummy);
+}
+for (int i=0; i < Nsymadd; i++)
+MPI_Bcast(symadd[i], Nspins, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
+if (rank==0){
+ matchlines(filedata, "Number of dimensions", &Ndimensions, true);
+}
+MPI_Bcast(&Ndimensions, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
+
+TransIds = (long long*) malloc(3*sizeof(long long));
+if (rank==0){
+  for (int i = 0;i<3;i++) TransIds[i] = 0; //Ugly,but needed for loop in RLcross.
+  matchlines(filedata, "Translation indices", TransIds, 1);
+}
+
+MPI_Bcast(TransIds, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
+#ifdef TEST_INPUT
+ LogMessageCharInt("Number of dimensions:", Ndimensions);
+ LogMessageChar("\n");
+ LogMessageChar("Translations at indices:");
+ for (int i=0; i<Ndimensions;i++) LogMessageInt(TransIds[i]);
+ LogMessageChar("\n");
+#endif
+ 
 
   #ifdef TEST_SPINFLIP
     LogMessageCharInt("Testing for spin flip sym. Matching symlist with SPIN_FLIP=",SPIN_FLIP);
@@ -472,17 +574,24 @@ long long ReadCoupPattern(char *filename)
     #ifdef TEST_SPINFLIP
       LogMessageCharInt("\nRLio: spinflip_number=",spinflip_number);
     #endif  
-  free(dummy);
-// ************ Input GS q-values ******************
 
+// ************ Input GS q-values ******************
+if (rank == 0){
   matchlines(filedata, "Number of chosen GS q-values", &Nq_choice, true);
+}
+MPI_Bcast(&Nq_choice, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD); 
 #ifdef TEST_INPUT
   LogMessageCharInt("Nq_choice:",Nq_choice); 
 #endif /* TEST_INPUT */   
-  dummy = (long long*) malloc(Nq_choice*sizeof(long long));
-  q_choice = (long long**) malloc(Nq_choice*sizeof(long long*));
 
+  q_choice = (long long**) malloc(Nq_choice*sizeof(long long*));
+  if (rank == 0){
+ long long* dummy = (long long*) malloc(Nq_choice*sizeof(long long));
  multimatch(filedata,filesize,"Chosen GS q-value", q_choice, dummy, Nq_choice);
+ free(dummy);
+  }
+  MPI_Bcast(q_choice, Nq_choice, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+
 #ifdef TEST_INPUT
   for (i=0; i<Nq_choice; i++)
     {
@@ -493,91 +602,98 @@ long long ReadCoupPattern(char *filename)
     LogMessageChar(") \n");
     }
 #endif /* TEST_INPUT */   
-  free(dummy);
+
+#ifdef MOTIVE
+if (rank == 0){  
+  matchlines(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
+}
+MPI_Bcast(&Nspins_in_uc, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);      
+
+#ifdef TEST_INPUT
+  LogMessageCharInt("Number of spins in unit cell: ", Nspins_in_uc);
+  LogMessageChar("\n");
+#endif //TEST_INPUT
   
-
-#ifdef STRUCTURE
-  matchlines(filedata, "Dimensions", &Nsym_translations, true);
-  dummy = (long long*) malloc(Nsym_translations*sizeof(long long));
-  Sym_translation=(double**)malloc(Nsym_translations*sizeof(double*));
-  multimatch(filedata,filesize,"Translation vector", Sym_translation, dummy, Nsym_translations);
-#ifdef TEST_INPUT
-  LogMessageCharInt("Nsym_translations (dimensionality):",Nsym_translations); 
-  LogMessageChar("\n");
-  for (i=0; i<Nsym_translations; i++)
-  {
-    LogMessageCharInt("Vector no: ",i);
-    LogMessageChar("[");
-    for (j=0; j<Nsym_translations; j++)
-      LogMessageInt(Sym_translation[i][j]);
-    LogMessageChar("] \n");
+  spin_positions = (double**)malloc(Nspins_in_uc*sizeof(double*));
+  for (int i = 0; i<Nspins_in_uc; i++){
+    spin_positions[i] = (double *) malloc(3*sizeof(double));
   }
-#endif /* TEST_INPUT */
-  free(dummy);
-
-
-  dummy = (long long*) malloc(Nspins*sizeof(long long));
-  position = (double**)malloc(Nspins*sizeof(double*));
-  multimatch(filedata,filesize,"Spin position", position, dummy, Nspins);
-#ifdef TEST_INPUT
-  for (i=0; i<Nspins; i++)
-    {
-      LogMessageCharInt(" spin:",i);
-      LogMessageChar("position (");
-      for (j=0; j<Nsym_translations; j++)
-	{
-	  LogMessageInt(position[i][j]);
-	}
-      LogMessageChar(" ) \n");
-    }
-#endif /* TEST_INPUT */
-  free(dummy);
-
-  matchlines(filedata, "Number of structurefactors", &Nstruct, true);
-#ifdef TEST_INPUT
-  LogMessageCharInt(" Nstruct:", Nstruct);
-  LogMessageChar("\n");
-#endif /* TEST_INPUT */
-  dummy = (long long*) malloc(Nstruct*sizeof(long long));
-  qvec=(double**)malloc(Nstruct*sizeof(double*));
-  multimatch(filedata,filesize,"Q vector", qvec, dummy, Nstruct);
-
-#ifdef TEST_INPUT
-  for (i=0; i<Nstruct; i++) {
-    
-    LogMessageCharInt(" qvec no. ",i);
-    LogMessageChar("(");
-    for (j=0; j<Nsym_translations; j++)
-      {
-	LogMessageInt(qvec[i][j]);
-      }
-    LogMessageChar(" ) \n");
+  if (rank==0){
+    long long* dummy = (long long*) malloc(Nspins_in_uc*sizeof(long long));
+    multimatch(filedata, filesize, "Relative position", spin_positions, 
+        dummy, Nspins_in_uc);
+    free(dummy);
   }
-#endif /* TEST_INPUT */
-  free(dummy);
-#endif  /* STRUCTURE */
+
+for (int i = 0; i< Nspins_in_uc; i++){
+   MPI_Bcast(spin_positions[i], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+ }
+
+#ifdef TEST_INPUT
+  for (i=0; i<Nspins_in_uc;i++){
+      LogMessageChar3Vector("Spin pos.",spin_positions[i][X],
+                                        spin_positions[i][Y],
+                                        spin_positions[i][Z]);
+  }
+#endif //TEST_INPUT
+ 
+
+
+if (rank == 0){
+  matchlines(filedata, "Qmax translation", Trans_Qmax, true);
+}
+MPI_Bcast(Trans_Qmax, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD); 
+#ifdef TEST_INPUT
+ LogMessageChar3Vector("Qmax translation", Trans_Qmax[X],
+                                           Trans_Qmax[Y],
+                                           Trans_Qmax[Z]);
+
+#endif
+
+
+
+#endif //MOTIVE
 
 #ifdef M_SYM
+
+if (rank==0){
   matchlines(filedata, "M start", &mstart, true);
   matchlines(filedata, "M end", &mend, true);
+}
+MPI_Bcast(&mstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(&mend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+
 #ifdef TEST_INPUT
   LogMessageCharDouble("mstart:", mstart);
   LogMessageCharDouble("mend:", mend);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */        
+
 #else
+
+if (rank==0){
   matchlines(filedata, "H start", &hstart, true);
   matchlines(filedata, "H end", &hend, true);
   matchlines(filedata, "H step", &hstep, true);
+}
+MPI_Bcast(&hstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(&hend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(&hstep, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 #ifdef TEST_INPUT
   LogMessageCharDouble("hstart:", hstart);
   LogMessageCharDouble("hend:", hend);
   LogMessageCharDouble("hstep:", hstep);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */    
+
+if (rank==0){
   matchlines(filedata, "Hx", &field[X], true);
   matchlines(filedata, "Hy", &field[Y], true);
   matchlines(filedata, "Hz", &field[Z], true);
+}
+MPI_Bcast(field, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 #ifdef TEST_INPUT
   LogMessageChar3Vector("Field direction:", field[X], field[Y], field[Z]);
   LogMessageChar("\n");
@@ -589,7 +705,9 @@ long long ReadCoupPattern(char *filename)
   else
     fatalerror(" Field direction not well defined",0);
 #ifdef TEST_INPUT
-  LogMessageChar3Vector("Normalized field direction:", field[X], field[Y], field[Z]);
+  LogMessageChar3Vector("Normalized field direction:",  field[X],
+                                                        field[Y],
+                                                        field[Z]);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */    
   //FillRotationMatrix(field); //doesnt work and unnecessary, SJ 20.02.17
@@ -597,16 +715,23 @@ long long ReadCoupPattern(char *filename)
 
 #ifdef LANCZOS
 // ********* Lanzcos-Mandatory input : Read Lanzcos numbers *********
+if (rank==0){
   matchlines(filedata, "Ritz_conv", &Ritz_conv, true);
+}
+MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
   #ifdef TEST_INPUT
   LogMessageCharDouble("Ritz_conv:", Ritz_conv);
   LogMessageChar("\n");
 #endif /* TEST_INPUT */
 #endif /* LANCZOS */
 
-  dummy= (long long*) malloc(Ncoupstr*sizeof(long long));
+
+  if (rank == 0){
+  long long* dummy= (long long*) malloc(Ncoupstr*sizeof(long long));
   double** dummyresdouble = (double**) malloc(Ncoupstr*sizeof(double*));
-  multimatch(filedata,filesize,"Coupling strength vector",dummyresdouble , dummy, Ncoupstr);
+  multimatch(filedata,filesize,"Coupling strength vector", dummyresdouble,
+                                                           dummy, Ncoupstr);
 
   for (long long k=0;k<Ncoupstr;k++) {
     hamzz[k]=dummyresdouble[k][0];
@@ -615,18 +740,31 @@ long long ReadCoupPattern(char *filename)
 #ifdef DIPOLE
     Dip[k]=dummyresdouble[k][3];
 #endif /* DIPOLE */
+  }
+    free(dummy);
+    free(dummyresdouble);
+  }
+  for (long long k=0;k<Ncoupstr;k++){
+    MPI_Bcast(&hamzz[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&hamxy[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&hamanis[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+#ifdef DIPOLE
+    MPI_Bcast(&Dip[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+#endif //DIPOLE
+  
 #ifdef TEST_INPUT
     LogMessageChar3Vector(" Jzz, Jxy, Janis:",hamzz[k],hamxy[k],hamanis[k]);
     LogMessageChar("\n");
 #endif /* TEST_INPUT */
   }
-  free(dummy);
-  free(dummyresdouble);
-
+  
 #ifdef RING_EXCHANGE
-  dummy= (long long*) malloc(Nringstr*sizeof(long long));
+
+if (rank==0){
+  long long *dummy= (long long*) malloc(Nringstr*sizeof(long long));
   double** dummyresdouble1 = (double**) malloc(Nringstr*sizeof(double*));
-  multimatch(filedata,filesize,"Ring strength",dummyresdouble1 , dummy, Nringstr);
+  multimatch(filedata,filesize,"Ring strength", dummyresdouble1, dummy,
+                                                                 Nringstr);
 
   for (long long k=0;k<Nringstr;k++) {
     hamring[k]=dummyresdouble1[k][0];
@@ -637,9 +775,13 @@ long long ReadCoupPattern(char *filename)
   }
   free(dummy);
   free(dummyresdouble1);
+}
+MPI_Bcast(hamring, Nringstr, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//MPI Not tested, since documentation is sparse on this functionality - ABP
 #endif /* RING_EXCHANGE */
 
-  dummy = (long long*) malloc(Ncoup*sizeof(long long));
+if (rank==0){
+  long long *dummy = (long long*) malloc(Ncoup*sizeof(long long));
   long long **dummyres = (long long**) malloc(Ncoup*sizeof(long long*));
   multimatch(filedata,filesize,"Coupling vector",dummyres , dummy, Ncoup);
 
@@ -649,21 +791,37 @@ long long ReadCoupPattern(char *filename)
     Jzz[k]=hamzz[dummyres[k][2]];
     Jxy[k]=hamxy[dummyres[k][2]];
     Janis[k]=hamanis[dummyres[k][2]];    
+  }
+  free(dummy);
+  free(dummyres);
+}
+
+for (long long k=0;k<Ncoup;k++){
+  MPI_Bcast(hamil_coup[k], 2, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+}
+MPI_Bcast(Jzz, Ncoup, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(Jxy, Ncoup, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(Janis, Ncoup, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  
 #ifdef TEST_INPUT
-    LogMessageCharInt(" Coupling from ",dummyres[k][0]);
-    LogMessageCharInt(", to ",dummyres[k][1]);
-    LogMessageCharInt(", strength ",dummyres[k][2]);
-    LogMessageChar("\n");
+for (long long k=0;k<Ncoup; k++){
+    LogMessageCharInt(" Coupling from ",hamil_coup[k][0]);
+    LogMessageCharInt(", to ",hamil_coup[k][1]);
+    LogMessageChar(", with strength: ");
+    LogMessageChar("\n\t");
     LogMessageCharDouble(" Jzz ",Jzz[k] );
     LogMessageCharDouble(", Jxy ", Jxy[k]);
     LogMessageCharDouble(", Janis ",Janis[k]);
     LogMessageChar("\n");
+}
 #endif /* TEST_INPUT */
     /*#ifndef M_SYM //NEVER: rotating J is the wrong way!
     TransformCoup(k);
 #endif /* M_SYM */
 
 #ifdef DIPOLE
+  if (rank==0){
+  for (long long k=0;k<Ncoup;k++) {
     Jdip[k]=Dip[dummyres[k][2]];
     r_vector[k][X]=dummyres[k][3];
     r_vector[k][Y]=dummyres[k][4];
@@ -672,16 +830,21 @@ long long ReadCoupPattern(char *filename)
     RotateVector(r_vector[k]);
     geom_13[k] = 1.0-3.0*SQR(r_vector[k][Z]);
 #ifdef TEST_ROTATION
-  LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],r_vector[k][Y],r_vector[k][Z]);
+  LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
+                                                      r_vector[k][Y],
+                                                      r_vector[k][Z]);
   LogMessageChar("\n");
 #endif /* TEST_ROTATION */
-#endif /* DIPOLE */
   }
+  } //Not parallelised Dipole is missing documentation
+#endif /* DIPOLE */
 
 #ifdef RING_EXCHANGE
+if (rank==0){
   dummy = (long long*) malloc(Nring*sizeof(long long));
   long long **dummyresring = (long long**) malloc(Nring*sizeof(long long*));
-  multimatch(filedata,filesize,"Coupling ring vector",dummyresring , dummy, Nring);
+  multimatch(filedata,filesize,"Coupling ring vector", dummyresring, dummy,
+                                                                     Nring);
 
   for (long long k=0;k<Nring;k++) {
     ring_coup[k][0]=dummyresring[k][0];
@@ -701,13 +864,16 @@ long long ReadCoupPattern(char *filename)
   }
   free(dummy);
   free(dummyresring);
+  } //Not parallelised Ring_exchange is missing documentation
 #endif /* RING_EXCHANGE */
 
+  if (rank==0){
   if (symconstruct==1)
     MakeSymCoup();
 
   LogMessageChar("RLio.C successful. \n");
   free(filedata);
+  }
   return 0;
  }
 
@@ -734,8 +900,9 @@ void TransformCoup(long long j)
 #ifdef FIND_CROSS
 #ifdef LANCZOS
 long long SortCross (long long Nener) {
-  /* Finds and sums crosssections for same energies, and sorts energies and cross by energy */
-  /* Could be optimized greatly, but MAX_LANCZOS is small: no point */
+  /* Finds and sums crosssections for same energies, and sorts energies and
+   * cross by energy.
+   * Could be optimized greatly, but MAX_LANCZOS is small: no point */
   long long XS = 0; // number of unique crosssections
   bool newener;
 
@@ -781,7 +948,8 @@ void time_stamp(time_t *tim, long long flag, const char *string)
   if (flag == STOP)
   {
    *tim += clock();
-   fprintf(logfile," %s done, %lg seconds used\n", string, *tim/(double)CLOCKS_PER_SEC);
+   fprintf(logfile," %s done, %lg seconds used\n",
+            string, *tim/(double)CLOCKS_PER_SEC);
   } 
 
   return;
@@ -803,7 +971,6 @@ void outro()
   #endif
 #endif /* FIND_CROSS */
   LogMessageChar("\n End of diagonalization program RLexact.\n");
-  printf("\n End of diagonalization program RLexact.\n");
 
   return;
  }
@@ -836,6 +1003,13 @@ void LogMessageImag(const double a, const double b)
   return;
  }
 
+void LogMessageKomplex(const komplex z)
+ {
+  fprintf(logfile, " (  %lg + %lg i )",real(z),imag(z));
+  fflush(logfile);
+  return;
+ }
+
 void LogMessageChar(const char *str)
  {
   fprintf(logfile, " %s ",str);
@@ -854,6 +1028,12 @@ void LogMessageCharDouble(const char *str, double d)
   fflush(logfile);
   return;
  }
+
+void LogMessageCharKomplex(const char *str, komplex z)
+{
+  fprintf(logfile, " %s (  %lg + %lg i )",str, real(z),imag(z));
+  fflush(logfile);
+}
 
 void LogMessageCharInt(const char *str, long long i)
  {
@@ -874,15 +1054,28 @@ void LogMessageChar3Vector(const char *str, double d1, double d2, double d3)
   return;
  }
 
+/* Overload for longs */
+void LogMessageChar3Vector(const char *str, 
+                          long long l1,long long l2, long long l3)
+{
+  fprintf(logfile, " %s (%lld, %lld, %lld ) \n",str,l1,l2,l3);
+  fflush(logfile);
+  return;
+ }
+
 void WriteState(const char *msg, komplex *state)
  {
    /* Output one state vector -- with a text message */
   long long i;
 
   fprintf(outfile,"%s \n",msg);
-  for(i=0;i<Nunique;i++)
-    fprintf(outfile,"  %g + i * %g \n",real(state[i]),imag(state[i]));
-
+  for(i=0;i<Nunique;i++){
+#ifdef CSVOUT
+    fprintf(outfile,"%g,%g,%lld\n",real(state[i]),imag(state[i]),unique[i]);
+#else
+    fprintf(outfile,"  %g + i * %g\n",real(state[i]),imag(state[i]),unique[i]);
+#endif
+  }
   return;
  }
 
@@ -895,7 +1088,8 @@ void WriteStates(komplex **hamil)
    {
     fprintf(outfile,"( ");
     for (j=0; j<Nuniq_k; j++)
-      fprintf(outfile,"( %lg +i %lg ), ",real(hamil[j+1][i+1]),imag(hamil[j+1][i+1]));
+      fprintf(outfile,"( %lg +i %lg ), ", real(hamil[j+1][i+1]),
+                                          imag(hamil[j+1][i+1]));
     fprintf(outfile,") \n");
    }
   
@@ -957,7 +1151,8 @@ void WriteResults(long long N)
  {
 /* Output the energies and other observables of the eigenstates */
   long long i,q;
-  #ifndef WRITE_MAGNETISATION //otherwise the energy and magnetisation pairs get mixed up
+  #ifndef WRITE_MAGNETISATION 
+  //otherwise the energy and magnetisation pairs get mixed up
     Bubblesort(energies,NULL,N);
   #endif
 
@@ -977,21 +1172,12 @@ void WriteResults(long long N)
 	     magnetisation[i]=0;
       }
       #ifdef WRITE_MAGNETISATION
-      #ifdef MATRIX
-      fprintf(outfile,", mag_z= %9.6g ",magnetisation[i]); //only meaningful for matrix-calculations
+      #ifdef MATRIX //only meaningful for matrix-calculations
+      fprintf(outfile,", mag_z= %9.6g ",magnetisation[i]); 
       #endif //MATRIX
       #endif //WRITE_MAGNETISATION
 #endif  /* FIND_MAG */
 
-#ifdef STRUCTURE
-      for (q=0; q<Nstruct; q++) {
-	// throw away rounding errors
-	if (abs(Szzq[q][i])<SMALL_NUMBER) {
-	  Szzq[q][i]=0;
-	}
-        fprintf(outfile,"Szzq= %g ",Szzq[q][i]);
-      }
-#endif  /* STRUCTURE */
       fprintf(outfile, "\n");
     }
   fprintf(outfile, "] \n");
@@ -1021,12 +1207,13 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
 #ifdef TEST_WRITECROSS
   LogMessageChar("In WriteCross, ");
-  #ifdef MSYM
+  #ifdef M_SYM
   LogMessageCharInt(", m =",twom/2);
   #endif
   LogMessageCharDouble(", gs_energy=",gs_energy);
+
   LogMessageCharInt(", q_gs = (",q_gs[0]);
-  LogMessageCharInt(",",q_gs[1]);
+  for (long long i=1;i<Nsym;i++) LogMessageCharInt(",",q_gs[i]);
   LogMessageChar(")");
   for (int i = 0; i < Nsym; i++)
   {
@@ -1036,10 +1223,35 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   LogMessageChar("\n");
 #endif
 
+#ifdef CSVOUT
+// Print header
+#ifdef M_SYM
+  fprintf(crossfile, "m,");
+#else
+  fprintf(crossfile, "h,");
+#endif
 
+  for (int i=0;i<Nsym;i++) fprintf(crossfile, "q%d,", i);
+  fprintf(crossfile, "E,S\n");
+
+//This doesn't sort the array as below, but this shouldn't be needed as
+//CSV-out is mainly for loading into other software and plotting/looking
+//at data there.
+  for (long long i = 0;i<Nener;i++) 
+  {
+#ifdef M_SYM
+  fprintf(crossfile,"%g,",double(twom)/2);
+#else
+  fprintf(crossfile,"%g,",double(h));
+#endif
+  for (int i=0;i<Nsym;i++) fprintf(crossfile,"%lld,", symvalue[i]-q_gs[i]);
+
+  fprintf (crossfile,"%g,%g\n",energies[i]-gs_energy,cross[i]);
+  }
+#else
 
 #ifdef M_SYM
-  fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]-q_gs[0]);
+  fprintf(crossfile, "[\n m= %g, q= (%lld",double(twom)/2,symvalue[0]-q_gs[0]);
   //fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]);
 #else
   fprintf(crossfile, "[ \n h= %g, q= (%lld",double(h),symvalue[0]-q_gs[0]);
@@ -1063,7 +1275,8 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   }
   #endif
 
-  long long Xsections = SortCross(Nener); // destroys *energies and *Cross. Maybe not so smart?
+  long long Xsections = SortCross(Nener); 
+  //destroys *energies and *Cross. Maybe not so smart?
   
   for (long long i = 0;i<Nener;i++) 
   {
@@ -1074,7 +1287,7 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
   }
   fprintf (crossfile,"]\n\n");
-
+#endif //CSVOUT
   return;
 }
 #endif /* LANCZOS */
@@ -1110,5 +1323,5 @@ void WriteQvalue(long long *qvec){
   for(i=0; i<Nsym; i++){
     fprintf(outfile,", %lld",qvec[i]);
   }
-fprintf(outfile,")");
+fprintf(outfile,")\n");
 }

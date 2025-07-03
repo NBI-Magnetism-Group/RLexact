@@ -1,12 +1,12 @@
 OBJECTS = RLexact.o RLio.o RLtables.o RLhamil.o RLsymm.o Diagonal.o nr.o RLutil.o  RLcross.o RLlancz.o RLmatrix.o RLsparse.o regc.o
 LIBS = -lm 
-FLAGS =  -I. -I/usr/include/g++-3 -O3 -gdwarf-2
 FLAGS =  -p -I. -I/usr/include/g++-3 -O0 -gdwarf-2 -ansi
+OPTFLAGS = -p -I. -I/usr/include/g++-3 -O0 -gdwarf-2 -ansi
 FLAGS =  -I. -I/usr/include/g++-3 -O0 -gdwarf-2
 OPTFLAGS =  -I. -I/usr/include/g++-3 -O3 -gdwarf-2
 #FLAGS =  -p -I. -I/usr/include/g++-3 -O1 -gdwarf-2 -ansi -pedantic
 EXECUTABLE = RLexact
-COMPILER = g++
+COMPILER = mpic++
 RLexact:	$(OBJECTS)
 		$(COMPILER) $(FLAGS) $(OBJECTS) $(LIBS) -o $(EXECUTABLE)
 

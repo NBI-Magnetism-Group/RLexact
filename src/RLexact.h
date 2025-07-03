@@ -11,22 +11,28 @@
 ============================================
 */
 
-// Phyxsics of problem 
+// Physics of problem 
 #define M_SYM
 //#define DIPOLE     
 //#define RING_EXCHANGE
 
 // Calculation of problem and output requests 
 #define LANCZOS 
-//#define MATRIX   
+//#define MATRIX    #Note FIND_CROSS currently only supports LANCZOS
 #define FIND_EIGENSTATE
 #define WRITE_ENERGIES
 #define FIND_CROSS //Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w) 
-//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w) instead of S^xx (q,w) and S^yy(q,w). Requires MSYM and FIND_CROSS.
-#define WRITE_STATES
+//#define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w)
+//                      instead of S^xx (q,w) and S^yy(q,w).
+//                      Requires MSYM and FIND_CROSS.
+
+#define WRITE_STATES //Prints groundstate in dat-file
+//                      and all eigenstates if MATRIX
+
 //#define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
-//#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM , Works only for MATRIX-mode, SJ 31/5/16
-//#define STRUCTURE  //doesnt currently work, SJ, 2/3/16 //Rename to Sqw_Q_VALUES AP 4/11/24 - Kim er næsten sikker
+//#define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM,
+//                              Works only for MATRIX-mode, SJ 31/5/16
+#define MOTIVE //spin positions
 
 // Dimensions of problem 
 #define NCOUP 400
@@ -107,7 +113,7 @@
   #define abs(a) sqrt(real(a)*real(a) + imag(a)*imag(a))
   #define sqrabs(a) (real(a)*real(a) + imag(a)*imag(a))
   #define eksp(a) exp(real(a))*(cos(imag(a))+I*sin(imag(a))) 
-  #define conj(a)  real(a)-I*imag(a)
+  #define conj(a)  (real(a)-I*imag(a))
   #define skrt(a) (sqrt(abs(a))*(cos(Arg(a)/2.0)+I*sin(Arg(a)/2.0) ) )
 //#define skrt(a) (sqrt(real(a))*(cos(Arg(a)/2.0)+I*sin(Arg(a)/2.0) ) )
 
@@ -139,6 +145,7 @@
 #define float double
 
 /* Output definitions */
+#define CSVOUT //output data to s** as comma separated values
 #define FILEEND ".dat"
 #define LOGFILEEND ".log"
 #define SZZEND ".szz" //only used of FIND_CROSS
@@ -159,8 +166,8 @@
 #define X 0
 #define Y 1
 #define Z 2
-#define REAL 0
-#define IMAG 1
+//#define REAL 0
+//#define IMAG 1 //Not used and clashed with OpenMPI
 #define NORMAL 0
 #define RECONSTRUCT 1
 #define CROSS 2
@@ -194,6 +201,7 @@
 		    for (sym=1; ++T[sym]==Nsymvalue[sym]; )   \
 	              if (sym<Nsym-1) { T[sym++]=0;           \
                                 new_state=SymOp(sym,new_state);}}      /* while */
+
 #define QLOOP_BEGIN for(sym=0;sym<Nsym;sym++) q[sym]=0;       \
                     sym=0;                                    \
                     while(q[Nsym-1]<Nsymvalue[Nsym-1]) {
@@ -239,15 +247,16 @@
 // Debugging output requests from RLlanczos.c 
 //#define TEST_SEED 
 //#define TEST_EIGENVECTORS
-#define TEST_FINDGROUND
+//#define TEST_FINDGROUND
 //#define TEST_STATES 
 //#define TEST_ENERGIES
-#define LANCZOS_MESSAGES
-#define VERBOSE_LANCZOS
+//#define TEST_LANCZOS_VECTOR
+//#define LANCZOS_MESSAGES
+//#define VERBOSE_LANCZOS
 //#define TEST_FINDMAG
 //#define DEBUG_SEED // WARNING: May cause premature stopping of lanczos algorithm
 //#define DEBUG_LANCSTEP
-#define TEST_LANCCROSS
+//#define TEST_LANCCROSS
 
 // Debugging output requests from RLtables.c 
 //#define TEST_TABLES    
@@ -275,8 +284,8 @@
 //#define TEST_ROTATION
 
 // Debugging output requests from RLcross.c 
-//#define PRINT_STATES 
-//#define PRINT_ENERGIES  
+//#define PRINT_STATES DOESN'T EXIST ANYMORE
+//#define PRINT_ENERGIES  DOESN'T EXIST ANYMORE
 //#define TEST_APPLYSMP
 //#define TEST_APPLYSZQ 
 //#define TEST_CROSS

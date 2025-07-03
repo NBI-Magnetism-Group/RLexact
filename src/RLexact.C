@@ -24,6 +24,9 @@
 #include <RLexact.h>
 #include <cnr.h>
 
+#include <mpi.h>
+int rank, nprocs, gs_rank;
+
 /* Functions declared in this file */
 #ifdef LANCZOS 
 void Solve_Lanczos();
@@ -50,12 +53,14 @@ extern void LogMessageImag(long long);
 extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
+extern void OutMessageChar(const char *);
 extern void WriteResults(long long);
 extern void WritehmQ(long long *);
 extern void WriteState(const char*,komplex*);
 extern void WriteStates(komplex**);
 extern void WriteGSdata(double,long long*);
 extern void WriteGSstate(komplex*);
+extern void WriteQvalue(long long *);
 extern void ReadGSdata(double*,long long*,komplex*);
 extern void ReadGSenergy(double*, long long *);
 #ifndef FIND_MAG
@@ -82,6 +87,13 @@ extern void ReadUniqueObservables();
 /* Global variables read from the input file */
 long long    Nspins;
        /* Number of spins in the system */
+#ifdef MOTIVE
+  long long Nspins_in_uc;
+  double **spin_positions;
+  long long Trans_Qmax[3];
+#else
+  long long Trans_Qmax = {1,1,1};
+#endif //MOTIVE
 long long    Ncoup;
        /* Actual number of couplings */
 long long    Ncoupstr;
@@ -99,6 +111,10 @@ long long    Nsymadd;
 long long    symlist[NSYM];  /* Symmetries to be used in problem */
 long long    **symadd;  /* Specification of additional
 		     symmetries to be used in problem */
+long long Ndimensions;
+       /* How many dimensions are used */
+long long *TransIds;
+       /* Index of the translation symmetries in symlist */
 long long    Nq_choice;
        /* number of symmetry vectors to be chosen */
 long long    **q_choice;
@@ -168,23 +184,6 @@ long long   Nelem;
 long long    *mag;
        /* m-value for the unique states, TODO: should be int */ 
 #endif /* M_SYM */
-#ifdef STRUCTURE
-long long    Nstruct;
-       /* Number of structure factors calculated */ 
-komplex phaseq[NSPINS][NSPINS]; 
-double **qvec;
-double **structq;
-       /* Structure factors for the unique states */
-double **position;
-       /* Position of all spins */
-double dummy;
-long long Nsym_translations;
-       /* Number of translation symmetries (dimensionality) */ 
-double **Sym_translation;
-       /* vectors of translations */ 
-double **Sym_translation_inv;
-       /* inverse translations */ 
-#endif  /* STRUCTURE */
 komplex **hamilton;
        /* The Hamiltonian matrix, dynamically allocated */
 komplex *vec1,*vec2,*vec3;
@@ -235,9 +234,6 @@ double *energies;
 #ifdef FIND_MAG
 double *magnetisation;
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-double **Szzq;
-#endif  /* STRUCTURE */
 #ifdef MATRIX 
 double *cross;
 #endif /* Matrix*/
@@ -253,6 +249,13 @@ double maggs;
 
 int main(int argc, char* argv[])
 {
+  gs_rank = 0;
+  rank = 0; //Don't know if this is necessary, but it's a nice fail safe. -ABP
+  nprocs = 1;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
  time_t time_total,time_single0, time_single, time_single2;
  infile_name=(char*)malloc(30*sizeof(char));
 
@@ -261,8 +264,10 @@ int main(int argc, char* argv[])
    name_on_commandline=true;
  }
 
+
  if (intro() == -1)
-   return 0;
+   return 1;
+
  srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
  time_stamp(&time_total,START,"diagonalization \n");
 
@@ -271,7 +276,7 @@ int main(int argc, char* argv[])
 #endif
 
   BuildTables();
- InitSym();
+  InitSym();
 
  #ifdef M_SYM
   LogMessageChar("With M-symmetry \n");
@@ -295,7 +300,9 @@ int main(int argc, char* argv[])
 #endif //VERBOSE
 
  if ((mstart>0) && (mend >0)) {
-   if (unimode==UNIMODER) {
+   if ((unimode==UNIMODER) && (rank == 0)) { //UNIMODER Reads from file.
+                                             //Not tested with MPI since perl
+                                             //scripts are lost.
      Nunique = ReadUnique((long long)(mstart*2),1);
    } else {
 //	 LogMessageChar("FillUnique 1 \n");
@@ -303,7 +310,7 @@ int main(int argc, char* argv[])
    }
  } else {
    if ((mstart<0) && (mend<0)) {
-     if (unimode==UNIMODER) {
+     if ((unimode==UNIMODER)&&(rank==0)) {
        Nunique = ReadUnique((long long)(mend*2),1);
      } else {
 //	 LogMessageChar("FillUnique 2 \n");
@@ -312,7 +319,7 @@ int main(int argc, char* argv[])
    } else {
      if (Nspins%2==0) {
 //     LogMessageCharInt("Nspins%2 loop entered, unimode ", unimode);
-       if (unimode==UNIMODER) {
+       if ((unimode==UNIMODER) && (rank==0)) {
 //	 LogMessageChar("ReadUnique 3 \n");
 	 Nunique = ReadUnique((long long)(0),1);
        } else {
@@ -320,7 +327,7 @@ int main(int argc, char* argv[])
 	 Nunique = FillUnique (0,1); //twom=0 if this loop is entered
        }
      } else {
-       if (unimode==UNIMODER) {
+       if ((unimode==UNIMODER) && (rank==0)){
 //	 LogMessageChar("ReadUnique 4 \n");
 	 Nunique = ReadUnique((long long)(1),1);
        } else {
@@ -331,7 +338,7 @@ int main(int argc, char* argv[])
    }
  }
    
-#else //NOT MSYM
+#else //NOT M_SYM
 #ifdef VERBOSE
  LogMessageChar("M_SYM not encountered \n");
  LogMessageCharInt("Unique mode is: ", unimode);
@@ -344,7 +351,7 @@ int main(int argc, char* argv[])
  LogMessageChar("\n");
 #endif //VERBOSE
 
- if (unimode==UNIMODER) {
+ if ((unimode==UNIMODER)&&(rank==0)) {
    Nunique = ReadUnique(0,1);
  } else {
    Nunique = FillUnique(0,1);
@@ -374,7 +381,7 @@ for (twom=(long long)(2*mstart); twom<= (long long)(2*mend); twom=twom+2)
     time_stamp(&time_single0,START,"filling arrays for one m");
   #endif
 
-  if (unimode==UNIMODER) {
+  if ((unimode==UNIMODER)&&(rank==0)) {
    Nunique=ReadUnique(twom,0);
   } else {
    Nunique=FillUnique(twom, 0);
@@ -392,12 +399,14 @@ for (twom=(long long)(2*mstart); twom<= (long long)(2*mend); twom=twom+2)
    time_stamp(&time_single0,START,"filling arrays of observables for all h \n");
 #endif
 
-   if (unimode==UNIMODER) {
+   if ((unimode==UNIMODER)&&(rank==0)) {
     LogMessageChar("The mode is UNIMODER \n");
      ReadUniqueObservables();
      Nunique=ReadUnique(0,0);
    } else {
-     Nunique=FillUnique(0,0); // TODO: CHECK THIS: slightly disgusting: variable is never used - FillUnique takes care of both M_SYM set and unset
+     Nunique=FillUnique(0,0); // TODO: CHECK THIS: slightly disgusting:
+                              // variable is never used - FillUnique takes care
+                              // of both M_SYM set and unset
      LogMessageChar("\n FillUnique is done \n");
      FillUniqueObservables();
      LogMessageChar("FillUniqueObservables is done \n");
@@ -406,55 +415,61 @@ for (twom=(long long)(2*mstart); twom<= (long long)(2*mend); twom=twom+2)
    time_stamp(&time_single0,STOP," ");
 #endif
 
-for (h=hstart; h<= hend; h+=hstep) 
-{
+   for (h=hstart; h<= hend; h+=hstep) 
+   {
 
-  #ifdef VERBOSE_TIME_LV1
-  LogMessageCharDouble("\n Now treating the h = ",h);
-  LogMessageChar("subspace \n\n");
-  time_stamp(&time_single0,START,"calculating for one h");
-  #endif
+#ifdef VERBOSE_TIME_LV1
+     LogMessageCharDouble("\n Now treating the h = ",h);
+     LogMessageChar("subspace \n\n");
+     time_stamp(&time_single0,START,"calculating for one h");
+#endif
 
 #endif /* M_SYM */
 
-  #ifdef VERBOSE_TIME_LV1
-  LogMessageCharInt("\n Nunique = ",Nunique);
-  #endif //VERBOSE_TIME_LV1  
+#ifdef VERBOSE_TIME_LV1
+     LogMessageCharInt("\n Nunique = ",Nunique);
+#endif //VERBOSE_TIME_LV1  
 
- if (unimode==UNIMODEW) {
-  WriteUnique(twom);
-  #ifndef M_SYM
-  long long q_write[NSYM];
-  for (int i = 0; i < NSYM; i++)
-  {
-    q_write[i]=0;
-  }
-  BuildCycle(q_write);
-  WriteUniqueObservables();
-  #endif /* M_SYM */
-   } 
-   else 
-   {
-  #ifdef MATRIX
-        Solve_Matrix();
-  #endif /* MATRIX */
-  #ifdef LANCZOS
-        Solve_Lanczos();
-  #endif /* LANCZOS */
+     if ((unimode==UNIMODEW)&&(rank==0))
+     {
+       WriteUnique(twom);
+#ifndef M_SYM
+       long long q_write[NSYM];
+       for (int i = 0; i < NSYM; i++)
+       {
+         q_write[i]=0;
+       }
+       BuildCycle(q_write);
+       WriteUniqueObservables();
+#endif /* not M_SYM */
+     } 
+     else 
+     {
+#ifdef MATRIX
+       if (rank == 0) //TODO Also MPI on Matrix mode - ABP 2025-03-13
+       Solve_Matrix();
+#endif /* MATRIX */
+#ifdef LANCZOS
+       Solve_Lanczos();
+#endif /* LANCZOS */
 
-  #ifdef VERBOSE_TIME_LV1
-        time_stamp(&time_single0,STOP,"one m/h ");
-        LogMessageChar("\n");
-  #endif
+#ifdef VERBOSE_TIME_LV1
+       time_stamp(&time_single0,STOP,"one m/h ");
+       LogMessageChar("\n");
+#endif
 
-   }
+     }
 }
 
 time_stamp(&time_total, STOP, "\n Total execution");
 outro();
 deallocate();
 LogMessageChar("deallocated correctly!");
-return 1;
+
+MPI_Barrier(MPI_COMM_WORLD);
+MPI_Finalize();
+if (rank == 0) OutMessageChar("\n End of diagonalization program RLexact.\n");
+return 0;
 } //end main()
 
 /* ----------------------------------------------------------------------------------*/
@@ -472,18 +487,20 @@ void Solve_Lanczos() {
   vec2 = tmp2;
   vec3 = shadow;
 
+  MPI_Barrier(MPI_COMM_WORLD);
   if (mode == MODEW || mode == MODEN){
     #ifdef VERBOSE_TIME_LV1
       time_stamp(&time_makesparse,START,"writing to file");
     #endif
         // Make sparse matrix (writing to file)
     LogMessageChar("\nwriting sparse matrix to file: begin");
-    MakeSparse();
+    if (rank==0) MakeSparse();
     LogMessageChar("writing sparse matrix to file: end\n");
     #ifdef VERBOSE_TIME_LV1
       time_stamp(&time_makesparse,STOP, "..");
     #endif
   }
+  MPI_Barrier(MPI_COMM_WORLD);
 
   #ifdef VERBOSE_TIME_LV1
     time_stamp(&time_single0,START,"dealing with the ground state");
@@ -494,73 +511,87 @@ void Solve_Lanczos() {
   if (mode==MODEGS || mode==MODEN) {
     if (Nq_choice > 0)
     {
-      gs_energy=LARGE_NUMBER;
-      for (j=0; j<Nq_choice; j++)
+      if (rank==0)
       {
-        q=&q_choice[j][0];
-        LogMessageChar("chosen q, q=(");
-        for (i=0; i<Nsym; i++) 
-          LogMessageCharInt(" ",q[i]);
+        gs_energy=LARGE_NUMBER;
+        for (j=0; j<Nq_choice; j++)
+        {
+          q=&q_choice[j][0];
+          LogMessageChar("chosen q, q=(");
+          for (i=0; i<Nsym; i++) 
+            LogMessageCharInt(" ",q[i]);
 
-        #ifndef M_SYM
+#ifndef M_SYM
           LogMessageCharDouble(" H= ",h);
-        #endif /* M_SYM */	   
+#endif /* M_SYM */	   
 
-        LogMessageChar(") \n");
-        BuildCycle(q);
-        etmp=LowestLanczos(q,NULL,&Nener,NORMAL);
+          LogMessageChar(") \n");
+          BuildCycle(q);
+          etmp=LowestLanczos(q,NULL,&Nener,NORMAL);
 
-        #ifdef WRITE_ENERGIES
+#ifdef WRITE_ENERGIES
           WritehmQ(q);
           WriteResults(Nener);
-        #endif /* WRITE_ENERGIES */
+#endif /* WRITE_ENERGIES */
 
-        if (etmp<gs_energy)
-        {
-          gs_energy=etmp;
-          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
-          //      for (i=0; i<Nunique; i++)
-          //	gs[i] = tmp[i];
+          if (etmp<gs_energy)
+          {
+            gs_energy=etmp;
+            for (sym=0; sym<Nsym; sym++){
+              q_gs[sym] = q[sym];
+            }
+            //      for (i=0; i<Nunique; i++)
+            //	gs[i] = tmp[i];
+          }
         }
       }
+      MPI_Bcast(&gs_energy, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      MPI_Bcast(q_gs, Nsym, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);      
     }
-    else //Nq_choice < 0
+    else //Nq_choice <= 0 -> Search all q
     {
       gs_energy=LARGE_NUMBER;
   
+      int mpi_q_count = 0;
       QLOOP_BEGIN
-  
-        #ifdef VERBOSE_TIME_LV2
+        
+        if (mpi_q_count%nprocs == rank)
+        {
+
+#ifdef VERBOSE_TIME_LV2
           LogMessageChar("\nSolve_Lanzcos: GS q-loop, q=(");
           for (i=0; i<Nsym; i++) 
             LogMessageInt(q[i]);
           LogMessageChar(") \n");
           time_stamp(&time_single2,START,"Ground state search for one q ");
-        #endif /* VERBOSE_TIME_LV2 */
-    
-        BuildCycle(q);
-        etmp=LowestLanczos(q,NULL,&Nener,NORMAL); 
-    
-        #ifdef WRITE_ENERGIES
+#endif /* VERBOSE_TIME_LV2 */
+
+          BuildCycle(q);
+          etmp=LowestLanczos(q,NULL,&Nener,NORMAL); 
+
+#ifdef WRITE_ENERGIES
           WritehmQ(q);
           WriteResults(Nener);
-        #endif /* WRITE_ENERGIES */
-    
-        if (etmp<gs_energy)
-        {
-          gs_energy=etmp;
-          for (sym=0; sym<Nsym; q_gs[sym]=q[sym++]);
-          //      for (i=0; i<Nunique; i++)
-          //	gs[i] = tmp[i];
-          //	gs[i] = evec[i];
-        }
-    
-        #ifdef VERBOSE_TIME_LV2
+#endif /* WRITE_ENERGIES */
+
+          if (etmp<gs_energy)
+          {
+            gs_energy=etmp;
+            for (sym=0; sym<Nsym;sym++){
+              q_gs[sym] = q[sym];
+            }
+            //      for (i=0; i<Nunique; i++)
+            //	gs[i] = tmp[i];
+            //	gs[i] = evec[i];
+          }
+
+#ifdef VERBOSE_TIME_LV2
           time_stamp(&time_single2,STOP," ");
-        #endif
-    
+#endif
+        }
+      mpi_q_count++; 
       QLOOP_END
-  
+
       if (mode==MODEGS) {
         Warning("YOU SHOULD SPECIFY Q-VALUES TO DETECT FOR MODEGS",0);
       }
@@ -568,17 +599,34 @@ void Solve_Lanczos() {
       #ifdef VERBOSE_TIME_LV1
         time_stamp(&time_single,STOP,"finding the ground state ");
       #endif
-  
+
+      struct {
+        double gs_energy;
+        int rank;
+      } send_data, recv_data;
+
+      send_data.gs_energy = gs_energy;
+      send_data.rank = rank;
+
+      MPI_Allreduce(&send_data, &recv_data, 1, MPI_DOUBLE_INT, MPI_MINLOC,
+          MPI_COMM_WORLD);
+
+      gs_energy = recv_data.gs_energy;
+      gs_rank = recv_data.rank;
+      MPI_Bcast(q_gs, Nsym, MPI_LONG_LONG_INT, gs_rank, MPI_COMM_WORLD);
+      LogMessageCharDouble("GS_energy after Allreduce", gs_energy);
+      
+
     }  /* end if (Nq_choice > 0) */
 	  
-	  if (mode == MODEGS)
-    {
+	  if ((mode == MODEGS)&&(rank==0))
+          {
 	     // End of finding the ground state, write ground state and q-symmetry to file:
 	     WriteGSdata(gs_energy,q_gs);
 	     //Done with modegs
 	  }
 	
-  } /* End of if(mode == MODEGS || mode == MODERC) */
+  } /* End of if(mode == MODEGS || mode == MODEN) */
 	
 	 // Now, reconstruct the groundstate.
 #ifdef VERBOSE_TIME_LV1
@@ -587,18 +635,26 @@ void Solve_Lanczos() {
 
     if (mode==MODEN || mode==MODERC) {
         
-       if (mode==MODERC){
+       if ((mode==MODERC)&&(rank==0)){
 	 //Read the ground state energy and q-vector from file
 	 ReadGSenergy(&gs_energy,q_gs);
        }
+       if (gs_rank == rank){
        BuildCycle(q_gs);
        LowestLanczos(q_gs,gs,&Nener,RECONSTRUCT);
+       }
+      MPI_Bcast(gs, Nunique, MPI_C_DOUBLE_COMPLEX, gs_rank,
+          MPI_COMM_WORLD); 
+      MPI_Bcast(&Nener, 1, MPI_LONG_LONG_INT, gs_rank, MPI_COMM_WORLD);
 #ifdef WRITE_STATES
         // print the groundstate vector to outfile
+      if (gs_rank == rank){
+        WriteQvalue(q_gs);
         WriteState("Groundstate",gs);
+        }
+      MPI_Barrier(MPI_COMM_WORLD);
 #endif /* WRITE_STATES */
-
-      if (mode == MODERC){
+      if ((mode == MODERC)&&(rank==0)){
 		//write reconstructed ground state to .gs file:
 		WriteGSstate(gs);
 		//done with moderc		  
@@ -621,7 +677,8 @@ void Solve_Lanczos() {
   else 
   {
     spinflip_GSvalue = Nspins+1;  // Set it to a never-used q-value
-    spinflip_number = 0;          // Need this to do the indexing, even if spin flip is not chosen
+    spinflip_number = 0;          // Need this to do the indexing, even if spin
+                                  // flip is not chosen
   }
 
 #ifdef VERBOSE_TIME_LV1
@@ -641,7 +698,7 @@ void Solve_Lanczos() {
       time_stamp(&time_single,START,"Cross sections");    
 #endif
 
-if (mode==MODEQ) {
+if ((mode==MODEQ)&&(rank==0)) {
       ReadGSdata(&gs_energy,q_gs,gs);
   #ifdef WRITE_STATES
         // print the groundstate vector to outfile
@@ -669,21 +726,47 @@ if (mode==MODEQ) {
   #endif
 
 } else if (mode==MODEN) {
-  QLOOP_BEGIN
 
-  #ifdef TEST_SPINFLIP
-  LogMessageCharInt("spinflip_GSvalue =",spinflip_GSvalue);
-  LogMessageCharInt("spinflip_number =",spinflip_number);
-  LogMessageCharInt("q[spinflip_number] =",q[spinflip_number]);
-  #endif
-  if (spinflip_GSvalue != q[spinflip_number] ) //consistent with spinflip not present also
+  // Set maxloop for translation symmetries before QLOOP
+  // Nsymvalue[transID].
+  //
+  // Depending on symmetries, optimization can be made using selection rules
+  // like SPINFLIP below.
+
+  long long Nqvalue[Nsym];
+  for (int i = 0;i<Nsym;i++) Nqvalue[i] = Nsymvalue[i];
+  for (int i = 0;i<Ndimensions;i++) Nqvalue[TransIds[i]] *= Trans_Qmax[i];
+
+  for (int i=0; i<Nsym;i++){
+    LogMessageCharInt("\n",i);
+    LogMessageCharInt("Nqvalue",Nqvalue[i]);
+    LogMessageCharInt("Nsymvalue",Nsymvalue[i]);
+  }
+  
+  /*for (int i=0; i<Ndimensions; i++){
+   //Trans_symvalue_dummy[TransIds[i]] = Nsymvalue[TransIds[i]];
+   Nsymvalue[TransIds[i]] *= Trans_Qmax[i]; //Nsymvalue bruges i loop for AppSz
+  }*/
+  int mpi_q_count=0;
+  for (sym=0;sym<Nsym;sym++) q[sym]=0;
+  sym=0;
+  while(q[Nsym-1]<Nqvalue[Nsym-1]){
+  //QLOOP_BEGIN
+
+    if (mpi_q_count % nprocs == rank) {
+#ifdef TEST_SPINFLIP
+    LogMessageCharInt("spinflip_GSvalue =",spinflip_GSvalue);
+    LogMessageCharInt("spinflip_number =",spinflip_number);
+    LogMessageCharInt("q[spinflip_number] =",q[spinflip_number]);
+#endif
+    if (spinflip_GSvalue != q[spinflip_number] ) //consistent with spinflip not present also
     {
 #ifdef VERBOSE_TIME_LV2
       time_stamp(&time_single2,START,"Cross section for one q-value in loop");    
       LogMessageChar("\nCrossection q-loop, q=(");
       for (i=0; i<Nsym; i++) 
       {
-	       LogMessageCharInt(" ",q[i]);
+        LogMessageCharInt(" ",q[i]);
       }
       LogMessageChar(") \n");
 
@@ -700,8 +783,15 @@ if (mode==MODEQ) {
       time_stamp(&time_single2,STOP," ");
 #endif
     }
-  QLOOP_END
     }
+    mpi_q_count++;
+    //QLOOP_END
+    for (sym=0;++q[sym]==Nqvalue[sym]; ){
+      if (sym<Nsym-1) q[sym++]=0;
+    }
+  }
+    //for (int i=0; i <Ndimensions; i++) Nsymvalue[TransIds[i]] /= Trans_Qmax[i];
+  }
 #ifdef VERBOSE_TIME_LV1
       time_stamp(&time_single,STOP,"\nCross sections ");
 #endif
@@ -847,10 +937,6 @@ void allocate()
 #ifdef FIND_MAG
   magnetisation = dvector(0,MAX_LANCZOS-1);
 #endif /*FIND_MAG*/
-#ifdef STRUCTURE
-  Szzq =     dmatrix(0,Nstruct,0,Nunique-1);
-  structq =     dmatrix(0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS
     cross = dvector(0,MAX_LANCZOS-1);
 #endif /* FIND_CROSS */
@@ -883,10 +969,6 @@ void allocate()
 #ifdef FIND_MAG
   magnetisation = dvector(0,Nunique-1);
 #endif /*FIND_MAG*/
-#ifdef STRUCTURE
-  Szzq =     dmatrix(0,Nstruct,0,Nunique-1);
-  structq =     dmatrix(0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS
     cross =    dvector(1,Nunique);
 #endif  /* FIND_CROSS */
@@ -913,10 +995,6 @@ void deallocate()
 #ifdef FIND_MAG
   freedvector(magnetisation,0,MAX_LANCZOS-1);
 #endif /* M_SYM */
-#ifdef STRUCTURE
-  freedmatrix(Szzq,0,Nstruct,0,Nunique-1);
-  freedmatrix(structq,0,Nstruct,0,Nunique-1);
-#endif  /* STRUCTURE */
 #ifdef FIND_CROSS   
     freedvector(cross,0,MAX_LANCZOS-1);
 #endif /* FIND_CROSS */
@@ -946,12 +1024,11 @@ void deallocate()
 #ifdef FIND_MAG
   freedvector(magnetisation, 0, Longest_Matrix - 1);
 #endif /* FIND_MAG */
-#ifdef STRUCTURE
-	freedmatrix(Szzq, 0, Nstruct, 0, Longest_Matrix - 1);Lon
-	freedmatrix(structq, 0, Nstruct, 0, Longest_Matrix - 1);
-#endif  /* STRUCTURE */
 
 #endif  /* MATRIX */
-
+#ifdef MOTIVE
+  for (int i = 0; i <Nspins_in_uc; i++) free(spin_positions[i]);
+  free(spin_positions);
+#endif //MOTIVE
   return;
  }

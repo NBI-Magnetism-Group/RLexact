@@ -76,14 +76,6 @@ extern long long *mag;
 #else 
 extern long long twom;
 #endif  /* M_SYM */
-#ifdef STRUCTURE
-extern long long Nstruct;
-extern long long Nsym_translations;
-extern komplex phaseq[NSPINS][NSPINS];
-extern double **structq, **qvec, **position;
-extern double **Sym_translation;
-extern double **Sym_translation_inv;
-#endif  /* STRUCTURE */
 
 /* InvertMatrix () inverts the translation matrix. TODO: replace by the other matrix routine! */
 /* The rational behind this is the following:
@@ -175,56 +167,6 @@ void BuildTables()
     LogMessageChar3Vector(". (cos, sin, sqrt): ",cosine[i],sine[i],sqroot[i]);
 #endif
 
-#ifdef STRUCTURE
-  //  InvertMatrix(Nsym_translations, Sym_translation, Sym_translation_inv);
-#ifdef TEST_TABLES
-  LogMessageChar("Translation matrix: \n");
-    for (i=0; i<Nsym_translations; i++)
-      {
-	LogMessageChar("(");
-	for (j=0; j<Nsym_translations; j++)
-	  LogMessageInt(Sym_translation[i][j]);
-	LogMessageChar(") \n");
-      }
-
-    /*  LogMessageChar("Inverted translation matrix: \n");
-    for (i=0; i<Nsym_translations; i++)
-      {
-	LogMessageChar("(");
-	for (j=0; j<Nsym_translations; j++)
-	  LogMessageCharDouble(" ",Sym_translation_inv[i][j]);
-	LogMessageChar(") \n");
-	} */
-#endif /* TEST_TABLES */
-#endif /* STRUCTURE */
-
-#ifdef STRUCTURE
-  /* Should be called once for every q */
-  /* Now, q should be calculated from the T eigenvalues */
-
-/* Calculating for each lattice site the phase factor for structure calculation */
-  for (q=0; q<Nstruct; q++)
-  {
-   for (i=0; i<Nspins; i++)
-    {
-      tmp = 0;
-      for (j=0; j<Nsym_translations; j++)
-        tmp += position[i][j]*qvec[q][j];
-      phaseq[q][i]=cos(tmp*2*PI)+I*sin(tmp*2*PI);
-    }
-#ifdef TEST_TABLES
-    LogMessageCharInt("phaseq[%lld][i] ",q);
-    for (i=0; i<Nspins; i++) 
-    {
-      LogMessageCharDouble(", (",real(phaseq[q][i]));
-      LogMessageCharDouble(" + i",imag(phaseq[q][i]));
-      LogMessageChar(") \n");
-    }
-    LogMessageChar("\n");
-#endif /* TEST_TABLES */
-  }
-#endif  /* STRUCTURE */
-
 }
 
 /* Count() counts the number of up spins in a state */
@@ -290,13 +232,6 @@ void ReadUniqueObservables() {
   }
 #endif
 
-#ifdef STRUCTURE
-  // write the structq matrix
-  errno=0;
-  if (Nstruct*Nunique!=fwrite(structq,sizeof(komplex),Nstruct*Nunique,uniobsfile)) {
-    fatalerror("Cannot read structq array from uniques observables file, sorry!",errno);
-  }
-#endif
   fclose(uniobsfile);
 }
 
@@ -437,13 +372,6 @@ void WriteUniqueObservables() {
     fatalerror("Cannot write Nocc_0 array to uniques observables file, sorry!",errno);
   }
 #endif
-#ifdef STRUCTURE
-  // write the structq matrix
-  errno=0;
-  if (Nstruct*Nunique!=fwrite(structq,sizeof(komplex),Nstruct*Nunique,uniobsfile)) {
-    fatalerror("Cannot write structq array to uniques observables file, sorry!", errno);
-  }
-#endif
   fclose (uniobsfile);
 }
 
@@ -576,29 +504,6 @@ void FillUniqueObservables()
 #endif  /* TEST_FILLUNIQUEOBSERVABLES */
 #endif  /* M_SYM */
 
-#ifdef STRUCTURE
-    for (q=0; q<Nstruct; q++)
-      {
-      sum=zero;
-      for (j=0; j<Nspins; j++)
-        {
-        spin_j=((state & (SPIN_0_UP<<j)) != 0) -0.5;
-        sum+=phaseq[q][j]*spin_j;
-#ifdef TEST_FILLUNIQUEOBSERVABLES
-        LogMessageCharDouble(" ",spin_j);
-        LogMessageCharDouble(" = ("real(sum));
-        LogMessageCharDouble(" + i ",imag(sum));
-	LogMessageChar(") ,");
-#endif  /* TEST_FILLUNIQUEOBSERVABLES */
-        }
-      structq[q][index] = abs(sum)/(double)Nspins;
-#ifdef TEST_FILLUNIQUEOBSERVABLES
-      LogMessageCharInt("q =",q);
-      LogMessageCharInt(" structq = ",structq[q][index]);
-#endif  /* TEST_FILLUNIQUEOBSERVABLES */
-      }
-#endif  /* STRUCTURE */
-
 #ifdef TEST_FILLUNIQUEOBSERVABLES
     LogMessageChar(", Done! \n");
 #endif  /* TEST_FILLUNIQUEOBSERVABLES */
@@ -720,6 +625,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
 
 #ifdef TEST_FINDUNIQUE
   LogMessageCharInt(" FindUnique called with state ",state);
+      LogMessageChar("\n");
 #endif
 
   min=state;
@@ -741,6 +647,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
       for(sym=0;sym<Nsym;sym++) 
 	LogMessageInt(Tvec[sym]);
       LogMessageCharInt(") State: ",new_state);
+      LogMessageChar("\n");
 #endif
 
     }
@@ -748,6 +655,7 @@ unsigned long long FindUnique(unsigned long long state, int *Tvec)
 
 #ifdef TEST_FINDUNIQUE
   LogMessageCharInt(" Found u = ", min);
+      LogMessageChar("\n");
 #endif
   
   return min;
