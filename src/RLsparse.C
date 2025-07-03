@@ -331,7 +331,10 @@ void WriteCouplingFiles(unsigned long long bitmap, unsigned long long new_state,
 // ApplySparse applies a sparse Hamilton operator read from series of 5 files to a state vector. CR 170300
 // This function in RLexact uses the most computational time!
 // TODO: Consider if the reading from files could be done more efficiently, e.g. should they be defined globally and kept open?
-// TODO: Test if BUFFERSIZE is optimal
+//      This could maybe work for systems with large RAM, or small systems.
+//      VOPO 32 spins produces ~80GB matrix, so not easy on laptop. - ABP
+// DONE: Test if BUFFERSIZE is optimal
+//            There isn't anything to see when changing BUFFERSIZE - ABP 20250408
 
 void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
 {
