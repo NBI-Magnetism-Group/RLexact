@@ -128,8 +128,9 @@ unsigned long long SymOp(long long sym_index, unsigned long long bitmap)
     //
       if ((sa >= 0) && sa < Nsymadd)
       {
-        for(j=0;j<Nspins;j++) 
+        for(j=0;j<Nspins;j++){ 
           if(bitmap&(((unsigned long long)1)<<j)) new_state +=((unsigned long long)1)<<symadd[sa][j];
+        }
 	//Safely delete
 	//LogMessageCharInt("new state, ",new_state);
 	//LogMessageChar("\n");

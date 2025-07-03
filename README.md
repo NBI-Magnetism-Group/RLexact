@@ -3,6 +3,7 @@
 ## Requirements
 * make
 * build-essential
+* libopenmpi
 
 ## Installation
 1. Clone this repository with `git clone https://github.com/NBI-Magnetism-Group/RLexact`
