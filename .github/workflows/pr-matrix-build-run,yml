@@ -16,20 +16,20 @@ permissions:
   contents: read
 
 jobs:
-  build-and-run:
-    name: Build & Run (${{ matrix.os }} / mpi=${{ matrix.mpi }})
-    runs-on: ${{ matrix.os }}
+  build: #build-and-run:
+    #name: Build & Run (${{ matrix.os }} / mpi=${{ matrix.mpi }})
+    #runs-on: ${{ matrix.os }}
 
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, macos-14]
-        mpi: [none, mpich]
-        include:
-          - os: ubuntu-22.04
-            shell: bash
-          - os: macos-14
-            shell: bash
+    #strategy:
+    #  fail-fast: false
+    #  matrix:
+    #    os: [ubuntu-22.04, macos-14]
+    #    mpi: [none, mpich]
+    #    include:
+    #      - os: ubuntu-22.04
+    #        shell: bash
+    #      - os: macos-14
+    #        shell: bash
 
     env:
       # Adjust these for your project
@@ -47,31 +47,16 @@ jobs:
       # ---------- Linux setup ----------
       - name: Install build dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-22.04'
-        run: |
-          set -euxo pipefail
-          sudo apt-get update
-          sudo apt-get install -y build-essential make clang pkg-config
-          if [ "${{ matrix.mpi }}" = "mpich" ]; then
-            sudo apt-get install -y mpich libmpich-dev
-          elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
-            sudo apt-get install -y openmpi-bin libopenmpi-dev
-          fi
-          # Optional: OpenCL headers/libs
-          # sudo apt-get install -y ocl-icd-opencl-dev
+        run: sudo apt install libopenmpi-dev
 
       # ---------- macOS setup ----------
       - name: Install build dependencies (macOS)
         if: matrix.os == 'macos-14'
         run: |
-          set -euxo pipefail
           brew update
           brew install llvm make
-          if [ "${{ matrix.mpi }}" = "mpich" ]; then
-            brew install mpich
-          elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
-            brew install open-mpi
-          fi
-
+          brew install mpich
+      # --------- General commands in bash -------
       - name: Show toolchain versions
         shell: bash
         run: |
@@ -89,39 +74,12 @@ jobs:
         env:
           CXXFLAGS: "${{ env.CXX_STD }} ${{ env.WARNINGS }}"
         run: |
-          set -euxo pipefail
           echo "Running make ${MAKE_TARGET}"
           make ${MAKE_TARGET} 2>&1 | tee build-${{ matrix.os }}-${{ matrix.mpi }}.log
-
-      - name: List build outputs
-        shell: bash
-        run: |
-          set -euxo pipefail
-          ls -lah
-          if [ -f "${EXECUTABLE_PATH}" ]; then
-            file "${EXECUTABLE_PATH}" || true
-          fi
-
-      - name: Show shared library deps (Linux)
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          set -euxo pipefail
-          if [ -f "${EXECUTABLE_PATH}" ]; then
-            ldd "${EXECUTABLE_PATH}" || true
-          fi
-
-      - name: Show shared library deps (macOS)
-        if: matrix.os == 'macos-14'
-        run: |
-          set -euxo pipefail
-          if [ -f "${EXECUTABLE_PATH}" ]; then
-            otool -L "${EXECUTABLE_PATH}" || true
-          fi
 
       - name: Run executable
         shell: bash
         run: |
-          set -euxo pipefail
           if [ ! -x "${EXECUTABLE_PATH}" ]; then
             echo "Executable not found or not executable: ${EXECUTABLE_PATH}"
             exit 1
