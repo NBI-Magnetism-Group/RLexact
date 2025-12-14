@@ -103,6 +103,7 @@ jobs:
         run: |
           set -euxo pipefail
           echo "Running make ${MAKE_TARGET}"
+          cd src
           make ${MAKE_TARGET} 2>&1 | tee build-${{ matrix.os }}-${{ matrix.mpi }}.log
 
       - name: List build outputs
