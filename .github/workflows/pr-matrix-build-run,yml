@@ -1,0 +1,153 @@
+
+name: PR — Matrix Build & Run
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-run:
+    name: Build & Run (${{ matrix.os }} / mpi=${{ matrix.mpi }})
+    runs-on: ${{ matrix.os }}
+
+    # ---- Matrix Settings ----
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-14]
+        mpi: [none, mpich]   # Switch to [none, openmpi] if you prefer Open MPI
+        include:
+          # You can fine-tune per-OS package manager choices here
+          - os: ubuntu-22.04
+            shell: bash
+          - os: macos-14
+            shell: bash
+
+    # ---- Common environment for the job ----
+    env:
+      # Adjust these for your project
+      MAKE_TARGET: ""                             # e.g. "RLexact" or "all"; leave blank to run `make`
+      EXECUTABLE_PATH: "./RLexact"                # expected output after make
+      EXEC_ARGS: "../RLexamples/test.h/"   # arguments to pass when running
+      RUN_LAUNCHER: ""                            # e.g. "mpirun -np 1"; leave empty to run directly
+      CXX_STD: "-std=c++17"
+      WARNINGS: "-Wall -Wextra -Wpedantic"
+      # If you want ASan/UBSan on Linux builds only, you can gate by matrix.os in steps
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------- Linux setup ----------------
+      - name: Install build dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential make clang pkg-config
+          if [ "${{ matrix.mpi }}" = "mpich" ]; then
+            sudo apt-get install -y mpich libmpich-dev
+          elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            sudo apt-get install -y openmpi-bin libopenmpi-dev
+          fi
+          # Optional OpenCL headers/libs (uncomment if you need OpenCL on CI)
+          # sudo apt-get install -y ocl-icd-opencl-dev
+          # Optional: graphviz, gfortran, etc. as needed
+
+      # ---------------- macOS setup ----------------
+      - name: Install build dependencies (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euxo pipefail
+          brew update
+          # Xcode Command Line Tools are present on the runner; install extras
+          brew install llvm make
+          if [ "${{ matrix.mpi }}" = "mpich" ]; then
+            brew install mpich
+          elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
+            brew install open-mpi
+          fi
+          # For macOS, mpic++ is provided by the MPI package installed above
+          # Optional: OpenCL headers (Apple provides framework at link time; usually no brew needed)
+
+      - name: Show toolchain versions
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "Compiler versions:"
+          c++ --version || true
+          clang --version || true
+          which mpic++ || true
+          mpic++ --version || true
+          echo "Make:"
+          make --version
+
+      # Optionally enforce warnings/standard by injecting CXXFLAGS via environment
+      - name: Build with make
+        shell: bash
+        env:
+          CXXFLAGS: "${{ env.CXX_STD }} ${{ env.WARNINGS }}"
+        run: |
+          set -euxo pipefail
+          echo "Running make ${MAKE_TARGET}"
+          make ${MAKE_TARGET} 2>&1 | tee build-${{ matrix.os }}-${{ matrix.mpi }}.log
+
+      - name: List build outputs
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ls -lah
+          if [ -f "${EXECUTABLE_PATH}" ]; then
+            file "${EXECUTABLE_PATH}" || true
+          fi
+
+      # Optional: show runtime library deps (Linux only)
+      - name: Show shared library deps (Linux)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          set -euxo pipefail
+          if [ -f "${EXECUTABLE_PATH}" ]; then
+            ldd "${EXECUTABLE_PATH}" || true
+          fi
+
+      # macOS equivalent uses otool
+      - name: Show shared library deps (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          set -euxo pipefail
+          if [ -f "${EXECUTABLE_PATH}" ]; then
+            otool -L "${EXECUTABLE_PATH}" || true
+          fi
+
+      - name: Run executable
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ ! -x "${EXECUTABLE_PATH}" ]; then
+            echo "Executable not found or not executable: ${EXECUTABLE_PATH}"
+            exit 1
+          fi
+
+          if [ -n "${RUN_LAUNCHER}" ]; then
+            echo "Launching with: ${RUN_LAUNCHER} ${EXECUTABLE_PATH} ${EXEC_ARGS}"
+            ${RUN_LAUNCHER} "${EXECUTABLE_PATH}" ${EXEC_ARGS} 2>&1 | tee run-${{ matrix.os }}-${{ matrix.mpi }}.log
+          else
+            echo "Launching: ${EXECUTABLE_PATH} ${EXEC_ARGS}"
+            "${EXECUTABLE_PATH}" ${EXEC_ARGS} 2>&1 | tee run-${{ matrix.os }}-${{ matrix.mpi }}.log
+          fi
+
+      - name: Upload logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.os }}-${{ matrix.mpi }}-${{ github.run_id }}
+          path: |
+            build-${{ matrix.os }}-${{ matrix.mpi }}.log
+                       run-${{ matrix.os }}-${{ matrix.mpi }}.log
