@@ -4,6 +4,12 @@ name: PR — Matrix Build & Run
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  
+  push:
+    branches: [main]
+  # Allow manual invocation from the Actions tab
+  workflow_dispatch:
+
 
 concurrency:
   group: pr-${{ github.ref }}
