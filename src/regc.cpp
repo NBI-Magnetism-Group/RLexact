@@ -9,6 +9,7 @@
 */
 
 #include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <regex.h>
@@ -120,12 +121,18 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
 
   regmatch_t resarray[2], resarray2[2]; // arrays used in the regexec expressions.
 
-  const char *pattern2 = "\\(\\-\\?[0-9|\\.|\\-]\\+\\).*[0-9\\-\\.]*"; // the pattern that matches one double followed by any number of further entries
+  const char *pattern2 = "([+-]?[[:digit:].-]+).*"; // the pattern that matches one double followed by any number of further entries
 
   // take the keyword, and form the appropriate regular expression from it, ie. keyword -> ^keyword\(.*\)
   long long l = 0;
   while (pattern[l]!=0) { l++;}
   char* realpat=(char*) malloc(sizeof(char)*(l+14));
+  
+    if (!realpat) {
+        std::cerr << "matchlines: realpat: malloc failed\n";
+        return -1;
+    }
+
   realpat[0]='^';
   for (long long m=0;m<l;m++) {
     realpat[m+1]=pattern[m];
@@ -152,7 +159,7 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
 
   // compile the patterns into comppat (the keyword), and comppat2 (the array matcher)
   regcomp (comppat, realpat,REG_NEWLINE|REG_ICASE);
-  regcomp (comppat2, pattern2,0);
+  regcomp (comppat2, pattern2,REG_EXTENDED);
 
 #ifdef TEST_FILEREAD
   cerr << "Now trying to match following text" << endl << "---INPUT BEGINS---" << endl;
@@ -171,6 +178,11 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
   char* parentes = (char*) malloc (MAXARRAYSIZE*sizeof(char)); // the array correspondig to the supplied keyword
   char* charnumber = (char*) malloc (MAXARRAYSIZE*sizeof(char)); // un-translated entry of the array
 
+    if (!parentes || !charnumber) {
+        std::cerr << "matchlines: parentes or charnumber: malloc failed\n";
+        return -1;
+    }
+
   if (found) {
     // search for the keyword was unsuccesful
     regexperr(found,realpat,strict); // regexperr kills the program if the error is fatal.
@@ -183,6 +195,10 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
     size = resarray[1].rm_eo - resarray[1].rm_so+1;
     free(parentes);
     parentes = (char*) malloc (sizeof(char)*(size+1)); // +1 since we include the endline char
+    if (!parentes){
+      std::cerr << "Matchlines: parentes: malloc failed\n";
+        return -1;
+    }
     long long i;
     for (i =0; i<size;i++) {
       parentes[i]=input[i+resarray[1].rm_so];
@@ -208,9 +224,11 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
 
       found2 = regexec(comppat2,parentes,2,resarray2,0); // find the first number in parentes
       if (found2 && (regexperr(found2,pattern2,false)==-1)) {
+        cout << "Something went wrong in regexec or regexperr";
 	// something went wrong (other than us simply finishing the line)
 	return -1;
       }
+      cout << "Found is " << found2 << " Count is " << count << "\n";
       if (!found2) {
 	// we have a candidate number
 
@@ -235,6 +253,7 @@ long long matchlines (char* input, const char* pattern, double* result, bool str
 #endif /* TEST_FILEREAD */
 
 	result[	count++] = number; // put the number into the result array
+  cout << "Printing out the first result of the array: " << result[0];
 
 	// chop the now parsed number of the beginning of the character array.
 	long long k;
@@ -261,21 +280,30 @@ long long matchlines (char* input, const char* pattern, long long* result, bool 
   /* function overloading: This will call the general double array matcher,
      and translate the resulting array to integers */
 
-  double *intermideate = (double*) malloc(MAXARRAYSIZE*sizeof(double));
-  long long matches=matchlines(input,pattern,intermideate,strict); // does the actual matching
+  double *intermediate = (double*) malloc(MAXARRAYSIZE*sizeof(double));
+  
+    if (!intermediate) {
+        std::cerr << "matchlines(long long*): malloc failed\n";
+        return -1;
+    }
+
+  long long matches=matchlines(input,pattern,intermediate,strict); // does the actual matching
+  cout << "Matchlines 1 has been run! intermediate is " << intermediate[0] << "\n";
+  cout << "Matches is: " << matches << "\n";
   if (matches < 0) {
     // something went wrong. Propagate error to caller
     return matches;
   }
   for (long long i=0;i<matches;i++) {
-    result[i]=(long long)intermideate[i];
+    cout << "If matches is ";
+    result[i]=(long long)intermediate[i];
 #ifdef FILEREAD_VERBOSE
-    if (result[i]!=intermideate[i]) { // report all non-integer elements to user
-      cout << "Warning! truncating  " << intermideate[i] << "to" << result[i] << " while scanning for " << pattern << endl;
+    if (result[i]!=intermediate[i]) { // report all non-integer elements to user
+      cout << "Warning! truncating  " << intermediate[i] << "to" << result[i] << " while scanning for " << pattern << endl;
     }
 #endif /* FILEREAD_VERBOSE */
   }
-  free(intermideate);
+  free(intermediate);
   return matches;
 }
 

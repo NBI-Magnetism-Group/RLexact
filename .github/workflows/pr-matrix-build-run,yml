@@ -4,15 +4,12 @@ name: PR — Matrix Build & Run
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  
   push:
     branches: [main]
-  # Allow manual invocation from the Actions tab
   workflow_dispatch:
 
-
 concurrency:
-  group: pr-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -23,35 +20,31 @@ jobs:
     name: Build & Run (${{ matrix.os }} / mpi=${{ matrix.mpi }})
     runs-on: ${{ matrix.os }}
 
-    # ---- Matrix Settings ----
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, macos-14]
-        mpi: [none, mpich]   # Switch to [none, openmpi] if you prefer Open MPI
+        mpi: [none, mpich]
         include:
-          # You can fine-tune per-OS package manager choices here
           - os: ubuntu-22.04
             shell: bash
           - os: macos-14
             shell: bash
 
-    # ---- Common environment for the job ----
     env:
       # Adjust these for your project
-      MAKE_TARGET: ""                             # e.g. "RLexact" or "all"; leave blank to run `make`
-      EXECUTABLE_PATH: "./RLexact"                # expected output after make
-      EXEC_ARGS: "../RLexamples/test.h/"   # arguments to pass when running
-      RUN_LAUNCHER: ""                            # e.g. "mpirun -np 1"; leave empty to run directly
+      MAKE_TARGET: ""                           # e.g. "RLexact" or "all"; leave blank to run `make`
+      EXECUTABLE_PATH: "./RLexact"              # expected output after make
+      EXEC_ARGS: "../RLexamples/test.h/"        # arguments to pass when running
+      RUN_LAUNCHER: ""                          # e.g. "mpirun -np 1"; leave empty to run directly
       CXX_STD: "-std=c++17"
       WARNINGS: "-Wall -Wextra -Wpedantic"
-      # If you want ASan/UBSan on Linux builds only, you can gate by matrix.os in steps
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ---------------- Linux setup ----------------
+      # ---------- Linux setup ----------
       - name: Install build dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-22.04'
         run: |
@@ -63,31 +56,27 @@ jobs:
           elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
             sudo apt-get install -y openmpi-bin libopenmpi-dev
           fi
-          # Optional OpenCL headers/libs (uncomment if you need OpenCL on CI)
+          # Optional: OpenCL headers/libs
           # sudo apt-get install -y ocl-icd-opencl-dev
-          # Optional: graphviz, gfortran, etc. as needed
 
-      # ---------------- macOS setup ----------------
+      # ---------- macOS setup ----------
       - name: Install build dependencies (macOS)
         if: matrix.os == 'macos-14'
         run: |
           set -euxo pipefail
           brew update
-          # Xcode Command Line Tools are present on the runner; install extras
           brew install llvm make
           if [ "${{ matrix.mpi }}" = "mpich" ]; then
             brew install mpich
           elif [ "${{ matrix.mpi }}" = "openmpi" ]; then
             brew install open-mpi
           fi
-          # For macOS, mpic++ is provided by the MPI package installed above
-          # Optional: OpenCL headers (Apple provides framework at link time; usually no brew needed)
 
       - name: Show toolchain versions
         shell: bash
         run: |
           set -euxo pipefail
-          echo "Compiler versions:"
+          echo "Compiler:"
           c++ --version || true
           clang --version || true
           which mpic++ || true
@@ -95,7 +84,6 @@ jobs:
           echo "Make:"
           make --version
 
-      # Optionally enforce warnings/standard by injecting CXXFLAGS via environment
       - name: Build with make
         shell: bash
         env:
@@ -114,7 +102,6 @@ jobs:
             file "${EXECUTABLE_PATH}" || true
           fi
 
-      # Optional: show runtime library deps (Linux only)
       - name: Show shared library deps (Linux)
         if: matrix.os == 'ubuntu-22.04'
         run: |
@@ -123,7 +110,6 @@ jobs:
             ldd "${EXECUTABLE_PATH}" || true
           fi
 
-      # macOS equivalent uses otool
       - name: Show shared library deps (macOS)
         if: matrix.os == 'macos-14'
         run: |
@@ -142,7 +128,7 @@ jobs:
           fi
 
           if [ -n "${RUN_LAUNCHER}" ]; then
-            echo "Launching with: ${RUN_LAUNCHER} ${EXECUTABLE_PATH} ${EXEC_ARGS}"
+            echo "Launching with: ${RUN_LAUNCHER} ${EXECUTABLE_PATH} ${EXEC            echo "Launching with: ${RUN_LAUNCHER} ${EXECUTABLE_PATH} ${EXEC_ARGS}"
             ${RUN_LAUNCHER} "${EXECUTABLE_PATH}" ${EXEC_ARGS} 2>&1 | tee run-${{ matrix.os }}-${{ matrix.mpi }}.log
           else
             echo "Launching: ${EXECUTABLE_PATH} ${EXEC_ARGS}"
@@ -156,4 +142,3 @@ jobs:
           name: logs-${{ matrix.os }}-${{ matrix.mpi }}-${{ github.run_id }}
           path: |
             build-${{ matrix.os }}-${{ matrix.mpi }}.log
-                       run-${{ matrix.os }}-${{ matrix.mpi }}.log
