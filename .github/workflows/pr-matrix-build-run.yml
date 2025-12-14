@@ -128,6 +128,8 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          ls -a
+          ls -a src
           if [ ! -x "${EXECUTABLE_PATH}" ]; then
             echo "Executable not found or not executable: ${EXECUTABLE_PATH}"
             exit 1
