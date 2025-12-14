@@ -16,12 +16,11 @@
 /* #include"gcc.h" */
 //#include "/usr/include/sys/types.h"
 #include <sys/types.h>
-
 #include<complex>
 #include<stdio.h>
 #include<stdlib.h>
 #include<cnr.h>
-#include<malloc.h>
+// #include<malloc.h>
 #include<RLexact.h>
 
 void nrerror(const char*);
