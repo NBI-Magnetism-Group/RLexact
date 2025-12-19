@@ -40,7 +40,7 @@ jobs:
       # Adjust these for your project
       MAKE_TARGET: "RLexact.out"                             # e.g. "RLexact" or "all"; leave blank to run `make`
       EXECUTABLE_PATH: "src/RLexact.out"                # expected output after make
-      EXEC_ARGS: "./RLexamples/test.h"   # arguments to pass when running
+      EXEC_ARGS: "./RLexamples/test/test.h"   # arguments to pass when running
       RUN_LAUNCHER: ""                            # e.g. "mpirun -np 1"; leave empty to run directly
       CXX_STD: "-std=c++17"
       WARNINGS: "-Wall -Wextra -Wpedantic"
