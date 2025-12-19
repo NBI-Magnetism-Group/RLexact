@@ -77,7 +77,7 @@ extern long long filesizer(char*);
 extern long long multimatch(char*,long long,const char*,double**,long long*,long long);
 extern long long multimatch(char*,long long,const char*,long long**,long long*,long long);
 extern long long matchlines(char*,const char*,double*,bool);
-extern long long matchlines(char*,const char*,long long*,bool);
+extern long long matchlines_wrapper(char*,const char*,long long*,bool);
 extern double* dvector(long long,long long);
 
 /* Global variables defined in RLexact.c */
@@ -151,10 +151,10 @@ long long filesize;
 long long intro()
  {
   /* Introduce, read input and perform file handling */
-  char outfile_name[30];
-  char logfile_name[30];
-  char gscofile_name[30];
-  char gscoinfile_name[30];
+  char outfile_name[256];
+  char logfile_name[256];
+  char gscofile_name[256];
+  char gscoinfile_name[256];
   char qstr[2];
 
   if (rank==0){
@@ -205,10 +205,12 @@ long long intro()
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,FILEEND);
   errno=1;
-  if (snprintf(outfile_name,29, "%s-%d%s", infile_name, rank, FILEEND)>=30) {
+  printf("\n Just before infile name too large\n");
+  if (snprintf(outfile_name,255, "%s-%d%s", infile_name, rank, FILEEND)>=256) {
     fatalerror("infile_name too large",errno);
     return -1;
   }
+  printf("\n Just before infile name too large\n");
   outfile=fopen(outfile_name,"w");
   if (outfile == NULL)
     {
@@ -219,7 +221,7 @@ long long intro()
   //strcpy(logfile_name,infile_name);
   //strcat(logfile_name,LOGFILEEND);
   errno=1;
-  if (snprintf(logfile_name, 29, "%s-%d%s", infile_name, rank, LOGFILEEND)>=30){
+  if (snprintf(logfile_name, 255, "%s-%d%s", infile_name, rank, LOGFILEEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -277,7 +279,7 @@ if (rank==0){
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,SZZEND);
   errno=1;
-  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SZZEND)>=30){
+  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SZZEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -292,7 +294,7 @@ if (rank==0){
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,SXXEND);
   errno=1;
-  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SXXEND)>=30){
+  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SXXEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -306,7 +308,7 @@ if (rank==0){
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,SYYEND);
   errno=1;
-  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SYYEND)>=30){
+  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SYYEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -322,7 +324,7 @@ if (rank==0){
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,SPMEND);
   errno=1;
-  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SPMEND)>=30){
+  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SPMEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -335,7 +337,7 @@ if (rank==0){
 
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,SMPEND);
-  if (snprintf(outfile_name, 29, "%s-%d%s", infile_name, rank, SMPEND)>=30){
+  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SMPEND)>=256){
     fatalerror("infile_name too large", errno);
     return -1;
   }
@@ -384,13 +386,17 @@ long long ReadCoupPattern(char *filename)
   if (rank==0){
     filesize = filesizer(filename);
     filedata = (char*)malloc(filesize*sizeof(char));
+    if (filedata == NULL){
+      printf("\nERROR: Filedata not allocated");
+      exit(1);
+    }
     filereader(filename,filedata,filesize); // the entire file is now in filedata
 
 #ifdef TEST_INPUT
   LogMessageChar("Input file opened...\n");
 #endif /* TEST_INPUT */
 
-  matchlines(filedata, "Number of spins", &Nspins, true);
+  matchlines_wrapper(filedata, "Number of spins", &Nspins, true);
 #ifdef TEST_INPUT
   LogMessageCharInt(" Nspins:",Nspins);
   LogMessageChar("\n");
@@ -400,7 +406,7 @@ long long ReadCoupPattern(char *filename)
 
 // *********** Mandatory input: Mode *************
 if (rank==0){
-  matchlines(filedata, "Mode", &mode, true);
+  matchlines_wrapper(filedata, "Mode", &mode, true);
 #ifdef TEST_INPUT
   switch(mode) {
   case MODEN:
@@ -421,7 +427,7 @@ MPI_Bcast(&mode, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0){
 // *********** Mandatory input: Unique mode *************
-  matchlines(filedata, "Unimode", &unimode, true);
+  matchlines_wrapper(filedata, "Unimode", &unimode, true);
 #ifdef TEST_INPUT
   switch(unimode) {
   case UNIMODEN:
@@ -442,16 +448,18 @@ MPI_Bcast(&unimode, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 // ******** Mandatory input: Read number of lines to input **********
 if (rank == 0){
-  matchlines(filedata, "Number of couplings", &Ncoup, true);
-  matchlines(filedata, "Number of coupling strength", &Ncoupstr, true);
+  matchlines_wrapper(filedata, "Number of couplings", &Ncoup, true);
+  printf("\nNcoupstr = %d", Ncoupstr);
+  matchlines_wrapper(filedata, "Number of coupling strengths", &Ncoupstr, true);
+  printf("\nNcoupstr = %d", Ncoupstr);
 }
 MPI_Bcast(&Ncoup, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 MPI_Bcast(&Ncoupstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 #ifdef RING_EXCHANGE
 if (rank == 0) {
-  matchlines(filedata, "Number of rings", &Nring, true);
-  matchlines(filedata, "Number of ringstrength", &Nringstr, true);
+  matchlines_wrapper(filedata, "Number of rings", &Nring, true);
+  matchlines_wrapper(filedata, "Number of ringstrength", &Nringstr, true);
 }
 MPI_Bcast(&Nring, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 MPI_Bcast(&Nringstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -469,11 +477,12 @@ MPI_Bcast(&Nringstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 #endif /* TEST_INPUT */
 
   if (rank == 0){
-  matchlines(filedata, "Number of hardcoded symmetries", &Nsym, true);
-  matchlines(filedata, "Number of custom symmetries", &Nsymadd, true);
-  matchlines(filedata, "Construct symmetries", &symconstruct, true);
+  matchlines_wrapper(filedata, "Number of hardcoded symmetries", &Nsym, true);
+  matchlines_wrapper(filedata, "Number of custom symmetries", &Nsymadd, true);
+  matchlines_wrapper(filedata, "Construct symmetries", &symconstruct, true);
   if ((Nsym+Nsymadd) <=0)
    {
+     printf("\nNsym=%lld, Nsymadd=%lld\n", Nsym, Nsymadd);
     fatalerror("At least one symmetry must be defined; use for instance IDENTITY",IDENTITY);
    }
   }
@@ -491,7 +500,7 @@ MPI_Bcast(&symconstruct, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
   
 // ********* Input symmetry info ********************
 if (rank == 0) {
-  matchlines(filedata, "Hardcoded symmetries", symlist, false);
+  matchlines_wrapper(filedata, "Hardcoded symmetries", symlist, false);
 }
 MPI_Bcast(&symlist, Nsym, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
@@ -513,7 +522,7 @@ for (int i=0; i < Nsymadd; i++)
 MPI_Bcast(symadd[i], Nspins, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 if (rank==0){
- matchlines(filedata, "Number of dimensions", &Ndimensions, true);
+ matchlines_wrapper(filedata, "Number of dimensions", &Ndimensions, true);
 }
 MPI_Bcast(&Ndimensions, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
@@ -521,7 +530,7 @@ MPI_Bcast(&Ndimensions, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 TransIds = (long long*) malloc(3*sizeof(long long));
 if (rank==0){
   for (int i = 0;i<3;i++) TransIds[i] = 0; //Ugly,but needed for loop in RLcross.
-  matchlines(filedata, "Translation indices", TransIds, 1);
+  matchlines_wrapper(filedata, "Translation indices", TransIds, 1);
 }
 
 MPI_Bcast(TransIds, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -577,7 +586,7 @@ MPI_Bcast(TransIds, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 // ************ Input GS q-values ******************
 if (rank == 0){
-  matchlines(filedata, "Number of chosen GS q-values", &Nq_choice, true);
+  matchlines_wrapper(filedata, "Number of chosen GS q-values", &Nq_choice, true);
 }
 MPI_Bcast(&Nq_choice, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD); 
 #ifdef TEST_INPUT
@@ -605,7 +614,7 @@ MPI_Bcast(&Nq_choice, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 #ifdef MOTIVE
 if (rank == 0){  
-  matchlines(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
+  matchlines_wrapper(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
 }
 MPI_Bcast(&Nspins_in_uc, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);      
 
@@ -640,7 +649,7 @@ for (int i = 0; i< Nspins_in_uc; i++){
 
 
 if (rank == 0){
-  matchlines(filedata, "Qmax translation", Trans_Qmax, true);
+  matchlines_wrapper(filedata, "Qmax translation", Trans_Qmax, true);
 }
 MPI_Bcast(Trans_Qmax, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD); 
 #ifdef TEST_INPUT
@@ -730,6 +739,7 @@ MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   if (rank == 0){
   long long* dummy= (long long*) malloc(Ncoupstr*sizeof(long long));
   double** dummyresdouble = (double**) malloc(Ncoupstr*sizeof(double*));
+  printf("\nNcoupstr = %d", Ncoupstr);
   multimatch(filedata,filesize,"Coupling strength vector", dummyresdouble,
                                                            dummy, Ncoupstr);
 
@@ -739,6 +749,9 @@ MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     hamanis[k]=dummyresdouble[k][2];
 #ifdef DIPOLE
     Dip[k]=dummyresdouble[k][3];
+    printf("Coupling strengths: \g, \g, \g, \g", 
+        hamzz[k], hamxy[k],
+        hamanis[k], Dip[k]);
 #endif /* DIPOLE */
   }
     free(dummy);
