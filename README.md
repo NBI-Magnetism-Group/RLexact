@@ -17,6 +17,6 @@ A program to exactly diagonalize hamiltons for small spin systems.
    ```brew install open-mpi```
    
 4. Clone this repository with `git clone https://github.com/NBI-Magnetism-Group/RLexact`
-5. 2. (Optional) Change flags in `src/RLexact.h` to correspond to the wished mode of operation according to the manual.
+5. (Optional) Change flags in `src/RLexact.h` to correspond to the wished mode of operation according to the manual.
 3. Run ```make -C src``` from the main folder to compile the binary.
 4. Run ```src/RLexact RLexamples/test/test.h$ To execute your first RLexact program```
