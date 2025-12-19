@@ -7,7 +7,7 @@ M start 0
 M end 0
 Number of spins 2
 Number of Couplings 2
-Number of Coupling strength 1
+Number of Coupling strengths 1
 Number of Hardcoded symmetries 0
 Number of custom symmetries 2
 Number of chosen GS q-values 0
