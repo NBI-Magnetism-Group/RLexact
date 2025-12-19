@@ -14,6 +14,12 @@
 #include <fstream>
 #include <regex.h>
 #include <RLexact.h>
+#include <regex>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <cctype>
+#include <cstring>
 
 using std::cerr;
 using std::cout;
@@ -100,182 +106,130 @@ void filereader (char* filename, char* filedata, long long filesize) {
   datafile.close();
 }
 
-long long matchlines (char* input, const char* pattern, double* result, bool strict) {
 
-  /* this function takes a pattern (usually a keyword) and searches for it in
-     the input string. If found, the value following the keyword is translated
-     into an array of doubles, returned in the result variable. If strict is
-     set, the function will return error (-1) if the keyword is found, but no
-     usable values could be filled into result - if strict _isn't_ set, it
-     silently passes an empty array to the caller. The function returns the
-     number of elements in the result array if succesful, or -1 if an error
-     occured */
 
-  // the two variables for holding the regular expressions for the keyword and the array-matching pattern
-  regex_t* comppat;
-  regex_t* comppat2;
-  comppat = new regex_t;
-  comppat2 = new regex_t;
 
-  long long count=0; // the number of elements put into the result array
 
-  regmatch_t resarray[2], resarray2[2]; // arrays used in the regexec expressions.
-
-  const char *pattern2 = "([+-]?[[:digit:].-]+).*"; // the pattern that matches one double followed by any number of further entries
-
-  // take the keyword, and form the appropriate regular expression from it, ie. keyword -> ^keyword\(.*\)
-  long long l = 0;
-  while (pattern[l]!=0) { l++;}
-  char* realpat=(char*) malloc(sizeof(char)*(l+14));
-  
-    if (!realpat) {
-        std::cerr << "matchlines: realpat: malloc failed\n";
-        return -1;
+long long matchlines(char* input, const char* pattern, double* result, bool strict)
+{
+    if (!input || !pattern || !result) {
+        return strict ? -1 : 0;
     }
 
-  realpat[0]='^';
-  for (long long m=0;m<l;m++) {
-    realpat[m+1]=pattern[m];
-  }
-  realpat[l+1]='\\';
-  realpat[l+2]='(';
-  realpat[l+3]='.';
-  realpat[l+4]='*';
-  realpat[l+5]='\\';
-  realpat[l+6]=')';
-  realpat[l+7]=0;
+    // Build POSIX regex: ^[[:space:]]*pattern[[:space:]]+(.*)
+    // (We’ll manually strip trailing // comments after capture.)
+    char regexbuf[512];
+    // NOTE: If 'pattern' may contain regex metacharacters, you must escape them.
+    // Given your "very strict input" requirement, we assume literal keyword.
+    std::snprintf(regexbuf, sizeof(regexbuf),
+                  "^[[:space:]]*%s[[:space:]]+(.*)", pattern);
 
-#ifdef TEST_FILEREAD
-  cerr << "Transforming pattern ";
-  for (long long n=0; n< l;n++) {
-    cout << pattern[n];
-  }
-  cout << " into ";
-  for (long long n=0; n< l+7;n++) {
-    cout << realpat[n];
-  }
-  cout << endl;
-#endif /* TEST_FILEREAD */
-
-  // compile the patterns into comppat (the keyword), and comppat2 (the array matcher)
-  regcomp (comppat, realpat,REG_NEWLINE|REG_ICASE);
-  regcomp (comppat2, pattern2,REG_EXTENDED);
-
-#ifdef TEST_FILEREAD
-  cerr << "Now trying to match following text" << endl << "---INPUT BEGINS---" << endl;
-  long long n = 0;
-  while(input[n]!=0) {
-    cout << input[n++];
-  }
-  cerr << "---INPUT ENDS---" << endl << "with pattern " << realpat << endl;
-#endif /* TEST_FILEREAD */
-
-  // find a line containing the keyword
-  long long found = regexec(comppat,input,2,resarray,0);
-
-  long long size,size2; // size of the line and an entry in the array, respectively
-  double number; // temporary holder of the ascii-to-double-translated entry of the array
-  char* parentes = (char*) malloc (MAXARRAYSIZE*sizeof(char)); // the array correspondig to the supplied keyword
-  char* charnumber = (char*) malloc (MAXARRAYSIZE*sizeof(char)); // un-translated entry of the array
-
-    if (!parentes || !charnumber) {
-        std::cerr << "matchlines: parentes or charnumber: malloc failed\n";
-        return -1;
+    regex_t re;
+    if (regcomp(&re, regexbuf, REG_EXTENDED | REG_ICASE) != 0) {
+        return -1; // regex compile failed
     }
 
-  if (found) {
-    // search for the keyword was unsuccesful
-    regexperr(found,realpat,strict); // regexperr kills the program if the error is fatal.
-    // otherwise, there just wasn't a relevant entry in the datafile, and that's OK
-    return 0;
-  } else {
-    // we found the keyword
+    regmatch_t matches[2];
+    long long count = 0;
+    bool patternFound = false;
 
-    // first, find the size of the array (in chars) and copy it to the parentes variable
-    size = resarray[1].rm_eo - resarray[1].rm_so+1;
-    free(parentes);
-    parentes = (char*) malloc (sizeof(char)*(size+1)); // +1 since we include the endline char
-    if (!parentes){
-      std::cerr << "Matchlines: parentes: malloc failed\n";
-        return -1;
+    // Iterate input as raw char* safely
+    const char* p = input;
+    while (*p != '\0') {
+        // Find end of current line (or end of buffer)
+        const char* nl = std::strchr(p, '\n');
+        size_t lineLen = nl ? static_cast<size_t>(nl - p) : std::strlen(p);
+
+        // Create a temporary, null-terminated buffer for the line
+        // (Avoids reading past memory when calling regexec.)
+        char* linebuf = static_cast<char*>(std::malloc(lineLen + 1));
+        if (!linebuf) {
+            regfree(&re);
+            return -1;
+        }
+        std::memcpy(linebuf, p, lineLen);
+        linebuf[lineLen] = '\0';
+
+        // Try to match the pattern on this line
+        if (regexec(&re, linebuf, 2, matches, 0) == 0) {
+            patternFound = true;
+
+            // Extract captured group (values after the pattern)
+            int start = matches[1].rm_so;
+            int end   = matches[1].rm_eo;
+
+            if (start >= 0 && end > start) {
+                // Create a values buffer (null-terminated)
+                size_t valsLen = static_cast<size_t>(end - start);
+                char* values = static_cast<char*>(std::malloc(valsLen + 1));
+                if (!values) {
+                    std::free(linebuf);
+                    regfree(&re);
+                    return -1;
+                }
+                std::memcpy(values, linebuf + start, valsLen);
+                values[valsLen] = '\0';
+
+                // Remove any trailing // comment
+                char* comment = std::strstr(values, "//");
+                if (comment) {
+                    *comment = '\0'; // truncate at comment
+                }
+
+                // Parse space-separated numbers with strtod
+                const char* s = values;
+                char* endptr = NULL;
+                while (*s != '\0') {
+                    // skip leading spaces
+                    while (std::isspace(static_cast<unsigned char>(*s))) ++s;
+                    if (*s == '\0') break;
+
+                    double val = std::strtod(s, &endptr);
+                    if (endptr == s) {
+                        // token wasn't a valid number; stop parsing this line
+                        break;
+                    }
+                    result[count++] = val;
+
+                    s = endptr;
+                    // skip spaces before next token
+                    while (std::isspace(static_cast<unsigned char>(*s))) ++s;
+                }
+
+                std::free(values);
+            }
+
+            std::free(linebuf);
+            break; // One pattern per line; stop after first match
+        }
+
+        std::free(linebuf);
+
+        // Advance to next line (or end)
+        if (nl) {
+            p = nl + 1;
+        } else {
+            break;
+        }
     }
-    long long i;
-    for (i =0; i<size;i++) {
-      parentes[i]=input[i+resarray[1].rm_so];
+
+    regfree(&re);
+
+    if (patternFound && count == 0 && strict) {
+        return -1; // keyword found but no usable values
     }
-    parentes[i]=0;
-
-#ifdef TEST_FILEREAD
-    cerr << "Found ";
-    long long n = 0;
-    while(parentes[n]!=0) {
-      cout << parentes[n++];
+    // If not found, return     // If not found, return 0 (original behavior)
+    cout << "\n Count is " << count << "\n";
+    for (int i = 0; i < count; i++){
+      cout << "\n Result " << i << " = " << result[i] << "\n";
     }
-    cout << endl;
-#endif /* TEST_FILEREAD */
-
-    // then, start the parsing of the parentes variable and build the result array
-    long long found2=0;
-    while (!found2) { // as there is still more numbers left to parse
-
-#ifdef TEST_FILEREAD
-      cout << "Trying to match \"" << parentes << "\" with \"" << pattern2 << "\"" << endl;
-#endif /* TEST_FILEREAD */
-
-      found2 = regexec(comppat2,parentes,2,resarray2,0); // find the first number in parentes
-      if (found2 && (regexperr(found2,pattern2,false)==-1)) {
-        cout << "Something went wrong in regexec or regexperr";
-	// something went wrong (other than us simply finishing the line)
-	return -1;
-      }
-      cout << "Found is " << found2 << " Count is " << count << "\n";
-      if (!found2) {
-	// we have a candidate number
-
-	size2 = resarray2[1].rm_eo-resarray2[1].rm_so; // the size (in chars of the number
-
-	// copy out the number chars to charnumber variable
-	long long j;
-	for (j =0; j<size2;j++) {
-	  charnumber[j] = parentes[resarray2[1].rm_so+j];
-	}
-	charnumber[j]=0;
-	
-#ifdef TEST_FILEREAD
-	cout << "sending \"" << charnumber <<"\" to the ascii to double parser"<< endl;
-#endif /* TEST_FILEREAD */
-
-	// translate the number from ascii to double
-	number = atod(charnumber);
-
-#ifdef TEST_FILEREAD
-	cout << "Received " << number << " from ascii to double parser" << endl;
-#endif /* TEST_FILEREAD */
-
-	result[	count++] = number; // put the number into the result array
-  cout << "Printing out the first result of the array: " << result[0];
-
-	// chop the now parsed number of the beginning of the character array.
-	long long k;
-	for (k = 0; k< size-resarray2[1].rm_eo;k++) {
-	  parentes[k]=parentes[k+resarray2[1].rm_eo+1];
-	}
-	parentes[k]=0;
-      }
-    }
-    // if we met no fatal errors, count now holds the number of entries in the array
-    regfree(comppat);
-    regfree(comppat2);
-    delete(comppat);
-    delete(comppat2);
-    free(realpat);
-    free(parentes);
-    free(charnumber);
     return count;
-  }
 }
 
-long long matchlines (char* input, const char* pattern, long long* result, bool strict) {
+
+
+
+long long matchlines_wrapper(char* input, const char* pattern, long long* result, bool strict) {
 
   /* function overloading: This will call the general double array matcher,
      and translate the resulting array to integers */
@@ -360,7 +314,7 @@ long long multimatch (char* input, long long length, const char* pattern, double
 #endif /* TEST_FILEREAD */
     if (matches>0) { // matches positive if succesful
       if ((hits)==count) { // we already matched hits lines - error!
-	cerr << "too many matches for pattern " << pattern << " - " << hits << "count must be specified correctly" << endl;
+	cerr << "too many matches for pattern " << pattern << " - " << hits << " count must be specified correctly" << endl;
 	exit(-1);
       }
       sizes[hits]=matches; // now holds the size of this array
@@ -378,7 +332,7 @@ long long multimatch (char* input, long long length, const char* pattern, double
 
   // check if we have too few matches after going through all of input
   if ((hits)<count) {
-    cerr << "too few matches for pattern " << pattern << " - " << hits << "count must be specified correctly" << endl;
+    cerr << "too few matches for pattern " << pattern << ". " << hits << " found, "<< count << " required. count must be specified correctly" << endl;
     exit(-1);
   }
 
