@@ -205,12 +205,10 @@ long long intro()
   //strcpy(outfile_name,infile_name);
   //strcat(outfile_name,FILEEND);
   errno=1;
-  printf("\n Just before infile name too large\n");
   if (snprintf(outfile_name,255, "%s-%d%s", infile_name, rank, FILEEND)>=256) {
     fatalerror("infile_name too large",errno);
     return -1;
   }
-  printf("\n Just before infile name too large\n");
   outfile=fopen(outfile_name,"w");
   if (outfile == NULL)
     {
@@ -449,9 +447,7 @@ MPI_Bcast(&unimode, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 // ******** Mandatory input: Read number of lines to input **********
 if (rank == 0){
   matchlines_wrapper(filedata, "Number of couplings", &Ncoup, true);
-  printf("\nNcoupstr = %d", Ncoupstr);
   matchlines_wrapper(filedata, "Number of coupling strengths", &Ncoupstr, true);
-  printf("\nNcoupstr = %d", Ncoupstr);
 }
 MPI_Bcast(&Ncoup, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 MPI_Bcast(&Ncoupstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -739,7 +735,6 @@ MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   if (rank == 0){
   long long* dummy= (long long*) malloc(Ncoupstr*sizeof(long long));
   double** dummyresdouble = (double**) malloc(Ncoupstr*sizeof(double*));
-  printf("\nNcoupstr = %d", Ncoupstr);
   multimatch(filedata,filesize,"Coupling strength vector", dummyresdouble,
                                                            dummy, Ncoupstr);
 
@@ -828,9 +823,6 @@ for (long long k=0;k<Ncoup; k++){
     LogMessageChar("\n");
 }
 #endif /* TEST_INPUT */
-    /*#ifndef M_SYM //NEVER: rotating J is the wrong way!
-    TransformCoup(k);
-#endif /* M_SYM */
 
 #ifdef DIPOLE
   if (rank==0){

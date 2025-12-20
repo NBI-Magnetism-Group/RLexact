@@ -44,6 +44,8 @@ jobs:
       RUN_LAUNCHER: ""                            # e.g. "mpirun -np 1"; leave empty to run directly
       CXX_STD: "-std=c++17"
       WARNINGS: "-Wall -Wextra -Wpedantic"
+      EXAMPLES_ROOT: "RLexamples"
+      HEADER_GLOB: "**/*.h"         # all .h files recursively under EXAMPLES_ROOT
       # If you want ASan/UBSan on Linux builds only, you can gate by matrix.os in steps
 
     steps:
@@ -124,24 +126,56 @@ jobs:
             otool -L "${EXECUTABLE_PATH}" || true
           fi
 
-      - name: Run executable
+      
+     
+      - name: Run executable for each example header
         shell: bash
+        env:
+          EXAMPLES_ROOT: "RLexamples"
+          HEADER_GLOB: "*.h"  # pattern used by find -name
         run: |
           set -euxo pipefail
-          ls -a
-          ls -a src
+
           if [ ! -x "${EXECUTABLE_PATH}" ]; then
             echo "Executable not found or not executable: ${EXECUTABLE_PATH}"
             exit 1
           fi
 
-          if [ -n "${RUN_LAUNCHER}" ]; then
-            echo "Launching with: ${RUN_LAUNCHER} ${EXECUTABLE_PATH} ${EXEC_ARGS}"
-            ${RUN_LAUNCHER} "${EXECUTABLE_PATH}" ${EXEC_ARGS} 2>&1 | tee run-${{ matrix.os }}.log
-          else
-            echo "Launching: ${EXECUTABLE_PATH} ${EXEC_ARGS}"
-            "${EXECUTABLE_PATH}" ${EXEC_ARGS} 2>&1 | tee run-${{ matrix.os }}.log
+          # Generate list of headers (recursive)
+          # If you want ONLY subdirectories (exclude top-level RLexamples/*.h), add -mindepth 2.
+          # find "${EXAMPLES_ROOT}" -mindepth 2 -type f -name "${HEADER_GLOB}" | sort > headers.list
+          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" | sort > headers.list
+
+          echo "Discovered $(wc -l < headers.list | tr -d ' ') header(s):"
+          awk '{print " - " $0}' headers.list
+
+          mkdir -p runlogs
+
+          any_fail=0
+          while IFS= read -r hdr; do
+            [ -n "$hdr" ] || continue
+
+            # Build a safe per-run log name from the relative path
+            rel="${hdr#${EXAMPLES_ROOT}/}"
+            safe_log="run-${{ matrix.os }}-${rel//\//_}.log"
+
+            echo "=== Running: ${EXECUTABLE_PATH} ${hdr}"
+            if [ -n "${RUN_LAUNCHER}" ]; then
+              echo "Launcher: ${RUN_LAUNCHER}"
+              ${RUN_LAUNCHER} "${EXECUTABLE_PATH}" "${hdr}" 2>&1 | tee "runlogs/${safe_log}" || any_fail=1
+            else
+              "${EXECUTABLE_PATH}" "${hdr}" 2>&1 | tee "runlogs/${safe_log}" || any_fail=1
+            fi
+          done < headers.list
+
+          cp headers.list "runlogs/INDEX-headers-${{ matrix.os }}.txt"
+
+          if [ "${any_fail}" -ne 0 ]; then
+            echo "One or more runs failed. See runlogs/*.log for details."
+            exit 1
           fi
+
+
 
       - name: Upload logs (always)
         if: always()
@@ -150,4 +184,5 @@ jobs:
           name: logs-${{ matrix.os }}-${{ github.run_id }}
           path: |
             build-${{ matrix.os }}.log
-                       run-${{ matrix.os }}.log
+            run-${{ matrix.os }}.log
+            runlogs
