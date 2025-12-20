@@ -24,3 +24,6 @@ A program to exactly diagonalize hamiltons for small spin systems.
 5. Move into the directory of RLexact, i.e Run ```cd RLexact```
 6. Run ```make -C src``` from the main folder to compile the binary.
 7. Run ```src/RLexact RLexamples/test/test.h``` To execute your first RLexact program
+
+## Windows
+1. Install Linux with WSL and then follow Linux instructions.
