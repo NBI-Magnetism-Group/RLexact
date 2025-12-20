@@ -54,9 +54,9 @@ void CrossMatrix();
 int sym;
 #endif /* MATRIX */
 bool NonZero(unsigned long long, long long*);
-#endif /*NEVER*
+#endif //NEVER
 
-/* Global variables defined in RLexact.c */
+// Global variables defined in RLexact.c 
 #ifdef M_SYM
   extern long long twom;
 #endif /* M_SYM */
@@ -226,7 +226,9 @@ void ApplySzq(long long *q)
   //long long phase;
   unsigned long long state,gsstate,new_state;
   komplex res,factor, spin_pos_res;
-  long long sym, T[NSYM],diffQ[NSYM];
+  long long sym;
+  long long *T = (long long *)malloc(NSYM * sizeof(long long));
+  long long *diffQ = (long long *)malloc(NSYM * sizeof(long long));
   double phase; //Potentially int, if RLtables is implemented /ABP
 
   for (sym=0;sym<Nsym;sym++) 
@@ -753,7 +755,7 @@ void ApplySmp(long long *q, long long SPMcross)
 void ApplySmpMsym(long long *q, long long which_q)
 {
   unsigned long long i,l,j,k;
-  int T[Nsym];
+  int *T = (int*)malloc(Nsym*sizeof(int));
   unsigned long long gsstate,downup,updown,u,state,smp_state;
   long long phase,n_flip,u_cycle,new_cycle;
   double norm;
