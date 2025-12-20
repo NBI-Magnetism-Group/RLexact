@@ -1,4 +1,4 @@
-# RLExact
+# RLexact
 A program to exactly diagonalize hamiltons for small spin systems.
 
 ## Installation
