@@ -270,11 +270,12 @@ long long multimatch (char* input, long long length, const char* pattern, double
 
   const char* linepat = "\\(.*\\)\n.*"; // this matches a line in the subexpression
 
-  // we will alter the input, so we must make a seperate copy
-  char* myInput = (char*) malloc(length*sizeof(char)); 
+  // we will alter the input, so we must make a seperate copy,
+  char* myInput = (char*) malloc((length + 1)*sizeof(char)); 
   for (long long i = 0;i<length;i++) {
     myInput[i]=input[i];
   }
+  myInput[length] = '\0'; // Add null terminator. ESSENTIAL
 
   regmatch_t resarray[2];
 
