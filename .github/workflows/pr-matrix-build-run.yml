@@ -127,8 +127,12 @@ jobs:
           fi
 
       
+     
       - name: Run executable for each example header
         shell: bash
+        env:
+          EXAMPLES_ROOT: "RLexamples"
+          HEADER_GLOB: "*.h"  # pattern used by find -name
         run: |
           set -euxo pipefail
 
@@ -137,42 +141,40 @@ jobs:
             exit 1
           fi
 
-          # Find all .h files under RLexamples subdirectories (recursive).
-          # If you want only *subdirectories*, you can exclude top-level headers via -mindepth 2.
-          # Example using -mindepth 2:
-          # mapfile -t HEADERS < <(find "${EXAMPLES_ROOT}" -mindepth 2 -type f -name "*.h" | sort)
+          # Generate list of headers (recursive)
+          # If you want ONLY subdirectories (exclude top-level RLexamples/*.h), add -mindepth 2.
+          # find "${EXAMPLES_ROOT}" -mindepth 2 -type f -name "${HEADER_GLOB}" | sort > headers.list
+          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" | sort > headers.list
 
-          # Current: include any .h under EXAMPLES_ROOT recursively:
-          mapfile -t HEADERS < <(find "${EXAMPLES_ROOT}" -type f -name "*.h" | sort)
-
-          echo "Discovered ${#HEADERS[@]} header(s):"
-          printf ' - %s\n' "${HEADERS[@]}"
+          echo "Discovered $(wc -l < headers.list | tr -d ' ') header(s):"
+          awk '{print " - " $0}' headers.list
 
           mkdir -p runlogs
 
           any_fail=0
-          for hdr in "${HEADERS[@]}"; do
-            # Create a safe log file name based on the relative path
+          while IFS= read -r hdr; do
+            [ -n "$hdr" ] || continue
+
+            # Build a safe per-run log name from the relative path
             rel="${hdr#${EXAMPLES_ROOT}/}"
             safe_log="run-${{ matrix.os }}-${rel//\//_}.log"
 
             echo "=== Running: ${EXECUTABLE_PATH} ${hdr}"
             if [ -n "${RUN_LAUNCHER}" ]; then
               echo "Launcher: ${RUN_LAUNCHER}"
-              # Use `|| any_fail=1` to continue collecting logs while marking failure
               ${RUN_LAUNCHER} "${EXECUTABLE_PATH}" "${hdr}" 2>&1 | tee "runlogs/${safe_log}" || any_fail=1
-            } else {
+            else
               "${EXECUTABLE_PATH}" "${hdr}" 2>&1 | tee "runlogs/${safe_log}" || any_fail=1
             fi
-          done
+          done < headers.list
 
-          # Save a combined index file with the list of logs
-          printf '%s\n' "${HEADERS[@]}" > runlogs/INDEX-headers-${{ matrix.os }}.txt
+          cp headers.list "runlogs/INDEX-headers-${{ matrix.os }}.txt"
 
           if [ "${any_fail}" -ne 0 ]; then
             echo "One or more runs failed. See runlogs/*.log for details."
             exit 1
           fi
+
 
 
       - name: Upload logs (always)
