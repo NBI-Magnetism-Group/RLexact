@@ -219,10 +219,6 @@ long long matchlines(char* input, const char* pattern, double* result, bool stri
         return -1; // keyword found but no usable values
     }
     // If not found, return     // If not found, return 0 (original behavior)
-    cout << "\n Count is " << count << "\n";
-    for (int i = 0; i < count; i++){
-      cout << "\n Result " << i << " = " << result[i] << "\n";
-    }
     return count;
 }
 
@@ -242,14 +238,11 @@ long long matchlines_wrapper(char* input, const char* pattern, long long* result
     }
 
   long long matches=matchlines(input,pattern,intermediate,strict); // does the actual matching
-  cout << "Matchlines 1 has been run! intermediate is " << intermediate[0] << "\n";
-  cout << "Matches is: " << matches << "\n";
   if (matches < 0) {
     // something went wrong. Propagate error to caller
     return matches;
   }
   for (long long i=0;i<matches;i++) {
-    cout << "If matches is ";
     result[i]=(long long)intermediate[i];
 #ifdef FILEREAD_VERBOSE
     if (result[i]!=intermediate[i]) { // report all non-integer elements to user
