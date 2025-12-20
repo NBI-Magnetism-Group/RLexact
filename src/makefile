@@ -1,6 +1,6 @@
 OBJECTS = RLexact.o RLio.o RLtables.o RLhamil.o RLsymm.o Diagonal.o nr.o RLutil.o  RLcross.o RLlancz.o RLmatrix.o RLsparse.o regc.o
 LIBS = -lm 
-FLAGS =  -I. -I/usr/include/g++-3 -O0 -std=c++11 -gdwarf-2 -ansi -g -fsanitize=address,undefined -fno-omit-frame-pointer
+FLAGS =  -I. -I/usr/include/g++-3 -O0 -std=c++11 -gdwarf-2 -ansi -g #-fsanitize=address,undefined -fno-omit-frame-pointer
 OPTFLAGS = -I. -I/usr/include/g++-3 -O0 -gdwarf-2 -ansi -std=c++11
 # FLAGS =  -I. -I/usr/include/g++-3 -O0 -gdwarf-2
 # OPTFLAGS =  -I. -I/usr/include/g++-3 -O3 -gdwarf-2
