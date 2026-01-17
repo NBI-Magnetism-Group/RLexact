@@ -10,11 +10,9 @@
 *
 ============================================
 */
-#ifndef HEADER
+#ifndef HEADER // Firstly make sure to only include all this once.
+
 #define HEADER
-
-
-
 // Struct definition for loading file
 struct FLAGS
 {
@@ -31,7 +29,6 @@ struct FLAGS
 // #define RING_EXCHANGE
 
 // Calculation of problem and output requests
-// #define LANCZOS
 // #define MATRIX    #Note FIND_CROSS currently only supports LANCZOS
 #define FIND_EIGENSTATE
 #define WRITE_ENERGIES
@@ -211,7 +208,7 @@ struct FLAGS
       new_state = SymOp(sym, new_state);     \
     }                                        \
   } /* while */
-    /*TRANSLOOP: for 1D this will be a loop over Nspins. statrs at sym=1 to avoid spin-flip/identity symmetry*/
+/*TRANSLOOP: for 1D this will be a loop over Nspins. statrs at sym=1 to avoid spin-flip/identity symmetry*/
 #define TRANSLOOP_BEGIN                     \
   T[0] = 1;                                 \
   for (sym = 1; sym < Nsym; sym++)          \

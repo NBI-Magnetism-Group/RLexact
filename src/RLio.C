@@ -208,10 +208,10 @@ long long intro(struct FLAGS *input_flags)
     if (input_flags->use_exact_matrix)
       OutMessageChar("Using Matrix");
     else if (input_flags->use_lanczos)
-      OutMessageChar("Using Lanczos ");
-    OutMessageCharInt(" diagonalization. BUFFERSIZE =", BUFFERSIZE);
+      OutMessageChar("Using Lanczos");
+    OutMessageCharInt("diagonalization. BUFFERSIZE =", BUFFERSIZE);
 #ifdef M_SYM
-    OutMessageChar(" M-symmetry present. \n");
+    OutMessageChar("M-symmetry present. \n");
 #else
     OutMessageChar(" M-symmetry absent. \n");
 #endif /* M_SYM */
@@ -383,6 +383,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   }
   filereader(filename, filedata, filesize); // the entire file is now in filedata
   input_flags->use_lanczos = 1;             // Using lanczos is default.
+  input_flags->use_exact_matrix = 0;
   matchlines_wrapper(filedata, "Use Exact Matrix", &input_flags->use_exact_matrix, true);
   matchlines_wrapper(filedata, "Use Lanczos", &input_flags->use_lanczos, true);
 }
