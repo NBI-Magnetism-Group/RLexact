@@ -25,7 +25,6 @@
 #include <nr.h>
 #include <cnr.h>
 
-#ifdef LANCZOS
 /* Functions defined in this file */
 double LowestLanczos(long long *, komplex *, long long *, long long);
 long long CrossLanczos(long long *);
@@ -720,5 +719,3 @@ double Normalize(komplex *vector1)
 
   return (lg);
 }
-
-#endif /* LANCZOS */

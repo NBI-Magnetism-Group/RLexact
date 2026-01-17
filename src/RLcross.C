@@ -43,9 +43,7 @@ double lengthofvector(komplex *);
 #ifndef M_SYM
 void ApplySmp(long long *, long long, komplex *);
 #endif
-#ifdef LANCZOS
 void CrossLanczos(long long *);
-#endif /* LANCZOS */
 
 #ifdef NEVER // doesnt work, SJ 270616
 void ApplySmpMsym(long long *, long long);
@@ -85,7 +83,6 @@ extern double *cross;
 /* Regional variables defined here */
 long long k[NSYM];
 
-#ifdef LANCZOS
 // void CrossLanczos(int symvalue[NSYM])
 void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 {
@@ -945,4 +942,3 @@ double lengthofvector(komplex *v)
   return length;
 }
 
-#endif /* FIND_CROSS */

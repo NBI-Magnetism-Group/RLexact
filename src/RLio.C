@@ -15,7 +15,6 @@
 
 // #include "/usr/include/sys/types.h"
 #include <sys/types.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -30,8 +29,9 @@
 extern int rank, nprocs;
 
 /* Functions defined in this file */
-long long intro();
-long long ReadCoupPattern(char *);
+long long
+intro();
+long long ReadCoupPattern(char *, struct FLAGS *);
 #ifndef M_SYM
 void TransformCoup(long long);
 #endif /* M_SYM */
@@ -62,6 +62,7 @@ void WriteGSdata(double, long long *);
 void WriteGSstate(komplex *);
 void ReadGSdata(double *, long long *, komplex *);
 void ReadGSenergy(double *, long long *);
+void ReadInputFlags(char *, struct FLAGS *);
 
 /* Functions in RLutils.C */
 extern void NormalizeVector(double *);
@@ -148,7 +149,7 @@ char *filedata;
 long long filesize;
 
 /************************************************/
-long long intro()
+long long intro(struct FLAGS *input_flags)
 {
   /* Introduce, read input and perform file handling */
   char outfile_name[256];
@@ -156,40 +157,6 @@ long long intro()
   char gscofile_name[256];
   char gscoinfile_name[256];
   char qstr[2];
-
-  if (rank == 0)
-  {
-    OutMessageChar("Welcome to the Exact Diagonalization Program, RLexact \n");
-#ifdef MATRIX
-    OutMessageChar(" Matrix");
-#endif /* MATRIX */
-#ifdef LANCZOS
-    OutMessageChar(" Lanzcos ");
-#endif /* LANCZOS */
-    OutMessageCharInt(" diagonalization. BUFFERSIZE =", BUFFERSIZE);
-#ifdef M_SYM
-    OutMessageChar(" M-symmetry present. \n");
-#else
-    OutMessageChar(" M-symmetry absent. \n");
-#endif /* M_SYM */
-    OutMessageChar(" Observables:");
-#ifdef FIND_MAG
-    OutMessageChar(" Magnetization,");
-#endif /* FIND_MAG */
-#ifdef CROSS
-    OutMessageChar(" S^zz(q,w),");
-#ifndef M_SYM
-#ifndef FIND_CROSS_PM
-    OutMessageChar(" S^xx(q,w), S^yy(q,w),");
-#endif
-#ifdef FIND_CROSS_PM
-    OutMessageChar(" S^+-(q,w), S^-+(q,w),");
-#endif
-#endif
-#endif /* CROSS */
-    OutMessageChar(" Energy.\n");
-    OutMessageChar(" For more information, see the manual.\n");
-  }
 
   if (!name_on_commandline)
   {
@@ -234,8 +201,40 @@ long long intro()
     fatalerror("Cannot open logfile, sorry!", errno);
     return -1;
   }
+  ReadInputFlags(infile_name, input_flags);
+  if (rank == 0)
+  {
+    OutMessageChar("Welcome to the Exact Diagonalization Program, RLexact \n");
+    if (input_flags->use_exact_matrix)
+      OutMessageChar("Using Matrix");
+    else if (input_flags->use_lanczos)
+      OutMessageChar("Using Lanczos ");
+    OutMessageCharInt(" diagonalization. BUFFERSIZE =", BUFFERSIZE);
+#ifdef M_SYM
+    OutMessageChar(" M-symmetry present. \n");
+#else
+    OutMessageChar(" M-symmetry absent. \n");
+#endif /* M_SYM */
+    OutMessageChar(" Observables:");
+#ifdef FIND_MAG
+    OutMessageChar(" Magnetization,");
+#endif /* FIND_MAG */
+#ifdef CROSS
+    OutMessageChar(" S^zz(q,w),");
+#ifndef M_SYM
+#ifndef FIND_CROSS_PM
+    OutMessageChar(" S^xx(q,w), S^yy(q,w),");
+#endif
+#ifdef FIND_CROSS_PM
+    OutMessageChar(" S^+-(q,w), S^-+(q,w),");
+#endif
+#endif
+#endif /* CROSS */
+    OutMessageChar(" Energy.\n");
+    OutMessageChar(" For more information, see the manual.\n");
+  }
 
-  ReadCoupPattern(infile_name); // this function does the actual file-input handling
+  ReadCoupPattern(infile_name, input_flags); // this function does the actual file-input handling
 
 #ifdef FIND_CROSS
   if (rank == 0)
@@ -371,8 +370,26 @@ long long intro()
 }
 
 /* ----------------------------------------------------------------------- */
+void ReadInputFlags(char *filename, struct FLAGS *input_flags)
+{
+  // This function simply reads in the input file, and captures all the flag
+  // settings.
+  filesize = filesizer(filename);
+  filedata = (char *)malloc(filesize * sizeof(char));
+  if (filedata == NULL)
+  {
+    printf("\nERROR: Filedata not allocated");
+    exit(1);
+  }
+  filereader(filename, filedata, filesize); // the entire file is now in filedata
+  input_flags->use_lanczos = 1;             // Using lanczos is default.
+  matchlines_wrapper(filedata, "Use Exact Matrix", &input_flags->use_exact_matrix, true);
+  matchlines_wrapper(filedata, "Use Lanczos", &input_flags->use_lanczos, true);
+}
 
-long long ReadCoupPattern(char *filename)
+/* ----------------------------------------------------------------------- */
+
+long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 {
   /* Read all couplings (pairs, types and strengths)
      and symmetry numbers from file */
@@ -751,19 +768,20 @@ long long ReadCoupPattern(char *filename)
   // FillRotationMatrix(field); //doesnt work and unnecessary, SJ 20.02.17
 #endif /* M_SYM */
 
-#ifdef LANCZOS
-  // ********* Lanzcos-Mandatory input : Read Lanzcos numbers *********
-  if (rank == 0)
+  if (input_flags->use_lanczos)
   {
-    matchlines(filedata, "Ritz_conv", &Ritz_conv, true);
-  }
-  MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // ********* Lanzcos-Mandatory input : Read Lanzcos numbers *********
+    if (rank == 0)
+    {
+      matchlines(filedata, "Ritz_conv", &Ritz_conv, true);
+    }
+    MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 #ifdef TEST_INPUT
-  LogMessageCharDouble("Ritz_conv:", Ritz_conv);
-  LogMessageChar("\n");
+    LogMessageCharDouble("Ritz_conv:", Ritz_conv);
+    LogMessageChar("\n");
 #endif /* TEST_INPUT */
-#endif /* LANCZOS */
+  }
 
   if (rank == 0)
   {
@@ -950,7 +968,7 @@ void TransformCoup(long long j)
 #endif /* M_SYM */
 
 #ifdef FIND_CROSS
-#ifdef LANCZOS
+
 long long SortCross(long long Nener)
 {
   /* Finds and sums crosssections for same energies, and sorts energies and
@@ -991,7 +1009,6 @@ long long SortCross(long long Nener)
   freedvector(tmpcross, 0, MAX_LANCZOS - 1);
   return XS;
 }
-#endif /* LANZCOS */
 #endif /* FIND_CROSS */
 
 void time_stamp(time_t *tim, long long flag, const char *string)
@@ -1246,7 +1263,7 @@ void WriteResults(long long N)
 }
 
 #ifdef FIND_CROSS
-#ifdef LANCZOS
+
 void WriteCross(long long Nener, long long *symvalue, long long flag)
 {
   /* Output the cross sections of the ground state */
@@ -1369,7 +1386,6 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 #endif // CSVOUT
   return;
 }
-#endif /* LANCZOS */
 #endif /* FIND_CROSS */
 
 void WriteGSEnergy(komplex E)

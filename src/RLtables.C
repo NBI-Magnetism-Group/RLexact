@@ -33,7 +33,7 @@ unsigned long long FillUnique(long long, int);
 // Fill the table of unique states
 void FillUniqueObservables();
 // Write diagonal values of the unique states to file
-void BuildCycle(long long *);
+void BuildCycle(long long *, struct FLAGS *);
 // Make table of number of occurences of a particular unique in a particular symmetry cycle
 unsigned long long FindUnique(unsigned long long, int *);
 // Find the unique corresponding to a particular state
@@ -530,7 +530,7 @@ void FillUniqueObservables()
 }
 
 /* Build table of occurencies in a full cycle, for one q-value */
-void BuildCycle(long long q[NSYM])
+void BuildCycle(long long q[NSYM], struct FLAGS *input_flags)
 {
   long long sym, s, j, count, tot_count, phi, uniq_count = 0;
   int T[NSYM];
@@ -589,17 +589,18 @@ void BuildCycle(long long q[NSYM])
     Nocc[j] = (long long)floor(p_r + SMALL_NUMBER); // round off phase sum to a real integer
 
     // save the Nocc in q=0 for use in cross section calcs with Lanczos
-#ifdef LANCZOS
-    qlength = 0;
-    for (int k = 1; k < Nsym; k++)
+    if (input_flags->use_lanczos)
     {
-      qlength += q[k] * q[k];
+      qlength = 0;
+      for (int k = 1; k < Nsym; k++)
+      {
+        qlength += q[k] * q[k];
+      }
+      if (qlength == 0)
+      {
+        Nocc_0[j] = Nocc[j];
+      }
     }
-    if (qlength == 0)
-    {
-      Nocc_0[j] = Nocc[j];
-    }
-#endif
 
 #ifdef MATRIX
     if (Nocc[j] > 0)
