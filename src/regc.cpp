@@ -5,6 +5,8 @@
 * Version 3.1, June 2016
 *
 * Observation: This file is apparently leaking memory like crazy - SJ 030616
+* Daniel Diablo Lomholt Christensen 20/12/2025. Fixed most memory leaks. 
+* The few remaining seem to be from MPI library, i.e not my problem...
 ============================================
 */
 
@@ -272,97 +274,190 @@ long long matchlines_wrapper(char *input, const char *pattern, long long *result
   return matches;
 }
 
-long long multimatch(char *input, long long length, const char *pattern, double **result, long long *sizes, long long count)
-{
+
+long long multimatch (char* input, long long length, const char* pattern,
+                      double** result, long long* sizes, long long count) {
   /* this function is specifically built to match a series of lines, all with the same
      pattern. Caller must specify the number of hits expected, to force stringent
      thinking. Returns actual number of lines matched (should always be count). */
 
-  regex_t *compline = new regex_t;
+  regex_t* compline = new regex_t;
 
-  const char *linepat = "\\(.*\\)\n.*"; // this matches a line in the subexpression
+  // KEEP YOUR ORIGINAL PATTERN
+  const char* linepat = "\\(.*\\)\n.*"; // this matches a line in the subexpression
 
-  // we will alter the input, so we must make a seperate copy
-  char *myInput = (char *)malloc(length * sizeof(char));
-  for (long long i = 0; i < length; i++)
-  {
-    myInput[i] = input[i];
+  // Make a separate, NUL-terminated copy of input (regexec expects C string)
+  char* myInput = (char*) malloc((size_t)length + 1);
+  if (!myInput) {
+    fprintf(stderr, "multimatch: OOM allocating input copy\n");
+    delete compline;
+    return 0;
   }
+  memcpy(myInput, input, (size_t)length);
+  myInput[length] = '\0'; // ESSENTIAL
 
   regmatch_t resarray[2];
 
-  regcomp(compline, linepat, REG_NEWLINE); // compile the regular expression
-
-  long long hits = 0; // counts the number of lines matched
-
-  while (length > 0)
-  { // while there is still input left
-    double *tempres = (double *)malloc(MAXARRAYSIZE * sizeof(double));
-    long long regerr = regexec(compline, myInput, 2, resarray, 0); // match next line
-
-    long long linesize = resarray[1].rm_eo - resarray[1].rm_so + 1; // length of line
-
-    char *line = (char *)malloc((1 + linesize) * sizeof(char));
-    long long j = 0;
-#ifdef TEST_FILEREAD
-    cout << "Now processing line: ";
-#endif /* TEST_FILEREAD */
-    for (j = 0; j < linesize; j++)
-    {
-      line[j] = myInput[resarray[1].rm_so + j]; // make a variable with the current line
-#ifdef TEST_FILEREAD
-      cout << line[j];
-#endif /* TEST_FILEREAD */
-    }
-#ifdef TEST_FILEREAD
-    cout << endl;
-#endif /* TEST_FILEREAD */
-
-    line[j] = 0; // make sure its terminated
-
-#ifdef TEST_FILEREAD
-    cout << "Beginning matching of " << line << " with pattern " << pattern << endl;
-#endif                                                             /* TEST_FILEREAD */
-    long long matches = matchlines(line, pattern, tempres, false); // match patern on line
-#ifdef TEST_FILEREAD
-    cout << "Ended matching of " << line << " with pattern " << pattern << endl;
-#endif /* TEST_FILEREAD */
-    if (matches > 0)
-    { // matches positive if succesful
-      if ((hits) == count)
-      { // we already matched hits lines - error!
-        cerr << "too many matches for pattern " << pattern << " - " << hits << " count must be specified correctly" << endl;
-        exit(-1);
-      }
-      sizes[hits] = matches;    // now holds the size of this array
-      result[hits++] = tempres; // result is passed by reference
-    }
-
-    // chop the first line of myInput
-    for (long long k = 0; k < length - (resarray[1].rm_eo + 1); k++)
-    {
-      myInput[k] = myInput[resarray[1].rm_eo + 1 + k];
-    }
-    length -= resarray[1].rm_eo + 1; // modify length acordingly
-    free(line);
+  int rc = regcomp(compline, linepat, REG_NEWLINE);
+  if (rc != 0) {
+    char errbuf[256];
+    regerror(rc, compline, errbuf, sizeof(errbuf));
+    fprintf(stderr, "regcomp error: %s\n", errbuf);
+    free(myInput);
+    delete compline; // no regfree needed if regcomp failed
+    return 0;
   }
 
-  // check if we have too few matches after going through all of input
-  if ((hits) < count)
-  {
-    cerr << "too few matches for pattern " << pattern << ". " << hits << " found, " << count << " required. count must be specified correctly" << endl;
+  long long hits = 0;
+
+  while (length > 0 && hits < count) {
+    // Try to match at the current buffer start
+    int regerr = regexec(compline, myInput, 2, resarray, 0);
+
+    if (regerr == REG_NOMATCH) {
+      // No match at current position: consume one line to make progress
+      char* nl = strchr(myInput, '\n');
+      size_t consumed = nl ? (size_t)(nl - myInput + 1) : (size_t)length;
+      size_t remain = (size_t)length - consumed;
+      memmove(myInput, myInput + consumed, remain);
+      length -= (long long)consumed;
+      myInput[length] = '\0';
+      continue;
+    }
+
+    if (regerr != 0) {
+      char errbuf[256];
+      regerror(regerr, compline, errbuf, sizeof(errbuf));
+      fprintf(stderr, "regexec error: %s\n", errbuf);
+      break; // clean up at end
+    }
+
+    // Validate group 1 before using it
+    if (resarray[1].rm_so < 0 || resarray[1].rm_eo < 0 ||
+        resarray[1].rm_eo < resarray[1].rm_so) {
+      // Defensive: if capture group is bad, consume at least one char/line to avoid infinite loop
+      char* nl = strchr(myInput, '\n');
+      size_t consumed = nl ? (size_t)(nl - myInput + 1) : 1;
+      if ((long long)consumed > length) consumed = (size_t)length;
+      size_t remain = (size_t)length - consumed;
+      memmove(myInput, myInput + consumed, remain);
+      length -= (long long)consumed;
+      myInput[length] = '\0';
+      continue;
+    }
+
+    // Your original linesize calculation (includes +1 for the newline)
+    long long linesize = resarray[1].rm_eo - resarray[1].rm_so + 1;
+    if (linesize < 0) linesize = 0;
+
+    char* line = (char*) malloc((size_t)linesize + 1);
+    if (!line) {
+      fprintf(stderr, "multimatch: OOM allocating line buffer\n");
+      break;
+    }
+
+#ifdef TEST_FILEREAD
+    std::cout << "Now processing line: ";
+#endif
+    long long j = 0;
+    for (j = 0; j < linesize; j++) {
+      line[j] = myInput[resarray[1].rm_so + j];
+#ifdef TEST_FILEREAD
+      std::cout << line[j];
+#endif
+    }
+#ifdef TEST_FILEREAD
+    std::cout << std::endl;
+#endif
+    line[j] = '\0';
+
+#ifdef TEST_FILEREAD
+    std::cout << "Beginning matching of " << line << " with pattern " << pattern << std::endl;
+#endif
+
+    // Allocate scratch buffer for parsed doubles (LEAK SOURCE if not freed on every path)
+    double* tempres = (double*) malloc(MAXARRAYSIZE * sizeof(double));
+    if (!tempres) {
+      fprintf(stderr, "multimatch: OOM allocating tempres\n");
+      free(line);
+      break;
+    }
+
+    long long matches = matchlines(line, pattern, tempres, false);
+
+#ifdef TEST_FILEREAD
+    std::cout << "Ended matching of " << line << " with pattern " << pattern << std::endl;
+#endif
+
+    if (matches > 0) {
+      if (hits == count) {
+        std::cerr << "too many matches for pattern " << pattern << " - " << hits
+                  << " count must be specified correctly" << std::endl;
+        // Clean up everything before aborting
+        free(tempres);
+        free(line);
+        regfree(compline);
+        free(myInput);
+        delete compline;
+        exit(-1);
+      }
+
+      // Allocate tight buffer and copy values out of tempres
+      double* out = (double*) malloc((size_t)matches * sizeof(double));
+      if (!out) {
+        fprintf(stderr, "multimatch: OOM allocating result buffer\n");
+        free(tempres);
+        free(line);
+        break;
+      }
+
+      memcpy(out, tempres, (size_t)matches * sizeof(double));
+      free(tempres); // <-- IMPORTANT: ALWAYS FREE SCRATCH
+
+      sizes[hits]  = matches;
+      result[hits] = out;        // caller must free(result[i]) later
+      hits++;
+    } else {
+      // No data parsed for this line; free scratch
+      free(tempres);
+    }
+
+    free(line);
+
+    // Chop the first line of myInput (your original logic: capture end + 1)
+    long long consumed_ll = resarray[1].rm_eo + 1;
+    if (consumed_ll < 0) consumed_ll = 0;
+    if (consumed_ll > length) consumed_ll = length;
+    size_t consumed = (size_t)consumed_ll;
+
+    size_t remain = (size_t)length - consumed;
+    memmove(myInput, myInput + consumed, remain);
+    length -= (long long)consumed;
+    myInput[length] = '\0';
+  }
+
+  if (hits < count) {
+    std::cerr << "too few matches for pattern " << pattern << ". "
+              << hits << " found, " << count
+              << " required. count must be specified correctly" << std::endl;
+    // Clean up before exiting
+    regfree(compline);
+    free(myInput);
+    delete compline;
     exit(-1);
   }
 
-  delete (compline);
+  regfree(compline);  // <-- frees internal tables allocated by regcomp
   free(myInput);
+  delete(compline);
 
   return hits;
 }
 
-long long multimatch(char *input, long long length, const char *pattern, long long **result, long long *sizes, long long count)
-{
-  double **tempresults = (double **)malloc(count * sizeof(double *));
+
+
+long long multimatch (char* input, long long length, const char* pattern, long long** result, long long* sizes, long long count) {
+  double **tempresults=(double**)malloc(count*sizeof(double*));
 #ifdef TEST_MULTIMATCH
   cerr << "Entering multimatch (long long)" << endl;
 #endif
