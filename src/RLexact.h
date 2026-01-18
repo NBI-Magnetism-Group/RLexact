@@ -24,7 +24,6 @@ struct FLAGS
 };
 
 // Physics of problem
-#define M_SYM
 // #define DIPOLE
 // #define RING_EXCHANGE
 

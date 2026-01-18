@@ -379,8 +379,11 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   filereader(filename, filedata, filesize); // the entire file is now in filedata
   input_flags->use_lanczos = 1;             // Using lanczos is default.
   input_flags->use_exact_matrix = 0;
+  input_flags->m_sym = 0;
   matchlines_wrapper(filedata, "Use Exact Matrix", &input_flags->use_exact_matrix, true);
   matchlines_wrapper(filedata, "Use Lanczos", &input_flags->use_lanczos, true);
+  matchlines_wrapper(filedata, "Use M Symmetry", &input_flags->m_sym, true);
+  printf("Using M Symmetry with %lld\n", input_flags->m_sym);
 }
 
 /* ----------------------------------------------------------------------- */
