@@ -602,10 +602,11 @@ void BuildCycle(long long q[NSYM], struct FLAGS *input_flags)
       }
     }
 
-#ifdef MATRIX
-    if (Nocc[j] > 0)
-      uniq_k[uniq_count++] = j;
-#endif // MATRIX
+    if (input_flags->use_exact_matrix)
+    {
+      if (Nocc[j] > 0)
+        uniq_k[uniq_count++] = j;
+    }
 
 #ifdef TEST_OCC
     LogMessageCharInt(" Unique", j);
@@ -618,9 +619,10 @@ void BuildCycle(long long q[NSYM], struct FLAGS *input_flags)
 #endif /* TEST_OCC */
   }
 
-#ifdef MATRIX
-  Nuniq_k = uniq_count;
-#endif
+  if (input_flags->use_exact_matrix)
+  {
+    Nuniq_k = uniq_count;
+  }
 
 #ifdef TEST_OCC
   LogMessageChar(" Exit BuildCycle \n");

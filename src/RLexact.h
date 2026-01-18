@@ -29,7 +29,6 @@ struct FLAGS
 // #define RING_EXCHANGE
 
 // Calculation of problem and output requests
-// #define MATRIX    #Note FIND_CROSS currently only supports LANCZOS
 #define FIND_EIGENSTATE
 #define WRITE_ENERGIES
 #define FIND_CROSS // Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w)
@@ -65,11 +64,7 @@ struct FLAGS
 // #endif
 
 // Set up size of buffer for sparse matrix read/write
-#ifdef MATRIX
-#define BUFFERSIZE BUFSIZ
-#else
 #define BUFFERSIZE 4194304
-#endif
 
 #define USE_COMPLEX
 

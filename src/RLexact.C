@@ -29,9 +29,7 @@ int rank, nprocs, gs_rank;
 
 /* Functions declared in this file */
 void Solve_Lanczos(struct FLAGS *);
-#ifdef MATRIX
-void Solve_Matrix();
-#endif /* MATRIX */
+void Solve_Matrix(struct FLAGS *);
 void allocate(struct FLAGS *);
 void deallocate(struct FLAGS *);
 
@@ -52,7 +50,7 @@ extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
 extern void OutMessageChar(const char *);
-extern void WriteResults(long long);
+extern void WriteResults(long long, struct FLAGS *);
 extern void WritehmQ(long long *);
 extern void WriteState(const char *, komplex *);
 extern void WriteStates(komplex **);
@@ -65,11 +63,9 @@ extern void ReadGSenergy(double *, long long *);
 extern void findmaggs();
 extern void WriteMaggs(long long *);
 #endif /*M_SYM*/
-#ifdef MATRIX
-extern double Matrix_gs(komplex **, long long *, long long *, komplex *);
+extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 extern void MakeSparse();
-#endif /* MATRIX */
 extern double LowestLanczos(long long *, komplex *, long long *, long long);
 extern void CrossLanczos(long long *);
 extern void MakeSparse();
@@ -165,12 +161,8 @@ unsigned long long *unique;
 /* Unique Ising states (not connected by symmetries) */
 long long Nu2;
 /* Lowest power of two larger than Nunique */
-#ifdef MATRIX
 long long *uniq_k;        // BUGGED: NUNIQUE NOT AVAILABLE
 long long Longest_Matrix; // Variable for deallocation at the end, stores first number of uniques
-#else
-long long uniq_k[1];
-#endif
 /* uniq_k is the index from reduced unique (at a given k) to total unique */
 
 long long Nelem;
@@ -229,9 +221,6 @@ double *energies;
 #ifdef FIND_MAG
 double *magnetisation;
 #endif /* FIND_MAG */
-#ifdef MATRIX
-double *cross;
-#endif /* Matrix*/
 double *cross;
 // double cross[MAX_LANCZOS];
 #ifdef FIND_MAG
@@ -380,9 +369,10 @@ int main(int argc, char *argv[])
        // LogMessageChar("\n");
 
   allocate(&input_flags);
-#ifdef MATRIX
-  Longest_Matrix = Nunique;
-#endif /*MATRIX*/
+  if (input_flags.use_exact_matrix)
+  {
+    Longest_Matrix = Nunique;
+  }
 
 #ifdef VERBOSE_TIME_LV1
   time_stamp(&time_single, STOP, "Longest_Matrix allocated ");
@@ -469,11 +459,9 @@ int main(int argc, char *argv[])
     }
     else
     {
-#ifdef MATRIX
-      if (rank == 0) // TODO Also MPI on Matrix mode - ABP 2025-03-13
-        Solve_Matrix();
-#endif /* MATRIX */
-      if (input_flags.use_lanczos)
+      if (rank == 0 && input_flags.use_exact_matrix) // TODO Also MPI on Matrix mode - ABP 2025-03-13
+        Solve_Matrix(&input_flags);
+      else if (input_flags.use_lanczos)
       {
         Solve_Lanczos(&input_flags);
       }
@@ -499,7 +487,7 @@ int main(int argc, char *argv[])
 
 /* ----------------------------------------------------------------------------------*/
 
-void Solve_Lanczos(struct FLAGS * input_flags)
+void Solve_Lanczos(struct FLAGS *input_flags)
 {
   /* Main routine for calculations using the Lanczos method */
   time_t time_single0, time_single, time_single2, time_makesparse;
@@ -559,7 +547,7 @@ void Solve_Lanczos(struct FLAGS * input_flags)
 
 #ifdef WRITE_ENERGIES
           WritehmQ(q);
-          WriteResults(Nener);
+          WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
           if (etmp < gs_energy)
@@ -600,7 +588,7 @@ void Solve_Lanczos(struct FLAGS * input_flags)
 
 #ifdef WRITE_ENERGIES
         WritehmQ(q);
-        WriteResults(Nener);
+        WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
         if (etmp < gs_energy)
@@ -847,8 +835,7 @@ void Solve_Lanczos(struct FLAGS * input_flags)
 
 /* ---------------------------------------------------------------------------- */
 
-#ifdef MATRIX
-void Solve_Matrix()
+void Solve_Matrix(struct FLAGS *input_flags)
 {
   /* Main routine for calculations using the matrix method.
   The code works but report memory deallocation error at the end.*/
@@ -877,10 +864,10 @@ void Solve_Matrix()
       hamilton[1][1] = zero;
       LogMessageChar("Hamiltonian accessed. \n");
 #endif /* TEST_GS_SEARCH */
-      gs_energy = Matrix_gs(hamilton, uniq_k, q, gs);
+      gs_energy = Matrix_gs(hamilton, uniq_k, q, gs, input_flags);
 #ifdef WRITE_ENERGIES
       WritehmQ(q);
-      WriteResults(Nuniq_k);
+      WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES
       WriteStates(hamilton);
@@ -902,12 +889,12 @@ void Solve_Matrix()
     hamilton[1][1] = zero;
     LogMessageChar("Hamiltonian accessed. \n");
 #endif /* TEST_GS_SEARCH */
-    etmp = Matrix_gs(hamilton, uniq_k, q, evec);
+    etmp = Matrix_gs(hamilton, uniq_k, q, evec, input_flags);
     if (etmp < LARGE_NUMBER) /* else: illegal symmetry combination */
     {
 #ifdef WRITE_ENERGIES
       WritehmQ(q);
-      WriteResults(Nuniq_k);
+      WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES
       WriteStates(hamilton);
@@ -950,7 +937,6 @@ void Solve_Matrix()
 #endif /* FIND_CROSS */
   return;
 }
-#endif /* MATRIX */
 
 //----------------------------
 
@@ -988,37 +974,39 @@ void allocate(struct FLAGS *input_flags)
 #endif /* FIND_CROSS */
   }
 
-#ifdef MATRIX
-  /* Allocate large vectors */
-  gs = kvector(0, Nunique);
-  tmp = kvector(0, Nunique - 1);
-  tmp2 = kvector(0, Nunique - 1);
+  if (input_flags->use_exact_matrix)
+  {
+    /* Allocate large vectors */
+    gs = kvector(0, Nunique);
+    tmp = kvector(0, Nunique - 1);
+    tmp2 = kvector(0, Nunique - 1);
 
-  /* allocate unique tables */
-  Nocc = (long long *)malloc(sizeof(long long) * Nunique);
-  unique = (unsigned long long *)malloc(sizeof(unsigned long long) * Nunique);
-  evec = kvector(0, Nunique);
-  energies = dvector(0, Nunique - 1);
-  uniq_k = (long long *)malloc(sizeof(long long) * Nunique);
-  hamilton = kmatrix(1, Nunique, 1, Nunique);
+    /* allocate unique tables */
+    Nocc = (long long *)malloc(sizeof(long long) * Nunique);
+    unique = (unsigned long long *)malloc(sizeof(unsigned long long) * Nunique);
+    evec = kvector(0, Nunique);
+    energies = dvector(0, Nunique - 1);
+    // DLC: This unique k is not assignable the 
+    uniq_k = (long long *)malloc(sizeof(long long) * Nunique);
+    hamilton = kmatrix(1, Nunique, 1, Nunique);
 
 #ifdef TEST_ALLOCATE
-  MessageCharInt("Hamiltonian matrix defined, size; ", Nunique);
-  MessageChar("\n");
-  hamilton[1][1] = zero;
-  MessageChar("Hamiltonian matrix accessed \n");
+    MessageCharInt("Hamiltonian matrix defined, size; ", Nunique);
+    MessageChar("\n");
+    hamilton[1][1] = zero;
+    MessageChar("Hamiltonian matrix accessed \n");
 #endif /* TEST_ALLOCATE */
 
 #ifndef M_SYM
-  mag = (long long *)malloc(sizeof(long long) * Nunique);
+    mag = (long long *)malloc(sizeof(long long) * Nunique);
 #endif /* FIND_MAG */
 #ifdef FIND_MAG
-  magnetisation = dvector(0, Nunique - 1);
+    magnetisation = dvector(0, Nunique - 1);
 #endif /*FIND_MAG*/
 #ifdef FIND_CROSS
-  cross = dvector(1, Nunique);
+    cross = dvector(1, Nunique);
 #endif /* FIND_CROSS */
-#endif /* MATRIX */
+  }
 
   return;
 }
@@ -1047,32 +1035,32 @@ void deallocate(struct FLAGS *input_flags)
 #endif /* FIND_CROSS */
   }
 
-#ifdef MATRIX
-  freekvector(gs, 0, Longest_Matrix);
-  freekvector(tmp, 0, Longest_Matrix - 1);
-  freekvector(tmp2, 0, Longest_Matrix - 1);
-  freekvector(evec, 0, Longest_Matrix);
+  if (input_flags->use_exact_matrix)
+  {
+    freekvector(gs, 0, Longest_Matrix);
+    freekvector(tmp, 0, Longest_Matrix - 1);
+    freekvector(tmp2, 0, Longest_Matrix - 1);
+    freekvector(evec, 0, Longest_Matrix);
 
-  free(Nocc);
-  free(unique);
-  freekmatrix(hamilton, 1, Longest_Matrix, 1, Longest_Matrix);
-  freedvector(energies, 0, Longest_Matrix - 1); // There is something wrong with this vector can't deallocate
-  free(uniq_k);
+    free(Nocc);
+    free(unique);
+    freekmatrix(hamilton, 1, Longest_Matrix, 1, Longest_Matrix);
+    freedvector(energies, 0, Longest_Matrix - 1); // There is something wrong with this vector can't deallocate
+    free(uniq_k);
 
 #ifdef FIND_CROSS
-  freekvector(szxygs, 0, Longest_Matrix - 1);
-  freedvector(cross, 1, Longest_Matrix);
+    freekvector(szxygs, 0, Longest_Matrix - 1);
+    freedvector(cross, 1, Longest_Matrix);
 #endif /* FIND_CROSS */
 
 #ifndef M_SYM
-  free(mag);
+    free(mag);
 #endif /* M_SYM */
 
 #ifdef FIND_MAG
-  freedvector(magnetisation, 0, Longest_Matrix - 1);
+    freedvector(magnetisation, 0, Longest_Matrix - 1);
 #endif /* FIND_MAG */
-
-#endif /* MATRIX */
+  }
 #ifdef MOTIVE
   for (int i = 0; i < Nspins_in_uc; i++)
     free(spin_positions[i]);

@@ -53,7 +53,7 @@ void LogMessageChar3Vector(const char *, double, double, double);
 void WriteState(const char *, komplex *);
 void WriteStates(komplex **);
 void WritehmQ(long long *);
-void WriteResults(long long);
+void WriteResults(long long, struct FLAGS *);
 void WriteCross(long long, long long *, long long);
 void WriteGSEnergy(komplex);
 void WriteEnergy(double);
@@ -1222,7 +1222,7 @@ void WritehmQ(long long *q)
   return;
 }
 
-void WriteResults(long long N)
+void WriteResults(long long N, struct FLAGS *input_flags)
 {
   /* Output the energies and other observables of the eigenstates */
   long long i, q;
@@ -1249,9 +1249,10 @@ void WriteResults(long long N)
       magnetisation[i] = 0;
     }
 #ifdef WRITE_MAGNETISATION
-#ifdef MATRIX // only meaningful for matrix-calculations
-    fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
-#endif // MATRIX
+    if (input_flags->use_exact_matrix)
+    {
+      fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
+    }
 #endif // WRITE_MAGNETISATION
 #endif /* FIND_MAG */
 

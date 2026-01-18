@@ -47,10 +47,8 @@ void CrossLanczos(long long *);
 
 #ifdef NEVER // doesnt work, SJ 270616
 void ApplySmpMsym(long long *, long long);
-#ifdef MATRIX
 void CrossMatrix();
 int sym;
-#endif /* MATRIX */
 bool NonZero(unsigned long long, long long *);
 #endif // NEVER
 
@@ -867,7 +865,6 @@ void ApplySmpMsym(long long *q, long long which_q)
 #endif // M_SYM
 
 #ifdef NEVER
-#ifdef MATRIX
 // CrossMatrix calculates now only S^zz(q) on the whole set of eigenstates
 // WARNING: all symmetries are considered to be spatial periodic translations !!
 // Written by Kim, 14.07.00
@@ -891,7 +888,6 @@ void CrossMatrix(long long symvalue[NSYM])
 
   return;
 }
-#endif /* MATRIX */
 
 bool NonZero(unsigned long long state, long long *q)
 {
