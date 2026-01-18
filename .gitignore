@@ -64,3 +64,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+
+# Ignore generated binary
+src/RLexact

@@ -33,7 +33,7 @@ double CalculateM(komplex *);
 #endif /* FIND_MAG */
 
 /* Functions declared elsewhere */
-void BuildCycle(long long *);
+void BuildCycle(long long *, struct FLAGS *);
 extern void WriteEnergy(double);
 // extern void FillHamilton(long long *, long long *, komplex**); OLD version
 extern void FillHamilSparse(komplex **, long long *k);
@@ -77,7 +77,7 @@ unsigned long long i_min;
 k[] and given h/m and finds the ground state.
 The routine returns the energy of the ground state,
 and evec is the ground state vector */
-double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *evec)
+double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *evec, struct FLAGS *input_flags)
 {
   time_t time_single;
   double emin;
@@ -90,7 +90,7 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *
 #ifdef VERBOSE_TIME_LV1
   time_stamp(&time_single, START, "\n timer of intiallizing and filling matrix");
 #endif /* VERBOSE_TIME_LV1*/
-  BuildCycle(k);
+  BuildCycle(k, input_flags);
 #ifdef MATRIX_MESSAGES
   LogMessageCharInt(" Nuniq_k: ", Nuniq_k);
   hamil[1][1] = zero;
