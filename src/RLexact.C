@@ -261,13 +261,13 @@ int main(int argc, char *argv[])
   BuildTables();
   InitSym();
 
-#ifdef M_SYM
+if(input_flags.m_sym){
   LogMessageChar("With M-symmetry \n");
-#else
+} else {
   LogMessageChar("Without M-symmetry \n");
-#endif
+}
 
-#ifdef M_SYM
+if (input_flags.m_sym){
 
   // First we must find the maximum number of unique states for any m.
   // This is always the number of uniques for the lowest absolute m-value.
@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
     }
   }
 
-#else // NOT M_SYM
+}else {// NOT M_SYM
 #ifdef VERBOSE
   LogMessageChar("M_SYM not encountered \n");
   LogMessageCharInt("Unique mode is: ", unimode);
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
   {
     Nunique = FillUnique(0, 1);
   }
-#endif /* M_SYM */
+} /* M_SYM */
        // LogMessageChar("Unique mode OK \n");
        // LogMessageCharInt("Memory needed for vectors is ", (Nunique*4*sizeof(komplex)));
        // LogMessageChar("\n");
