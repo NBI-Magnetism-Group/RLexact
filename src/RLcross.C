@@ -23,8 +23,8 @@
 
 /* Functions declared elsewhere */
 extern unsigned long long SymOp(long long, unsigned long long);
-extern double LowestLanczos(long long *, komplex *, long long *, long long);
-extern void WriteCross(long long, long long *, long long);
+extern double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS*);
+extern void WriteCross(long long, long long *, long long, struct FLAGS *);
 extern unsigned long long FindUnique(unsigned long long, int *);
 extern long long LookUpU(unsigned long long);
 extern void LogMessageChar(const char *);
@@ -190,11 +190,11 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
     }
 #endif // TEST_CROSS
 
-    LowestLanczos(symvalue, NULL, &Nener, CROSS);
+    LowestLanczos(symvalue, NULL, &Nener, CROSS, input_flags);
     /*This will do the actual work! When done, global variables
      *energies and *Cross contains the relevant values for cross-section*/
 
-    WriteCross(Nener, symvalue, flag);
+    WriteCross(Nener, symvalue, flag, input_flags);
 
 #ifdef TEST_CROSS
     LogMessageChar("Data has been written to file\n");

@@ -36,8 +36,8 @@ void deallocate(struct FLAGS *);
 /* Functions declared elsewhere */
 extern void BuildTables();
 extern void BuildCycle(long long *, struct FLAGS *);
-extern unsigned long long FillUnique(long long, int);
-extern void FillUniqueObservables();
+extern unsigned long long FillUnique(long long, int, struct FLAGS *);
+extern void FillUniqueObservables(struct FLAGS *);
 extern long long intro(struct FLAGS *);
 extern void time_stamp(time_t *, long long, const char *);
 extern void outro();
@@ -51,7 +51,7 @@ extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
 extern void OutMessageChar(const char *);
 extern void WriteResults(long long, struct FLAGS *);
-extern void WritehmQ(long long *);
+extern void WritehmQ(long long *, struct FLAGS *);
 extern void WriteState(const char *, komplex *);
 extern void WriteStates(komplex **);
 extern void WriteGSdata(double, long long *);
@@ -66,13 +66,13 @@ extern void WriteMaggs(long long *);
 extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 extern void MakeSparse(struct FLAGS *);
-extern double LowestLanczos(long long *, komplex *, long long *, long long);
+extern double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS *);
 extern void CrossLanczos(long long *, struct FLAGS *);
 extern void InitSym();
-extern long long ReadUnique(long long, int);
-extern void WriteUnique(long long);
-extern void WriteUniqueObservables();
-extern void ReadUniqueObservables();
+extern long long ReadUnique(long long, int, struct FLAGS *);
+extern void WriteUnique(long long, struct FLAGS *);
+extern void WriteUniqueObservables(struct FLAGS *);
+extern void ReadUniqueObservables(struct FLAGS *);
 
 /* Global variables read from the input file */
 long long Nspins;
@@ -287,12 +287,12 @@ int main(int argc, char *argv[])
       { // UNIMODER Reads from file.
         // Not tested with MPI since perl
         // scripts are lost.
-        Nunique = ReadUnique((long long)(mstart * 2), 1);
+        Nunique = ReadUnique((long long)(mstart * 2), 1, &input_flags);
       }
       else
       {
         //	 LogMessageChar("FillUnique 1 \n");
-        Nunique = FillUnique((long long)(mstart * 2), 1);
+        Nunique = FillUnique((long long)(mstart * 2), 1, &input_flags);
       }
     }
     else
@@ -301,12 +301,12 @@ int main(int argc, char *argv[])
       {
         if ((unimode == UNIMODER) && (rank == 0))
         {
-          Nunique = ReadUnique((long long)(mend * 2), 1);
+          Nunique = ReadUnique((long long)(mend * 2), 1, &input_flags);
         }
         else
         {
           //	 LogMessageChar("FillUnique 2 \n");
-          Nunique = FillUnique((long long)(mend * 2), 1);
+          Nunique = FillUnique((long long)(mend * 2), 1, &input_flags);
         }
       }
       else
@@ -317,12 +317,12 @@ int main(int argc, char *argv[])
           if ((unimode == UNIMODER) && (rank == 0))
           {
             //	 LogMessageChar("ReadUnique 3 \n");
-            Nunique = ReadUnique((long long)(0), 1);
+            Nunique = ReadUnique((long long)(0), 1, &input_flags);
           }
           else
           {
             //	 LogMessageChar(" FillUnique 3 \n");
-            Nunique = FillUnique(0, 1); // twom=0 if this loop is entered
+            Nunique = FillUnique(0, 1, &input_flags); // twom=0 if this loop is entered
           }
         }
         else
@@ -330,12 +330,12 @@ int main(int argc, char *argv[])
           if ((unimode == UNIMODER) && (rank == 0))
           {
             //	 LogMessageChar("ReadUnique 4 \n");
-            Nunique = ReadUnique((long long)(1), 1);
+            Nunique = ReadUnique((long long)(1), 1, &input_flags);
           }
           else
           {
             //	 LogMessageChar("FillUnique 4 \n");
-            Nunique = FillUnique(1, 1);
+            Nunique = FillUnique(1, 1, &input_flags);
           }
         }
       }
@@ -357,11 +357,11 @@ int main(int argc, char *argv[])
 
     if ((unimode == UNIMODER) && (rank == 0))
     {
-      Nunique = ReadUnique(0, 1);
+      Nunique = ReadUnique(0, 1, &input_flags);
     }
     else
     {
-      Nunique = FillUnique(0, 1);
+      Nunique = FillUnique(0, 1, &input_flags);
     }
   }
   // LogMessageChar("Unique mode OK \n");
@@ -392,12 +392,12 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODER) && (rank == 0))
       {
-        Nunique = ReadUnique(twom, 0);
+        Nunique = ReadUnique(twom, 0, &input_flags);
       }
       else
       {
-        Nunique = FillUnique(twom, 0);
-        FillUniqueObservables();
+        Nunique = FillUnique(twom, 0, &input_flags);
+        FillUniqueObservables(&input_flags);
       }
 
 #ifdef VERBOSE_TIME_LV1
@@ -411,7 +411,7 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODEW) && (rank == 0))
       {
-        WriteUnique(twom);
+        WriteUnique(twom, &input_flags);
       }
       else
       {
@@ -439,16 +439,16 @@ int main(int argc, char *argv[])
     if ((unimode == UNIMODER) && (rank == 0))
     {
       LogMessageChar("The mode is UNIMODER \n");
-      ReadUniqueObservables();
-      Nunique = ReadUnique(0, 0);
+      ReadUniqueObservables(&input_flags);
+      Nunique = ReadUnique(0, 0, &input_flags);
     }
     else
     {
-      Nunique = FillUnique(0, 0); // TODO: CHECK THIS: slightly disgusting:
+      Nunique = FillUnique(0, 0, &input_flags); // TODO: CHECK THIS: slightly disgusting:
                                   // variable is never used - FillUnique takes care
                                   // of both M_SYM set and unset
       LogMessageChar("\n FillUnique is done \n");
-      FillUniqueObservables();
+      FillUniqueObservables(&input_flags);
       LogMessageChar("FillUniqueObservables is done \n");
     }
 #ifdef VERBOSE_TIME_LV1
@@ -469,14 +469,14 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODEW) && (rank == 0))
       {
-        WriteUnique(twom);
+        WriteUnique(twom, &input_flags);
         long long q_write[NSYM];
         for (int i = 0; i < NSYM; i++)
         {
           q_write[i] = 0;
         }
         BuildCycle(q_write, &input_flags);
-        WriteUniqueObservables();
+        WriteUniqueObservables(&input_flags);
       }
       else
       {
@@ -564,10 +564,10 @@ void Solve_Lanczos(struct FLAGS *input_flags)
 
           LogMessageChar(") \n");
           BuildCycle(q, input_flags);
-          etmp = LowestLanczos(q, NULL, &Nener, NORMAL);
+          etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
 #ifdef WRITE_ENERGIES
-          WritehmQ(q);
+          WritehmQ(q, input_flags);
           WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
@@ -605,10 +605,10 @@ void Solve_Lanczos(struct FLAGS *input_flags)
 #endif /* VERBOSE_TIME_LV2 */
 
         BuildCycle(q, input_flags);
-        etmp = LowestLanczos(q, NULL, &Nener, NORMAL);
+        etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
 #ifdef WRITE_ENERGIES
-        WritehmQ(q);
+        WritehmQ(q, input_flags);
         WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
@@ -684,7 +684,7 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     if (gs_rank == rank)
     {
       BuildCycle(q_gs, input_flags);
-      LowestLanczos(q_gs, gs, &Nener, RECONSTRUCT);
+      LowestLanczos(q_gs, gs, &Nener, RECONSTRUCT, input_flags);
     }
     MPI_Bcast(gs, Nunique, MPI_C_DOUBLE_COMPLEX, gs_rank,
               MPI_COMM_WORLD);
@@ -887,7 +887,7 @@ void Solve_Matrix(struct FLAGS *input_flags)
 #endif /* TEST_GS_SEARCH */
       gs_energy = Matrix_gs(hamilton, uniq_k, q, gs, input_flags);
 #ifdef WRITE_ENERGIES
-      WritehmQ(q);
+      WritehmQ(q, input_flags);
       WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES
@@ -914,7 +914,7 @@ void Solve_Matrix(struct FLAGS *input_flags)
     if (etmp < LARGE_NUMBER) /* else: illegal symmetry combination */
     {
 #ifdef WRITE_ENERGIES
-      WritehmQ(q);
+      WritehmQ(q, input_flags);
       WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES

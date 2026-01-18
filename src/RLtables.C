@@ -29,9 +29,9 @@ void BuildTables();
 // Fill the tables of often used math functions and complex phases
 long long Count(unsigned long long);
 // Count the number of up-spins in a state (represented by a bitmap)
-unsigned long long FillUnique(long long, int);
+unsigned long long FillUnique(long long, int, struct FLAGS*);
 // Fill the table of unique states
-void FillUniqueObservables();
+void FillUniqueObservables(struct FLAGS*);
 // Write diagonal values of the unique states to file
 void BuildCycle(long long *, struct FLAGS *);
 // Make table of number of occurences of a particular unique in a particular symmetry cycle
@@ -43,13 +43,13 @@ long long LookUpU(unsigned long long);
 // Find the index of a given unique state
 void InvertMatrix(long long, double[4][4], double[4][4]);
 // Inverts 1x1 and 2x2 matrices. TODO: test when this is used and if it should be generalized
-void WriteUnique(long long);
+void WriteUnique(long long, struct FLAGS*);
 // Write list of uniques to file
-long long ReadUnique(long long, int);
+long long ReadUnique(long long, int, struct FLAGS*);
 // Read list of uniques from file
-void WriteUniqueObservables();
+void WriteUniqueObservables(struct FLAGS*);
 // Write the diagonal elements of the uniques to file
-void ReadUniqueObservables();
+void ReadUniqueObservables(struct FLAGS*);
 // Read the diagonal elements of the uniques from file
 
 /* Functions defined elsewhere */
@@ -71,11 +71,8 @@ extern unsigned long long *unique;
 extern long long *uniq_k;
 extern long long *Nocc, *Nocc_0;
 extern char *infile_name;
-#ifndef M_SYM
 extern long long *mag;
-#else
 extern long long twom;
-#endif /* M_SYM */
 
 /* InvertMatrix () inverts the translation matrix. TODO: replace by the other matrix routine! */
 /* The rational behind this is the following:
@@ -191,7 +188,7 @@ long long Count(unsigned long long state)
 
 /* ReadUniqueObservables() reads diagonal elements for all uniques from a file */
 /* */
-void ReadUniqueObservables()
+void ReadUniqueObservables(struct FLAGS *input_flags)
 {
   char uniqueobs_name[30];
   FILE *uniobsfile;
@@ -199,16 +196,21 @@ void ReadUniqueObservables()
   char m_name[2];
 
   // first, we construct the appropriate name of the unique file
-#ifdef M_SYM          // At present ReadUniqueObservables are not called by RLexact for M_SYM on, so this #ifdef does not make much sense.
-  itoa(twom, m_name); // TT debugging 5/2-10
-  strcpy(uniqueobs_name, infile_name);
-  strcat(uniqueobs_name, ".m"); // The line strcat(uniqueobs_name,UNIOBSEND); was originally here, but it must have been a bug never discovered due to the function never being called in this #ifdef.
-  strcat(uniqueobs_name, m_name);
-  strcat(uniqueobs_name, UNIOBSEND);
-#else  /*M_SYM */
-  strcpy(uniqueobs_name, infile_name);
-  strcat(uniqueobs_name, UNIOBSEND);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+  {
+    // At present ReadUniqueObservables are not called by RLexact for M_SYM on, so this #ifdef does not make much sense.
+
+    itoa(twom, m_name); // TT debugging 5/2-10
+    strcpy(uniqueobs_name, infile_name);
+    strcat(uniqueobs_name, ".m"); // The line strcat(uniqueobs_name,UNIOBSEND); was originally here, but it must have been a bug never discovered due to the function never being called in this #ifdef.
+    strcat(uniqueobs_name, m_name);
+    strcat(uniqueobs_name, UNIOBSEND);
+  }
+  else
+  { /*M_SYM */
+    strcpy(uniqueobs_name, infile_name);
+    strcat(uniqueobs_name, UNIOBSEND);
+  }
 
   // then, we open the file
   errno = 0;
@@ -221,26 +223,27 @@ void ReadUniqueObservables()
   }
   fflush(uniobsfile);
 
-#ifndef M_SYM
-  // read the magnetisation and periodicity in q=0
-  errno = 0;
-  if (Nunique != fread(mag, sizeof(long long), Nunique, uniobsfile))
+  if (!input_flags->m_sym)
   {
-    fatalerror("Cannot read mag array from uniques observables file, sorry!", errno);
-  }
+    // read the magnetisation and periodicity in q=0
+    errno = 0;
+    if (Nunique != fread(mag, sizeof(long long), Nunique, uniobsfile))
+    {
+      fatalerror("Cannot read mag array from uniques observables file, sorry!", errno);
+    }
 
-  errno = 0;
-  if (Nunique != fread(Nocc_0, sizeof(long long), Nunique, uniobsfile))
-  {
-    fatalerror("Cannot read Nocc_0 array from uniques observables file, sorry!", errno);
+    errno = 0;
+    if (Nunique != fread(Nocc_0, sizeof(long long), Nunique, uniobsfile))
+    {
+      fatalerror("Cannot read Nocc_0 array from uniques observables file, sorry!", errno);
+    }
   }
-#endif
 
   fclose(uniobsfile);
 }
 
 /* ReadUnique() reads the number of uniques and a list of the uniques from file */
-long long ReadUnique(long long twom, int Nunique_only)
+long long ReadUnique(long long twom, int Nunique_only, struct FLAGS *input_flags)
 {
   char unique_name[30], m_name[2];
   FILE *unifile;
@@ -248,12 +251,13 @@ long long ReadUnique(long long twom, int Nunique_only)
 
   // first, we construct the appropriate name of the unique file
   strcpy(unique_name, infile_name); // TODO: generalize for other file names
-#ifdef M_SYM
-/*  LogMessageCharInt("\n 2m value for the un file is:",twom);
-  itoa(twom,m_name);
-  strcat(unique_name,".m");
-  strcat(unique_name,m_name); */
-#endif // M_SYM
+  if (input_flags->m_sym)
+  {
+    /*  LogMessageCharInt("\n 2m value for the un file is:",twom);
+      itoa(twom,m_name);
+      strcat(unique_name,".m");
+      strcat(unique_name,m_name); */
+  }
   strcat(unique_name, UNIEND);
 
   // then, we open the file
@@ -297,7 +301,7 @@ long long ReadUnique(long long twom, int Nunique_only)
 }
 
 /* WriteUnique writes the number of uniques, followed by the unique table to the unique-file. */
-void WriteUnique(long long twom)
+void WriteUnique(long long twom, struct FLAGS *input_flags)
 {
   char unique_name[30];
   char m_name[2];
@@ -306,13 +310,14 @@ void WriteUnique(long long twom)
 
   // First, construct the appropriate name of the unique file
   strcpy(unique_name, infile_name);
-#ifdef M_SYM
-  /* itoa(twom,m_name);
-  strcat(unique_name,".m");
-  strcat(unique_name,m_name);
-  LogMessageChar("m_name : ");
-  LogMessageChar(m_name); */
-#endif // M_SYM
+  if (input_flags->m_sym)
+  {
+    /* itoa(twom,m_name);
+    strcat(unique_name,".m");
+    strcat(unique_name,m_name);
+    LogMessageChar("m_name : ");
+    LogMessageChar(m_name); */
+  }
   strcat(unique_name, UNIEND);
   LogMessageChar("unique_name : ");
   LogMessageChar(unique_name);
@@ -345,7 +350,7 @@ void WriteUnique(long long twom)
 }
 
 /* WriteUniqueObservables() writes diagonal elements of the uniques to file */
-void WriteUniqueObservables()
+void WriteUniqueObservables(struct FLAGS *input_flags)
 {
   char uniqueobs_name[30];
   FILE *uniobsfile;
@@ -365,26 +370,26 @@ void WriteUniqueObservables()
     fatalerror("Cannot open unique observables file, sorry!", errno);
   }
   fflush(uniobsfile);
-
-#ifndef M_SYM
-  // write the magnetisation
-  errno = 0;
-  if (Nunique != fwrite(mag, sizeof(long long), Nunique, uniobsfile))
+  if (!input_flags->m_sym)
   {
-    fatalerror("Cannot write mag array to uniques observables file, sorry!", errno);
+    // write the magnetisation
+    errno = 0;
+    if (Nunique != fwrite(mag, sizeof(long long), Nunique, uniobsfile))
+    {
+      fatalerror("Cannot write mag array to uniques observables file, sorry!", errno);
+    }
+    // write the periodicity in q=0 for use in cross sections
+    if (Nunique != fwrite(Nocc_0, sizeof(long long), Nunique, uniobsfile))
+    {
+      fatalerror("Cannot write Nocc_0 array to uniques observables file, sorry!", errno);
+    }
   }
-  // write the periodicity in q=0 for use in cross sections
-  if (Nunique != fwrite(Nocc_0, sizeof(long long), Nunique, uniobsfile))
-  {
-    fatalerror("Cannot write Nocc_0 array to uniques observables file, sorry!", errno);
-  }
-#endif
   fclose(uniobsfile);
 }
 
 /* FillUnique fills the table of unique states if the flag CountOnly is not set.
 The number of unique states are returned in any case. */
-unsigned long long FillUnique(long long twom, int CountOnly)
+unsigned long long FillUnique(long long twom, int CountOnly, struct FLAGS *input_flags)
 {
   unsigned long long bitmap, basis_c = 0;
   long long i, j, n, pos[NSPINS + 1];
@@ -395,92 +400,93 @@ unsigned long long FillUnique(long long twom, int CountOnly)
   LogMessageCharInt("Start of FillUnique. MAX_STATE = ", (unsigned long long)MAX_STATE);
   LogMessageChar("\n");
 #endif
-
-#ifdef M_SYM
-  n = (Nspins + twom) / 2; // number of spin-ups
-                           // Begin with all spins to the right
-  for (j = 0; j < n; j++)
-    pos[j] = j;
-  bitmap = 0;
-  for (j = 0; j < n; j++)
-    bitmap += ((unsigned long long)1) << pos[j];
-#ifdef TEST_FILLUNIQUE
-  LogMessageCharInt(" Loop over all states with ", n);
-  LogMessageCharInt(" spins up starting with state ", bitmap);
-  LogMessageChar("\n");
-#endif
-  while (bitmap < ((unsigned long long)MAX_STATE))
+  if (input_flags->m_sym)
   {
+    n = (Nspins + twom) / 2; // number of spin-ups
+                             // Begin with all spins to the right
+    for (j = 0; j < n; j++)
+      pos[j] = j;
+    bitmap = 0;
+    for (j = 0; j < n; j++)
+      bitmap += ((unsigned long long)1) << pos[j];
 #ifdef TEST_FILLUNIQUE
-    LogMessageCharInt("\nLooking at state ", bitmap);
+    LogMessageCharInt(" Loop over all states with ", n);
+    LogMessageCharInt(" spins up starting with state ", bitmap);
+    LogMessageChar("\n");
 #endif
-    if (IsUnique(bitmap))
+    while (bitmap < ((unsigned long long)MAX_STATE))
     {
 #ifdef TEST_FILLUNIQUE
-      LogMessageCharInt("\nEnter IsUnique criteria, basis_c=", basis_c);
+      LogMessageCharInt("\nLooking at state ", bitmap);
+#endif
+      if (IsUnique(bitmap))
+      {
+#ifdef TEST_FILLUNIQUE
+        LogMessageCharInt("\nEnter IsUnique criteria, basis_c=", basis_c);
 #endif // TESTFILLUNIQUE
-      if (!CountOnly)
-      {
-        unique[basis_c] = (unsigned long long)bitmap;
-      }
-      basis_c++;
+        if (!CountOnly)
+        {
+          unique[basis_c] = (unsigned long long)bitmap;
+        }
+        basis_c++;
 #ifdef TEST_FILLUNIQUE
-      LogMessageCharInt("\n basis_c=", basis_c);
-      if (!CountOnly)
-      {
-        LogMessageCharInt("Its Unique, number ", basis_c - 1);
-        LogMessageCharInt(": ", unique[basis_c - 1]);
-        LogMessageCharInt("is ", bitmap);
-        LogMessageChar("\n");
-      }
-      else
-      {
-        LogMessageCharInt("Its Unique, number ", basis_c - 1);
-        LogMessageCharInt("is ", bitmap);
-        LogMessageChar("\n");
-      }
+        LogMessageCharInt("\n basis_c=", basis_c);
+        if (!CountOnly)
+        {
+          LogMessageCharInt("Its Unique, number ", basis_c - 1);
+          LogMessageCharInt(": ", unique[basis_c - 1]);
+          LogMessageCharInt("is ", bitmap);
+          LogMessageChar("\n");
+        }
+        else
+        {
+          LogMessageCharInt("Its Unique, number ", basis_c - 1);
+          LogMessageCharInt("is ", bitmap);
+          LogMessageChar("\n");
+        }
 #endif
+      }
+      j = 0; // now, reposition the spins to cover all combinations of spin up
+      while ((j < n - 1) && (pos[j + 1] == (pos[j] + 1)))
+        j++;
+      bitmap += (((unsigned long long)1) << (pos[j] + 1)) - (((unsigned long long)1) << pos[j]);
+      pos[j]++;
+      for (i = 0; i < j; i++)
+      {
+        bitmap += (((unsigned long long)1) << i) - (((unsigned long long)1) << pos[i]);
+        pos[i] = i;
+      }
     }
-    j = 0; // now, reposition the spins to cover all combinations of spin up
-    while ((j < n - 1) && (pos[j + 1] == (pos[j] + 1)))
-      j++;
-    bitmap += (((unsigned long long)1) << (pos[j] + 1)) - (((unsigned long long)1) << pos[j]);
-    pos[j]++;
-    for (i = 0; i < j; i++)
+  }
+  else
+  { // M_SYM
+
+    if (Nspins >= 48)
+      fatalerror("In FillUnique: Cannot run through all states for Nspins>=", 48);
+    if (Nspins > 32)
     {
-      bitmap += (((unsigned long long)1) << i) - (((unsigned long long)1) << pos[i]);
-      pos[i] = i;
+      Warning("You are looping over many states in FillUnique:", exp(Nspins));
     }
-  }
-
-#else // M_SYM
-
-  if (Nspins >= 48)
-    fatalerror("In FillUnique: Cannot run through all states for Nspins>=", 48);
-  if (Nspins > 32)
-  {
-    Warning("You are looping over many states in FillUnique:", exp(Nspins));
-  }
-  for (bitmap = 0; bitmap < MAX_STATE; bitmap++)
-  {
+    for (bitmap = 0; bitmap < MAX_STATE; bitmap++)
+    {
 #ifdef TEST_FILLUNIQUE
-    LogMessageCharInt(" basis_c = ", basis_c);
-    LogMessageCharInt(" bitmap = ", bitmap);
+      LogMessageCharInt(" basis_c = ", basis_c);
+      LogMessageCharInt(" bitmap = ", bitmap);
 #endif
-    if (IsUnique(bitmap))
-    { // Unique found
-      if (!CountOnly)
-      {
-        unique[basis_c] = bitmap;
+      if (IsUnique(bitmap))
+      { // Unique found
+        if (!CountOnly)
+        {
+          unique[basis_c] = bitmap;
 #ifdef TEST_FILLUNIQUE_LIST
-        LogMessageCharInt("\n Unique no: ", basis_c);
-        LogMessageCharInt(" , ", unique[basis_c]);
+          LogMessageCharInt("\n Unique no: ", basis_c);
+          LogMessageCharInt(" , ", unique[basis_c]);
 #endif
+        }
+        basis_c++;
       }
-      basis_c++;
     }
   }
-#endif // M_SYM
 
   Nu2 = ((unsigned long long)1) << (long long)ceil(log(basis_c + 1) / log(2)); // find smallest Nu2 = 2^^j > n
 
@@ -493,7 +499,7 @@ unsigned long long FillUnique(long long twom, int CountOnly)
 }
 
 /* FillUniqueObservables fills the table of observables of unique states. */
-void FillUniqueObservables()
+void FillUniqueObservables(struct FLAGS *input_flags)
 {
   LogMessageChar("IN FillUniqueObservables\n");
   unsigned long long state, index;
@@ -511,15 +517,15 @@ void FillUniqueObservables()
     LogMessageCharInt(" : ", state);
     LogMessageCharInt(", count: ", count);
 #endif /* TEST_FILLUNIQUEOBSERVABLES */
-
-#ifndef M_SYM
-    mag[index] = count - (Nspins + 1) / 2;
-    ;
-    /* Integer division, force integer m, even if Sz is half-integer */
+    if (!input_flags->m_sym)
+    {
+      mag[index] = count - (Nspins + 1) / 2;
+      ;
+      /* Integer division, force integer m, even if Sz is half-integer */
 #ifdef TEST_FILLUNIQUEOBSERVABLES
-    LogMessageCharInt(", m=", mag[index]);
+      LogMessageCharInt(", m=", mag[index]);
 #endif /* TEST_FILLUNIQUEOBSERVABLES */
-#endif /* M_SYM */
+    }
 
 #ifdef TEST_FILLUNIQUEOBSERVABLES
     LogMessageChar(", Done! \n");

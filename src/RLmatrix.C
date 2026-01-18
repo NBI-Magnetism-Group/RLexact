@@ -36,7 +36,7 @@ double CalculateM(komplex *);
 void BuildCycle(long long *, struct FLAGS *);
 extern void WriteEnergy(double);
 // extern void FillHamilton(long long *, long long *, komplex**); OLD version
-extern void FillHamilSparse(komplex **, long long *k);
+extern void FillHamilSparse(komplex **, long long *k, struct FLAGS*);
 extern void Diagonalize(komplex **, long long, double *);
 extern void Eigenvector_test(long long *, komplex *, komplex *);
 extern void fatalerror(const char *, long long);
@@ -117,7 +117,7 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *
 #ifdef MATRIX_MESSAGES
   LogMessageChar("\n Next step, fill hamiltonian and diagonalize it \n H= \n");
 #endif
-  FillHamilSparse(hamil, k);
+  FillHamilSparse(hamil, k, input_flags);
 #ifdef MATRIX_MESSAGES
   for (i = 1; i <= Nuniq_k; i++)
   {
