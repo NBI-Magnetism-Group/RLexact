@@ -40,10 +40,8 @@ extern void fatalerror(const char *, long long);
 /* Functions declared in this file */
 void ApplySzq(long long *);
 double lengthofvector(komplex *);
-#ifndef M_SYM
 void ApplySmp(long long *, long long, komplex *);
-#endif
-void CrossLanczos(long long *);
+void CrossLanczos(long long *, struct FLAGS *);
 
 #ifdef NEVER // doesnt work, SJ 270616
 void ApplySmpMsym(long long *, long long);
@@ -53,9 +51,7 @@ bool NonZero(unsigned long long, long long *);
 #endif // NEVER
 
 // Global variables defined in RLexact.c
-#ifdef M_SYM
 extern long long twom;
-#endif /* M_SYM */
 
 extern long long Nspins, Nunique, hamil_coup[NCOUP][2];
 extern long long *TransIds;
@@ -82,15 +78,14 @@ extern double *cross;
 long long k[NSYM];
 
 // void CrossLanczos(int symvalue[NSYM])
-void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
+void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symvalue =qvector)
 {
   long long j, r, Nener;
   int maxflag;
 
 #ifdef TEST_CROSS
-#ifdef M_SYM
-  LogMessageCharInt("\n for twom =", twom);
-#endif
+  if (input_flags->m_sym)
+    LogMessageCharInt("\n for twom =", twom);
   LogMessageCharInt("\nIn q = ", symvalue[1]);
   for (int i = 2; i < Nsym; i++)
     LogMessageCharInt(", ", symvalue[i]);
@@ -119,12 +114,10 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
 #endif
 
   // how many cross sections can be calculated?
-#ifdef M_SYM
-  maxflag = 1;
-#endif
-#ifndef M_SYM
-  maxflag = 3;
-#endif
+  if (input_flags->m_sym)
+    maxflag = 1;
+  else
+    maxflag = 3;
 
   for (int flag = 0; flag < maxflag; flag++) // first SZZ, then SXX, then SYY
   {
@@ -143,42 +136,42 @@ void CrossLanczos(long long *symvalue) //(Note: symvalue =qvector)
     {
       ApplySzq(symvalue);
     }
-#ifndef M_SYM
+    if (!input_flags->m_sym)
+    {
 
 #ifndef FIND_CROSS_PM // find in terms of S^xx and S^yy
-    if (flag == 1)    // SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
-    {
-      /* applysmp is calculated here, but also needed in flag==2 */
-      ApplySmp(symvalue, 0, spgs); // find s^+_q |gs>
-      ApplySmp(symvalue, 1, smgs); // find s^-_q |gs>
-
-      for (int i = 0; i < Nunique; i++)
+      if (flag == 1)  // SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
       {
-        szxygs[i] = (1.0 / (2.0)) * (spgs[i] + smgs[i]);
-      }
-    }
+        /* applysmp is calculated here, but also needed in flag==2 */
+        ApplySmp(symvalue, 0, spgs); // find s^+_q |gs>
+        ApplySmp(symvalue, 1, smgs); // find s^-_q |gs>
 
-    if (flag == 2) // SYY, s^y |gs> = 1/(2i) (s^+_q |gs> - s^-_q |gs>)
-    {
-      for (int i = 0; i < Nunique; i++)
-      {
-        szxygs[i] = (1.0 / (2.0 * I)) * (spgs[i] - smgs[i]);
+        for (int i = 0; i < Nunique; i++)
+        {
+          szxygs[i] = (1.0 / (2.0)) * (spgs[i] + smgs[i]);
+        }
       }
-    }
+
+      if (flag == 2) // SYY, s^y |gs> = 1/(2i) (s^+_q |gs> - s^-_q |gs>)
+      {
+        for (int i = 0; i < Nunique; i++)
+        {
+          szxygs[i] = (1.0 / (2.0 * I)) * (spgs[i] - smgs[i]);
+        }
+      }
 #endif // not FIND_CROSS_PM
 
 #ifdef FIND_CROSS_PM // find in terms of S^+- and S^-+
-    if (flag == 1)   // SMP
-    {
-      ApplySmp(symvalue, 0, szxygs); // find s^+_q |gs>
-    }
-    if (flag == 2) // SPM
-    {
-      ApplySmp(symvalue, 1, szxygs); // find s^-_q |gs>
-    }
+      if (flag == 1) // SMP
+      {
+        ApplySmp(symvalue, 0, szxygs); // find s^+_q |gs>
+      }
+      if (flag == 2) // SPM
+      {
+        ApplySmp(symvalue, 1, szxygs); // find s^-_q |gs>
+      }
 #endif // FIND_CROSS_PM
-
-#endif // M_SYM
+    }
 
     szqlength = lengthofvector(szxygs); // for output in cross files
 
@@ -407,7 +400,6 @@ void ApplySzq(long long *q)
   return;
 }
 
-#ifndef M_SYM
 /* ApplySmp applies the S+(q) or S-(q) operator (to the ground state vector).
    Last Change: Asbjørn 2025.02.6
    The SMP parameter determines which operator to apply
@@ -627,7 +619,6 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec)
 
   return;
 }
-#endif // NOT M_SYM
 
 #ifdef NEVER // Msym old
 /* ApplySmpMsym applies the S-S+(q) operator (to the ground state vector).
@@ -749,7 +740,6 @@ void ApplySmp(long long *q, long long SPMcross)
 }
 #endif // NOT M_SYM
 
-#ifdef M_SYM
 /* ApplySmpMsym applies the S-S+(q) operator (to the ground state vector).
    Last Change: Kim 06.09.94
    The which_q parameter determines if it is the S-(q)S+ operator
@@ -862,7 +852,6 @@ void ApplySmpMsym(long long *q, long long which_q)
 
   return;
 }
-#endif // M_SYM
 
 #ifdef NEVER
 // CrossMatrix calculates now only S^zz(q) on the whole set of eigenstates
@@ -937,4 +926,3 @@ double lengthofvector(komplex *v)
   }
   return length;
 }
-

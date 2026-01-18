@@ -54,16 +54,14 @@ extern void LogMessageInt(long long);
 extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
-#ifndef M_SYM
 extern void Hamil_Zeeman(unsigned long long, unsigned long long *, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#endif
-extern void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
+extern void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *, struct FLAGS *);
 #ifdef RING_EXCHANGE
 extern void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #endif /*RING_EXCHANGE*/
 
 // Functions defined in this file
-void MakeSparse();
+void MakeSparse(struct FLAGS *);
 void ApplySparse(komplex *vectin, komplex *vectout, long long *k);
 void FillHamilSparse(komplex **hamil, long long *k);
 void WriteCouplingFiles(unsigned long long, unsigned long long, int *, komplex, long long, long long, int *, long long *, FILE *, FILE *, FILE *);
@@ -79,7 +77,7 @@ char Ntotbuf[BUFFERSIZE];
 /* MakeSparse writes a series of 6 files containing all information on the q-independent matrix elements */
 /* TODO: isolate file opening/closing in separate functions in RLio.C  */
 
-void MakeSparse()
+void MakeSparse(struct FLAGS *input_flags)
 {
   long long i, strength, l, index, j, u_cycle, totcount = 0;
   int nelem;
@@ -197,7 +195,7 @@ void MakeSparse()
    reset to true values later. - treue 20080204 */
       new_state = bitmap;
       J = 0;
-      Hamil2_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile);
+      Hamil2_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile, input_flags);
     } /* loop over couplings, end */
 
 #ifdef RING_EXCHANGE
