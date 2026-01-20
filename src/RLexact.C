@@ -67,7 +67,7 @@ extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct 
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 extern void MakeSparse();
 extern double LowestLanczos(long long *, komplex *, long long *, long long);
-extern void CrossLanczos(long long *);
+extern void CrossLanczos(long long *, struct FLAGS*);
 extern void MakeSparse();
 extern void InitSym();
 extern long long ReadUnique(long long, int);
@@ -115,14 +115,12 @@ long long q_gs[NSYM];
 long long twom;
 /* Two times the magnetization value (an integer!) */
 double mstart, mend;
-#ifndef M_SYM
 double h;
 /* Magnitude of the magnetic field */
 double hstart, hend, hstep;
 /* Limits for field values to be used */
 double field[3];
 /* Three (normalized) components of the magnetic field */
-#endif /* M_SYM */
 double Jzz[NCOUP];
 /* z value of each coupling; Hz=Jz Sz1 Sz2 */
 double Jxy[NCOUP];
@@ -167,10 +165,8 @@ long long Longest_Matrix; // Variable for deallocation at the end, stores first 
 
 long long Nelem;
 // Number of matrix elements
-#ifndef M_SYM
 long long *mag;
 /* m-value for the unique states, TODO: should be int */
-#endif /* M_SYM */
 komplex **hamilton;
 /* The Hamiltonian matrix, dynamically allocated */
 komplex *vec1, *vec2, *vec3;
@@ -254,225 +250,255 @@ int main(int argc, char *argv[])
   srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
   time_stamp(&time_total, START, "diagonalization \n");
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, START, "filling basic arrays");
-#endif
+  if (input_flags.VERBOSE_TIME_LV1)
+    time_stamp(&time_single, START, "filling basic arrays");
 
   BuildTables();
   InitSym();
 
-if(input_flags.m_sym){
-  LogMessageChar("With M-symmetry \n");
-} else {
-  LogMessageChar("Without M-symmetry \n");
-}
-
-if (input_flags.m_sym){
-
-  // First we must find the maximum number of unique states for any m.
-  // This is always the number of uniques for the lowest absolute m-value.
-#ifdef VERBOSE
-  LogMessageChar("M_SYM encountered 1st \n");
-  LogMessageCharInt("Unique mode is: ", unimode);
-  LogMessageCharInt("Mode is: ", mode);
-  LogMessageCharInt("Nspins%2 is: ", Nspins % 2);
-  LogMessageCharInt("twom is: ", twom);
-  LogMessageCharInt("mstart = ", mstart);
-  LogMessageCharInt("mend = ", mend);
-  LogMessageChar("\n");
-#endif // VERBOSE
-
-  if ((mstart > 0) && (mend > 0))
-  {
-    if ((unimode == UNIMODER) && (rank == 0))
-    { // UNIMODER Reads from file.
-      // Not tested with MPI since perl
-      // scripts are lost.
-      Nunique = ReadUnique((long long)(mstart * 2), 1);
-    }
-    else
-    {
-      //	 LogMessageChar("FillUnique 1 \n");
-      Nunique = FillUnique((long long)(mstart * 2), 1);
-    }
-  }
+  if (input_flags.m_sym)
+    LogMessageChar("With M-symmetry \n");
   else
+    LogMessageChar("Without M-symmetry \n");
+
+  if (input_flags.m_sym)
   {
-    if ((mstart < 0) && (mend < 0))
+
+    // First we must find the maximum number of unique states for any m.
+    // This is always the number of uniques for the lowest absolute m-value.
+    if (input_flags.VERBOSE)
+    {
+      LogMessageChar("M_SYM encountered 1st \n");
+      LogMessageCharInt("Unique mode is: ", unimode);
+      LogMessageCharInt("Mode is: ", mode);
+      LogMessageCharInt("Nspins%2 is: ", Nspins % 2);
+      LogMessageCharInt("twom is: ", twom);
+      LogMessageCharInt("mstart = ", mstart);
+      LogMessageCharInt("mend = ", mend);
+      LogMessageChar("\n");
+    }
+
+    if ((mstart > 0) && (mend > 0))
     {
       if ((unimode == UNIMODER) && (rank == 0))
-      {
-        Nunique = ReadUnique((long long)(mend * 2), 1);
+      { // UNIMODER Reads from file.
+        // Not tested with MPI since perl
+        // scripts are lost.
+        Nunique = ReadUnique((long long)(mstart * 2), 1);
       }
       else
       {
-        //	 LogMessageChar("FillUnique 2 \n");
-        Nunique = FillUnique((long long)(mend * 2), 1);
+        //	 LogMessageChar("FillUnique 1 \n");
+        Nunique = FillUnique((long long)(mstart * 2), 1);
       }
     }
     else
     {
-      if (Nspins % 2 == 0)
+      if ((mstart < 0) && (mend < 0))
       {
-        //     LogMessageCharInt("Nspins%2 loop entered, unimode ", unimode);
         if ((unimode == UNIMODER) && (rank == 0))
         {
-          //	 LogMessageChar("ReadUnique 3 \n");
-          Nunique = ReadUnique((long long)(0), 1);
+          Nunique = ReadUnique((long long)(mend * 2), 1);
         }
         else
         {
-          //	 LogMessageChar(" FillUnique 3 \n");
-          Nunique = FillUnique(0, 1); // twom=0 if this loop is entered
+          //	 LogMessageChar("FillUnique 2 \n");
+          Nunique = FillUnique((long long)(mend * 2), 1);
         }
       }
       else
       {
-        if ((unimode == UNIMODER) && (rank == 0))
+        if (Nspins % 2 == 0)
         {
-          //	 LogMessageChar("ReadUnique 4 \n");
-          Nunique = ReadUnique((long long)(1), 1);
+          //     LogMessageCharInt("Nspins%2 loop entered, unimode ", unimode);
+          if ((unimode == UNIMODER) && (rank == 0))
+          {
+            //	 LogMessageChar("ReadUnique 3 \n");
+            Nunique = ReadUnique((long long)(0), 1);
+          }
+          else
+          {
+            //	 LogMessageChar(" FillUnique 3 \n");
+            Nunique = FillUnique(0, 1); // twom=0 if this loop is entered
+          }
         }
         else
         {
-          //	 LogMessageChar("FillUnique 4 \n");
-          Nunique = FillUnique(1, 1);
+          if ((unimode == UNIMODER) && (rank == 0))
+          {
+            //	 LogMessageChar("ReadUnique 4 \n");
+            Nunique = ReadUnique((long long)(1), 1);
+          }
+          else
+          {
+            //	 LogMessageChar("FillUnique 4 \n");
+            Nunique = FillUnique(1, 1);
+          }
         }
       }
     }
   }
-
-}else {// NOT M_SYM
-#ifdef VERBOSE
-  LogMessageChar("M_SYM not encountered \n");
-  LogMessageCharInt("Unique mode is: ", unimode);
-  LogMessageCharInt("Mode is: ", mode);
-  LogMessageCharInt("Nspins%2 is: ", Nspins % 2);
-  LogMessageCharInt("h is: ", h);
-  LogMessageCharInt("hstart is ", hstart);
-  LogMessageCharInt("hend is ", hend);
-  LogMessageCharDouble("in steps ", hstep);
-  LogMessageChar("\n");
-#endif // VERBOSE
-
-  if ((unimode == UNIMODER) && (rank == 0))
-  {
-    Nunique = ReadUnique(0, 1);
-  }
   else
-  {
-    Nunique = FillUnique(0, 1);
-  }
-} /* M_SYM */
-       // LogMessageChar("Unique mode OK \n");
-       // LogMessageCharInt("Memory needed for vectors is ", (Nunique*4*sizeof(komplex)));
-       // LogMessageChar("\n");
+  { // NOT M_SYM
+    if (input_flags.VERBOSE)
+    {
+      LogMessageChar("M_SYM not encountered \n");
+      LogMessageCharInt("Unique mode is: ", unimode);
+      LogMessageCharInt("Mode is: ", mode);
+      LogMessageCharInt("Nspins%2 is: ", Nspins % 2);
+      LogMessageCharInt("h is: ", h);
+      LogMessageCharInt("hstart is ", hstart);
+      LogMessageCharInt("hend is ", hend);
+      LogMessageCharDouble("in steps ", hstep);
+      LogMessageChar("\n");
+    }
+
+    if ((unimode == UNIMODER) && (rank == 0))
+    {
+      Nunique = ReadUnique(0, 1);
+    }
+    else
+    {
+      Nunique = FillUnique(0, 1);
+    }
+  } /* M_SYM */
+  // LogMessageChar("Unique mode OK \n");
+  // LogMessageCharInt("Memory needed for vectors is ", (Nunique*4*sizeof(komplex)));
+  // LogMessageChar("\n");
 
   allocate(&input_flags);
   if (input_flags.use_exact_matrix)
-  {
     Longest_Matrix = Nunique;
-  }
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, STOP, "Longest_Matrix allocated ");
-#endif
+  if (input_flags.VERBOSE_TIME_LV1)
+    time_stamp(&time_single, STOP, "Longest_Matrix allocated ");
 
-#ifdef M_SYM
-  // LogMessageChar("M_SYM encountered \n");
-  for (twom = (long long)(2 * mstart); twom <= (long long)(2 * mend); twom = twom + 2)
+  if (input_flags.m_sym)
   {
+    // LogMessageChar("M_SYM encountered \n");
+    for (twom = (long long)(2 * mstart); twom <= (long long)(2 * mend); twom = twom + 2)
+    {
 
-#ifdef VERBOSE_TIME_LV1
-    LogMessageCharInt("\n Now treating the m = ", twom / 2);
-    LogMessageChar("subspace: \n\n");
-    time_stamp(&time_single0, START, "filling arrays for one m");
-#endif
+      if (input_flags.VERBOSE_TIME_LV1)
+      {
+        LogMessageCharInt("\n Now treating the m = ", twom / 2);
+        LogMessageChar("subspace: \n\n");
+        time_stamp(&time_single0, START, "filling arrays for one m");
+      }
+
+      if ((unimode == UNIMODER) && (rank == 0))
+      {
+        Nunique = ReadUnique(twom, 0);
+      }
+      else
+      {
+        Nunique = FillUnique(twom, 0);
+        FillUniqueObservables();
+      }
+
+      if (input_flags.VERBOSE_TIME_LV1)
+      {
+        time_stamp(&time_single0, STOP, " ");
+        time_stamp(&time_single0, START, "calculating for one m");
+      }
+      if (input_flags.VERBOSE_TIME_LV1)
+        LogMessageCharInt("\n Nunique = ", Nunique);
+
+      if ((unimode == UNIMODEW) && (rank == 0))
+      {
+        WriteUnique(twom);
+        if (!input_flags.m_sym)
+        {
+          long long q_write[NSYM];
+          for (int i = 0; i < NSYM; i++)
+          {
+            q_write[i] = 0;
+          }
+          BuildCycle(q_write, &input_flags);
+          WriteUniqueObservables();
+        }
+      }
+      else
+      {
+        if (rank == 0 && input_flags.use_exact_matrix) // TODO Also MPI on Matrix mode - ABP 2025-03-13
+          Solve_Matrix(&input_flags);
+        else if (input_flags.use_lanczos)
+        {
+          Solve_Lanczos(&input_flags);
+        }
+
+        if (input_flags.VERBOSE_TIME_LV1)
+        {
+          time_stamp(&time_single0, STOP, "one m/h ");
+          LogMessageChar("\n");
+        }
+      }
+    }
+  }
+  else if (!input_flags.m_sym)
+  {
+    if (input_flags.VERBOSE_TIME_LV1)
+      time_stamp(&time_single0, START, "filling arrays of observables for all h \n");
 
     if ((unimode == UNIMODER) && (rank == 0))
     {
-      Nunique = ReadUnique(twom, 0);
+      LogMessageChar("The mode is UNIMODER \n");
+      ReadUniqueObservables();
+      Nunique = ReadUnique(0, 0);
     }
     else
     {
-      Nunique = FillUnique(twom, 0);
+      Nunique = FillUnique(0, 0); // TODO: CHECK THIS: slightly disgusting:
+                                  // variable is never used - FillUnique takes care
+                                  // of both M_SYM set and unset
+      LogMessageChar("\n FillUnique is done \n");
       FillUniqueObservables();
+      LogMessageChar("FillUniqueObservables is done \n");
     }
+    if (input_flags.VERBOSE_TIME_LV1)
+      time_stamp(&time_single0, STOP, " ");
 
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_single0, STOP, " ");
-    time_stamp(&time_single0, START, "calculating for one m");
-#endif
-
-#else /*Not M_SYM*/
-
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single0, START, "filling arrays of observables for all h \n");
-#endif
-
-  if ((unimode == UNIMODER) && (rank == 0))
-  {
-    LogMessageChar("The mode is UNIMODER \n");
-    ReadUniqueObservables();
-    Nunique = ReadUnique(0, 0);
-  }
-  else
-  {
-    Nunique = FillUnique(0, 0); // TODO: CHECK THIS: slightly disgusting:
-                                // variable is never used - FillUnique takes care
-                                // of both M_SYM set and unset
-    LogMessageChar("\n FillUnique is done \n");
-    FillUniqueObservables();
-    LogMessageChar("FillUniqueObservables is done \n");
-  }
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single0, STOP, " ");
-#endif
-
-  for (h = hstart; h <= hend; h += hstep)
-  {
-
-#ifdef VERBOSE_TIME_LV1
-    LogMessageCharDouble("\n Now treating the h = ", h);
-    LogMessageChar("subspace \n\n");
-    time_stamp(&time_single0, START, "calculating for one h");
-#endif
-
-#endif /* M_SYM */
-
-#ifdef VERBOSE_TIME_LV1
-    LogMessageCharInt("\n Nunique = ", Nunique);
-#endif // VERBOSE_TIME_LV1
-
-    if ((unimode == UNIMODEW) && (rank == 0))
+    for (h = hstart; h <= hend; h += hstep)
     {
-      WriteUnique(twom);
-#ifndef M_SYM
-      long long q_write[NSYM];
-      for (int i = 0; i < NSYM; i++)
-      {
-        q_write[i] = 0;
-      }
-      BuildCycle(q_write, input_flags);
-      WriteUniqueObservables();
-#endif /* not M_SYM */
-    }
-    else
-    {
-      if (rank == 0 && input_flags.use_exact_matrix) // TODO Also MPI on Matrix mode - ABP 2025-03-13
-        Solve_Matrix(&input_flags);
-      else if (input_flags.use_lanczos)
-      {
-        Solve_Lanczos(&input_flags);
-      }
 
-#ifdef VERBOSE_TIME_LV1
-      time_stamp(&time_single0, STOP, "one m/h ");
-      LogMessageChar("\n");
-#endif
+      if (input_flags.VERBOSE_TIME_LV1)
+      {
+        LogMessageCharDouble("\n Now treating the h = ", h);
+        LogMessageChar("subspace \n\n");
+        time_stamp(&time_single0, START, "calculating for one h");
+      }
+      if (input_flags.VERBOSE_TIME_LV1)
+        LogMessageCharInt("\n Nunique = ", Nunique);
+
+      if ((unimode == UNIMODEW) && (rank == 0))
+      {
+        WriteUnique(twom);
+        if (!input_flags.m_sym)
+        {
+          long long q_write[NSYM];
+          for (int i = 0; i < NSYM; i++)
+          {
+            q_write[i] = 0;
+          }
+          BuildCycle(q_write, &input_flags);
+          WriteUniqueObservables();
+        }
+      }
+      else
+      {
+        if (rank == 0 && input_flags.use_exact_matrix) // TODO Also MPI on Matrix mode - ABP 2025-03-13
+          Solve_Matrix(&input_flags);
+        else if (input_flags.use_lanczos)
+          Solve_Lanczos(&input_flags);
+
+        if (input_flags.VERBOSE_TIME_LV1)
+        {
+          time_stamp(&time_single0, STOP, "one m/h ");
+          LogMessageChar("\n");
+        }
+      }
     }
   }
-
   time_stamp(&time_total, STOP, "\n Total execution");
   outro();
   deallocate(&input_flags);
@@ -503,24 +529,23 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   MPI_Barrier(MPI_COMM_WORLD);
   if (mode == MODEW || mode == MODEN)
   {
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_makesparse, START, "writing to file");
-#endif
+    if (input_flags->VERBOSE_TIME_LV1)
+      time_stamp(&time_makesparse, START, "writing to file");
     // Make sparse matrix (writing to file)
     LogMessageChar("\nwriting sparse matrix to file: begin");
     if (rank == 0)
       MakeSparse();
     LogMessageChar("writing sparse matrix to file: end\n");
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_makesparse, STOP, "..");
-#endif
+    if (input_flags->VERBOSE_TIME_LV1)
+      time_stamp(&time_makesparse, STOP, "..");
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single0, START, "dealing with the ground state");
-  time_stamp(&time_single, START, "finding the ground state");
-#endif
+  if (input_flags->VERBOSE_TIME_LV1)
+  {
+    time_stamp(&time_single0, START, "dealing with the ground state");
+    time_stamp(&time_single, START, "finding the ground state");
+  }
 
   // Run Lanczos to find eigenenergies and identify the ground state
   if (mode == MODEGS || mode == MODEN)
@@ -537,9 +562,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
           for (i = 0; i < Nsym; i++)
             LogMessageCharInt(" ", q[i]);
 
-#ifndef M_SYM
-          LogMessageCharDouble(" H= ", h);
-#endif /* M_SYM */
+          if (!input_flags->m_sym)
+            LogMessageCharDouble(" H= ", h);
 
           LogMessageChar(") \n");
           BuildCycle(q, input_flags);
@@ -744,7 +768,7 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     LogMessageChar("\nCalling CrossLanczos \n \n");
 #endif // TEST_APPLYSZQ
 
-    CrossLanczos(q);
+    CrossLanczos(q, input_flags);
 #ifdef VERBOSE_TIME_LV2
     time_stamp(&time_single2, STOP, " ");
 #endif
@@ -808,7 +832,7 @@ void Solve_Lanczos(struct FLAGS *input_flags)
           LogMessageChar("\nCalling CrossLanczos: \n \n");
 #endif // TEST_APPLYSZQ
 
-          CrossLanczos(q);
+          CrossLanczos(q, input_flags);
 
 #ifdef VERBOSE_TIME_LV2
           time_stamp(&time_single2, STOP, " ");
@@ -963,9 +987,8 @@ void allocate(struct FLAGS *input_flags)
     shadow = gs; // gs is not needed to hold groundstate: We dont want it
 #endif /* FIND_EIGENSTATE */
     energies = dvector(0, MAX_LANCZOS - 1);
-#ifndef M_SYM
-    mag = (long long *)malloc(sizeof(long long) * Nunique);
-#endif /*M_SYM*/
+    if (!input_flags->m_sym)
+      mag = (long long *)malloc(sizeof(long long) * Nunique);
 #ifdef FIND_MAG
     magnetisation = dvector(0, MAX_LANCZOS - 1);
 #endif /*FIND_MAG*/
@@ -986,7 +1009,7 @@ void allocate(struct FLAGS *input_flags)
     unique = (unsigned long long *)malloc(sizeof(unsigned long long) * Nunique);
     evec = kvector(0, Nunique);
     energies = dvector(0, Nunique - 1);
-    // DLC: This unique k is not assignable the 
+    // DLC: This unique k is not assignable the
     uniq_k = (long long *)malloc(sizeof(long long) * Nunique);
     hamilton = kmatrix(1, Nunique, 1, Nunique);
 
@@ -996,10 +1019,8 @@ void allocate(struct FLAGS *input_flags)
     hamilton[1][1] = zero;
     MessageChar("Hamiltonian matrix accessed \n");
 #endif /* TEST_ALLOCATE */
-
-#ifndef M_SYM
-    mag = (long long *)malloc(sizeof(long long) * Nunique);
-#endif /* FIND_MAG */
+    if (!input_flags->m_sym)
+      mag = (long long *)malloc(sizeof(long long) * Nunique);
 #ifdef FIND_MAG
     magnetisation = dvector(0, Nunique - 1);
 #endif /*FIND_MAG*/
@@ -1053,9 +1074,8 @@ void deallocate(struct FLAGS *input_flags)
     freedvector(cross, 1, Longest_Matrix);
 #endif /* FIND_CROSS */
 
-#ifndef M_SYM
-    free(mag);
-#endif /* M_SYM */
+    if (!input_flags->m_sym)
+      free(mag);
 
 #ifdef FIND_MAG
     freedvector(magnetisation, 0, Longest_Matrix - 1);
