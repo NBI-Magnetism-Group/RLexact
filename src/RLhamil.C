@@ -25,9 +25,7 @@
 
 /* Functions defined in this file */
 void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#ifndef M_SYM
 void Hamil_Zeeman(unsigned long long, unsigned long long *, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#endif
 #ifdef RING_EXCHANGE
 void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #endif /*RING_EXCHANGE*/
@@ -62,11 +60,8 @@ extern long long Nsymvalue[];
 extern long long hamil_coup[NCOUP][2];
 extern double Jzz[], Jxy[], Janis[];
 extern double Jdip[], geom_13[], r_vector[NCOUP][3];
-#ifdef M_SYM
 extern long long m;
-#else
 extern double h, field[3];
-#endif /* M_SYM */
 extern double sine[], cosine[], sqroot[];
 extern long long Ncoup;
 #ifdef RING_EXCHANGE
@@ -80,7 +75,6 @@ long long n_2, u_occ;
 unsigned long long index1, index2;
 komplex this_;
 
-#ifndef M_SYM
 void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long long i, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
 { // only supports fields along one coordinate axis
 #ifdef TEST_HAMZEE
@@ -150,7 +144,6 @@ void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long
     }
   }
 }
-#endif
 
 void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, long long i, long long j, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
 {

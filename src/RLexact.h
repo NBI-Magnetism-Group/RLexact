@@ -21,6 +21,12 @@ struct FLAGS
   long long m_sym;        // M_symmetry present = 1, absent = 0
   long long dipole;       // DLC: This is defineable, but needs testing
   long long ring_exchang; // DLC: This is defineable, but needs testing
+
+  // The following is all the old Test commands and verbose commands.
+  // Putting them here, because they are making it difficult to see indentation.
+  long long VERBOSE_TIME_LV1;
+  long long VERBOSE_TIME_LV2;
+  long long VERBOSE;
 };
 
 // Physics of problem
