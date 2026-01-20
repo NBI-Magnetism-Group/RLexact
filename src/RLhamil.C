@@ -64,8 +64,10 @@ extern long long m;
 extern double h, field[3];
 extern double sine[], cosine[], sqroot[];
 extern long long Ncoup;
+#ifdef RING_EXCHANGE
 extern double Jr[NRING];
 extern long long ring_coup[NRING][4];
+#endif /* RING_EXCHANGE */
 
 /* Regional variables in this file */
 unsigned long long bitmap, new_state;
@@ -73,10 +75,7 @@ long long n_2, u_occ;
 unsigned long long index1, index2;
 komplex this_;
 
-void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, 
-                    long long i, int *nelem, long long *totcount, int *T, 
-                    komplex *J, double *diag, 
-                    FILE *indexfile, FILE *Tfile, FILE *Jfile)
+void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long long i, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
 { // only supports fields along one coordinate axis
 #ifdef TEST_HAMZEE
   LogMessageCharDouble("\nIn Hamil_Zeeman. h =", h);
