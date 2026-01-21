@@ -30,10 +30,8 @@ double CalculateM(komplex *);
 #endif /* FIND_MAG */
 
 /* Functions declared elsewhere */
-void BuildCycle(long long *, struct FLAGS *);
 extern void WriteEnergy(double);
 // extern void FillHamilton(long long *, long long *, komplex**); OLD version
-extern void Diagonalize(komplex **, long long, double *);
 extern void Eigenvector_test(long long *, komplex *, komplex *);
 extern void fatalerror(const char *, long long);
 extern void Warning(const char *, long long);
@@ -71,8 +69,8 @@ unsigned long long i_min;
 k[] and given h/m and finds the ground state.
 The routine returns the energy of the ground state,
 and evec is the ground state vector */
-double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], 
-                    komplex *evec, struct FLAGS *input_flags)
+double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
+                 komplex *evec, struct FLAGS *input_flags)
 {
   time_t time_single;
   double emin;
@@ -131,7 +129,7 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
   time_stamp(&time_single, START, "timer of total Diagonalization time");
 #endif /*VERBOSE_TIME_LV1*/
 
-  Diagonalize(hamil, Nuniq_k, energies);
+  Diagonalize(hamil, Nuniq_k, energies, input_flags);
 
 #ifdef VERBOSE_TIME_LV1
   time_stamp(&time_single, STOP, " Total diagonalization time for this symmetry=S");

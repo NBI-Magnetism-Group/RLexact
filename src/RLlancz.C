@@ -121,39 +121,40 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
   }
 #endif
 
-#ifdef FIND_EIGENSTATE
-  if (flag == RECONSTRUCT)
+  if (input_flags->find_eigenstate)
   {
-    sprintf(filename, "seed%lld.bin", Nspins);
-    errno = 0;
-    seedfile = fopen(filename, "w");
-    if (seedfile == NULL)
+    if (flag == RECONSTRUCT)
     {
-      fatalerror("Cannot open seedfile (writing), sorry!", errno);
-      exit(-1);
-    }
+      sprintf(filename, "seed%lld.bin", Nspins);
+      errno = 0;
+      seedfile = fopen(filename, "w");
+      if (seedfile == NULL)
+      {
+        fatalerror("Cannot open seedfile (writing), sorry!", errno);
+        exit(-1);
+      }
 
 #ifdef TEST_FINDGROUND
-    LogMessageChar("Seedvector before save to file:\n");
+      LogMessageChar("Seedvector before save to file:\n");
 #endif /* TEST_FINDGROUND */
-    // write seedvector to file for later use in finding the groundstate
-    for (i = 0; i < Nunique; i++)
-    {
-#ifdef TEST_FINDGROUND
-      LogMessageCharDouble("( ", real(first[i]));
-      LogMessageCharDouble(" + i ", imag(first[i]));
-      LogMessageChar(") \n");
-#endif /* TEST_FINDGROUND */
-      errno = 0;
-      if (fwrite(&(first[i]), sizeof(komplex), 1, seedfile) <= 0)
+      // write seedvector to file for later use in finding the groundstate
+      for (i = 0; i < Nunique; i++)
       {
-        fatalerror("Error in writing seedfile in lanczos for unique", errno);
-        exit(1);
+#ifdef TEST_FINDGROUND
+        LogMessageCharDouble("( ", real(first[i]));
+        LogMessageCharDouble(" + i ", imag(first[i]));
+        LogMessageChar(") \n");
+#endif /* TEST_FINDGROUND */
+        errno = 0;
+        if (fwrite(&(first[i]), sizeof(komplex), 1, seedfile) <= 0)
+        {
+          fatalerror("Error in writing seedfile in lanczos for unique", errno);
+          exit(1);
+        }
       }
+      fclose(seedfile);
     }
-    fclose(seedfile);
   }
-#endif /* FIND_EIGENSTATE */
 
   /* first[][] is now set with a proper seed */
   for (i = 0; i < Nunique; i++)
@@ -244,79 +245,80 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
 
   *Nener = r;
 
-#ifdef FIND_EIGENSTATE
-  if (flag == RECONSTRUCT)
+  if (input_flags->find_eigenstate)
   {
-    /* Reconstruct Lanczos sequence to construct eigenvector */
-
-    errno = 0;
-    seedfile = fopen(filename, "r");
-    if (seedfile == NULL)
+    if (flag == RECONSTRUCT)
     {
-      fatalerror("Cannot open seed file (reading), sorry!", errno);
-    }
+      /* Reconstruct Lanczos sequence to construct eigenvector */
 
-    // read seedvector from seed file
-#ifdef TEST_FINDGROUND
-    LogMessageChar("Seed vector after load from file:\n");
-#endif /* TEST_FINDGROUND */
-    for (i = 0; i < Nunique; i++)
-    {
-      if (fread(&(first[i]), sizeof(komplex), 1, seedfile) <= 0)
+      errno = 0;
+      seedfile = fopen(filename, "r");
+      if (seedfile == NULL)
       {
-        LogMessageCharInt("Error in reading seedfile in lanczos for unique ", i);
-        fatalerror("", errno);
+        fatalerror("Cannot open seed file (reading), sorry!", errno);
       }
 
+      // read seedvector from seed file
 #ifdef TEST_FINDGROUND
-      LogMessageCharDouble("", real(first[i]));
-      LogMessageCharDouble(" + i ", imag(first[i]));
+      LogMessageChar("Seed vector after load from file:\n");
 #endif /* TEST_FINDGROUND */
-    }
+      for (i = 0; i < Nunique; i++)
+      {
+        if (fread(&(first[i]), sizeof(komplex), 1, seedfile) <= 0)
+        {
+          LogMessageCharInt("Error in reading seedfile in lanczos for unique ", i);
+          fatalerror("", errno);
+        }
+
 #ifdef TEST_FINDGROUND
-    LogMessageChar("Seed file read (while finding eigenvectors) \n");
+        LogMessageCharDouble("", real(first[i]));
+        LogMessageCharDouble(" + i ", imag(first[i]));
+#endif /* TEST_FINDGROUND */
+      }
+#ifdef TEST_FINDGROUND
+      LogMessageChar("Seed file read (while finding eigenvectors) \n");
 #endif /* TEST_FINDGROUND */
 
-    fclose(seedfile);
+      fclose(seedfile);
 
-    for (i = 0; i < Nunique; i++)
-      resvect[i] = zero;
+      for (i = 0; i < Nunique; i++)
+        resvect[i] = zero;
 
 #ifdef TEST_FINDGROUND
-    LogMessageChar("Finding eigenvector\n");
+      LogMessageChar("Finding eigenvector\n");
 #endif
-    LanczosLoop(Nvec, k, resvect, input_flags);
+      LanczosLoop(Nvec, k, resvect, input_flags);
 
 #ifdef FIND_MAG
-    for (i = 0; i < Nvec; i++)
-    {
-#ifdef TEST_FINDGROUND
-      LogMessageCharInt("AFTER GS Vector number", i);
-      LogMessageChar("\n");
-#endif
-      magnetisation[i] = 0;
-      for (int j = 0; j < Nvec; j++)
+      for (i = 0; i < Nvec; i++)
       {
-        magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
 #ifdef TEST_FINDGROUND
-        LogMessageCharDouble("", real(z[j + 1][i + 1]));
-        LogMessageCharDouble("+ i ", imag(z[j + 1][i + 1]));
-        LogMessageCharDouble(" with ", lanczmag[j]);
+        LogMessageCharInt("AFTER GS Vector number", i);
+        LogMessageChar("\n");
+#endif
+        magnetisation[i] = 0;
+        for (int j = 0; j < Nvec; j++)
+        {
+          magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
+#ifdef TEST_FINDGROUND
+          LogMessageCharDouble("", real(z[j + 1][i + 1]));
+          LogMessageCharDouble("+ i ", imag(z[j + 1][i + 1]));
+          LogMessageCharDouble(" with ", lanczmag[j]);
+          LogMessageChar("\n");
+#endif
+        }
+#ifdef TEST_FINDGROUND
+        LogMessageCharDouble("REAL MAG IS ", magnetisation[i]);
         LogMessageChar("\n");
 #endif
       }
-#ifdef TEST_FINDGROUND
-      LogMessageCharDouble("REAL MAG IS ", magnetisation[i]);
-      LogMessageChar("\n");
-#endif
-    }
 #endif // FIND_MAG
 
 #ifdef TEST_EIG
-    //  eigenvector_test(k,resvect,third);
+      //  eigenvector_test(k,resvect,third);
 #endif /* TEST_EIG */
+    }
   }
-#endif /* FIND_EIGENSTATE */
 
   freekmatrix(z, 1, MAX_LANCZOS, 1, MAX_LANCZOS);
 

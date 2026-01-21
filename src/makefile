@@ -1,4 +1,4 @@
-OBJECTS = RLexact.o RLio.o RLtables.o RLhamil.o RLsymm.o Diagonal.o nr.o RLutil.o  RLcross.o RLlancz.o RLmatrix.o RLsparse.o regc.o
+OBJECTS = RLexact.o RLio.o RLtables.o RLhamil.o RLsymm.o Diagonal.o nr.o RLutil.o  RLcross.o RLlancz.o RLmatrix.o RLsparse.o regc.o RLhamil.dipole.o
 LIBS = -lm 
 FLAGS =  -I. -I/usr/include/g++-3 -O0 -std=c++11 -gdwarf-2 -ansi -g -Wno-deprecated-declarations#-fsanitize=address,undefined -fno-omit-frame-pointer
 OPTFLAGS = -I. -I/usr/include/g++-3 -O0 -gdwarf-2 -ansi -std=c++11 -Wno-deprecated-declarations
@@ -33,6 +33,9 @@ RLsymm.o:	RLexact.h Functions.h RLsymm.C
 
 RLhamil.o:	RLexact.h Functions.h RLhamil.C
 		$(COMPILER) $(OPTFLAGS) -c RLhamil.C
+
+RLhamil_dipole.o:	RLexact.h Functions.h RLhamil.dipole.C
+		$(COMPILER) $(OPTFLAGS) -c RLhamil.dipole.C
 
 RLutil.o:	RLexact.h Functions.h RLutil.C
 		$(COMPILER) $(OPTFLAGS) -c RLutil.C
