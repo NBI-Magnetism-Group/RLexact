@@ -863,25 +863,23 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
     }
     if (input_flags->dipole)
     {
-      if (rank == 0)
+      for (long long k = 0; k < Ncoup; k++)
       {
-        for (long long k = 0; k < Ncoup; k++)
-        {
-          Jdip[k] = Dip[dummyres[k][2]];
-          r_vector[k][X] = dummyres[k][3];
-          r_vector[k][Y] = dummyres[k][4];
-          r_vector[k][Z] = dummyres[k][5];
-          NormalizeVector(r_vector[k]);
-          RotateVector(r_vector[k]);
-          geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
+        Jdip[k] = Dip[dummyres[k][2]];
+        r_vector[k][X] = dummyres[k][3];
+        r_vector[k][Y] = dummyres[k][4];
+        r_vector[k][Z] = dummyres[k][5];
+        NormalizeVector(r_vector[k]);
+        RotateVector(r_vector[k]);
+        geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
 #ifdef TEST_ROTATION
-          LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
-                                r_vector[k][Y],
-                                r_vector[k][Z]);
-          LogMessageChar("\n");
+        LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
+                              r_vector[k][Y],
+                              r_vector[k][Z]);
+        LogMessageChar("\n");
 #endif /* TEST_ROTATION */
-        }
-      } // Not parallelised Dipole is missing documentation
+      }
+      // Not parallelised Dipole is missing documentation
     }
     free(dummy);
     free(dummyres);
