@@ -29,8 +29,6 @@
 void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #endif /*RING_EXCHANGE*/
 
-void Eigenvector_test(long long *, komplex *, komplex *);
-
 /* Functions defined elsewhere */
 extern long long LookUpU(unsigned long long);
 extern long long Count(unsigned long long);
@@ -563,25 +561,25 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 }
 #endif /*RING_EXCHANGE*/
 
-#ifdef TEST_EIG
-void Eigenvector_test(long long k[NSYM], komplex *evec, komplex *tmp)
+void Eigenvector_test(long long k[NSYM], komplex *evec, komplex *tmp, struct FLAGS *input_flags)
 {
   long long i;
   komplex product;
 
   LogMessageChar("Entering Eigenvector_test.\n");
-  Hamilton(evec, tmp, k);
+  // Hamilton(evec, tmp, k);
+  //DLC: Seems like there was an old Hamilton function no longer in use here.
   product = zero;
   LogMessageChar("Middle of Eigenvector_test.\n");
   for (i = 0; i < Nunique; i++)
     product += evec[i] * conj(tmp[i]);
   WriteGSEnergy(product);
 
-#ifdef WRITE_STATES
-  WriteState("Eigenvector:", evec);
-  WriteState("H|e>:", tmp);
-#endif /* WRITE_STATES */
+  if (input_flags->write_states)
+  {
+    WriteState("Eigenvector:", evec);
+    WriteState("H|e>:", tmp);
+  }
 
   return;
 }
-#endif /* TEST_EIG */

@@ -23,6 +23,11 @@ struct FLAGS
   long long dipole;       // DLC: This is defineable, but needs testing
   long long ring_exchang; // DLC: This is defineable, but needs testing
   long long find_eigenstate;
+  
+  // OUTPUT SPECIFIERS
+  long long write_energies;
+  long long write_states;// Prints groundstate in dat-file
+                        // and all eigenstates if MATRIX;
 
   // The following is all the old Test commands and verbose commands.
   // Putting them here, because they are making it difficult to see indentation.
@@ -36,14 +41,12 @@ struct FLAGS
 // #define RING_EXCHANGE
 
 // Calculation of problem and output requests
-#define WRITE_ENERGIES
 #define FIND_CROSS // Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w)
 // #define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w)
 //                       instead of S^xx (q,w) and S^yy(q,w).
 //                       Requires MSYM and FIND_CROSS.
 
-#define WRITE_STATES // Prints groundstate in dat-file
-//                      and all eigenstates if MATRIX
+#define WRITE_STATES 
 
 // #define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 // #define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM,

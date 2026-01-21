@@ -556,10 +556,11 @@ void Solve_Lanczos(struct FLAGS *input_flags)
           BuildCycle(q, input_flags);
           etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
-#ifdef WRITE_ENERGIES
-          WritehmQ(q, input_flags);
-          WriteResults(Nener, input_flags);
-#endif /* WRITE_ENERGIES */
+          if (input_flags->write_energies)
+          {
+            WritehmQ(q, input_flags);
+            WriteResults(Nener, input_flags);
+          }
 
           if (etmp < gs_energy)
           {
@@ -597,10 +598,11 @@ void Solve_Lanczos(struct FLAGS *input_flags)
         BuildCycle(q, input_flags);
         etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
-#ifdef WRITE_ENERGIES
-        WritehmQ(q, input_flags);
-        WriteResults(Nener, input_flags);
-#endif /* WRITE_ENERGIES */
+        if (input_flags->write_energies)
+        {
+          WritehmQ(q, input_flags);
+          WriteResults(Nener, input_flags);
+        }
 
         if (etmp < gs_energy)
         {
@@ -679,15 +681,16 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     MPI_Bcast(gs, Nunique, MPI_C_DOUBLE_COMPLEX, gs_rank,
               MPI_COMM_WORLD);
     MPI_Bcast(&Nener, 1, MPI_LONG_LONG_INT, gs_rank, MPI_COMM_WORLD);
-#ifdef WRITE_STATES
-    // print the groundstate vector to outfile
-    if (gs_rank == rank)
+    if (input_flags->write_states)
     {
-      WriteQvalue(q_gs);
-      WriteState("Groundstate", gs);
+      // print the groundstate vector to outfile
+      if (gs_rank == rank)
+      {
+        WriteQvalue(q_gs);
+        WriteState("Groundstate", gs);
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif /* WRITE_STATES */
     if ((mode == MODERC) && (rank == 0))
     {
       // write reconstructed ground state to .gs file:
@@ -737,10 +740,11 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   if ((mode == MODEQ) && (rank == 0))
   {
     ReadGSdata(&gs_energy, q_gs, gs);
-#ifdef WRITE_STATES
-    // print the groundstate vector to outfile
-    WriteState("Groundstate", gs);
-#endif /* WRITE_STATES */
+    if (input_flags->write_states)
+    {
+      // print the groundstate vector to outfile
+      WriteState("Groundstate", gs);
+    }
     q = &q_choice[0][0];
 #ifdef VERBOSE_TIME_LV2
     time_stamp(&time_single2, START, "Cross section for one chosen q-value");
@@ -769,7 +773,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     // Depending on symmetries, optimization can be made using selection rules
     // like SPINFLIP below.
 
-    long long Nqvalue[Nsym];
+    long long *Nqvalue;
+    Nqvalue = (long long *)malloc(Nsym * sizeof(long long));
     for (int i = 0; i < Nsym; i++)
       Nqvalue[i] = Nsymvalue[i];
     for (int i = 0; i < Ndimensions; i++)
@@ -876,13 +881,13 @@ void Solve_Matrix(struct FLAGS *input_flags)
       LogMessageChar("Hamiltonian accessed. \n");
 #endif /* TEST_GS_SEARCH */
       gs_energy = Matrix_gs(hamilton, uniq_k, q, gs, input_flags);
-#ifdef WRITE_ENERGIES
-      WritehmQ(q, input_flags);
-      WriteResults(Nuniq_k, input_flags);
-#endif /* WRITE_ENERGIES */
-#ifdef WRITE_STATES
-      WriteStates(hamilton);
-#endif /* WRITE_STATES */
+      if (input_flags->write_energies)
+      {
+        WritehmQ(q, input_flags);
+        WriteResults(Nuniq_k, input_flags);
+      }
+      if (input_flags->write_states)
+        WriteStates(hamilton);
     }
   }
   else
@@ -903,19 +908,21 @@ void Solve_Matrix(struct FLAGS *input_flags)
     etmp = Matrix_gs(hamilton, uniq_k, q, evec, input_flags);
     if (etmp < LARGE_NUMBER) /* else: illegal symmetry combination */
     {
-#ifdef WRITE_ENERGIES
-      WritehmQ(q, input_flags);
-      WriteResults(Nuniq_k, input_flags);
-#endif /* WRITE_ENERGIES */
-#ifdef WRITE_STATES
-      WriteStates(hamilton);
-#endif /* WRITE_STATES */
+      if (input_flags->write_energies)
+      {
+        WritehmQ(q, input_flags);
+        WriteResults(Nuniq_k, input_flags);
+      }
+      if (input_flags->write_states)
+        WriteStates(hamilton);
     }
     if (etmp < gs_energy)
     {
       gs_energy = etmp;
-      for (sym = 0; sym < Nsym; q_gs[sym] = q[sym++])
-        ;
+      // DLC: The loop was unsafe before, changed to not be compiler dependent
+      //  for (sym=0; sym<Nsym; q_gs[sym] = q[sym++])
+      for (sym = 0; sym < Nsym; sym++)
+        q_gs[sym] = q[sym];
       for (i = 0; i < Nunique; i++)
         gs[i] = evec[i];
     }
@@ -973,7 +980,7 @@ void allocate(struct FLAGS *input_flags)
       shadow = szxygs;
     }
     else
-    {             
+    {
       shadow = gs; // gs is not needed to hold groundstate: We dont want it
     }
     energies = dvector(0, MAX_LANCZOS - 1);

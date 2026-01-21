@@ -30,9 +30,7 @@
 extern int rank, nprocs;
 
 /* Functions defined in this file */
-long long
-intro();
-long long ReadCoupPattern(char *, struct FLAGS *);
+
 void TransformCoup(long long);
 #ifdef FIND_MAG
 void WriteMaggs(long long *);
@@ -197,6 +195,7 @@ long long intro(struct FLAGS *input_flags)
   ReadInputFlags(infile_name, input_flags);
   if (rank == 0)
   {
+
     OutMessageChar("Welcome to the Exact Diagonalization Program, RLexact \n");
     if (input_flags->use_exact_matrix)
       OutMessageChar("Using Matrix");
@@ -379,10 +378,19 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   input_flags->use_exact_matrix = 0;
   input_flags->m_sym = 1; // Use m_sym as default
   input_flags->find_eigenstate = 1; // As default, find eigenstates
+  input_flags->write_energies = 1; // Output energies and states as default
+  input_flags->write_states = 1;
   matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
   matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true);
   matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true);
   matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
+
+
+  matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true);
+  matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true);
+
+
+  
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true);
   matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true);

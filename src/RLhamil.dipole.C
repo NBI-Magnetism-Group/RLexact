@@ -18,9 +18,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <nr.h>
-#include <cnr.h>
-#include <RLexact.h>
+#include "cnr.h"
+#include "RLexact.h"
+#include "Functions.h"
 
 /* Functions defined in this file */
 void Eigenvector_test(int *, komplex *, komplex *);
@@ -31,13 +31,8 @@ void Hamil2(int *, komplex, komplex *);
 void matrixelement(komplex, int *, komplex, komplex *);
 
 /* Functions defined elsewhere */
-extern int LookUpU(unsigned long);
-extern int Count(unsigned long);
-void fatalerror(char *, int);
-unsigned long FindUnique(unsigned long, int *);
 extern void WriteGSEnergy(komplex);
 extern void WriteState(char *, komplex *);
-extern void time_stamp(time_t *, int, char *);
 
 /* Global variables defined in RLexact.c */
 extern unsigned long unique[];
@@ -55,10 +50,10 @@ extern double sine[], cosine[], sqroot[];
 extern int Nunique, Ncoup;
 
 /* Regional variables in this file */
-unsigned long bitmap, new_state;
-int n_2, u_occ;
-unsigned long index1, index2;
-komplex this_;
+extern unsigned long long bitmap, new_state;
+extern int n_2, u_occ;
+extern unsigned long index1, index2;
+extern komplex this_;
 
 #ifdef TEST_EIG
 void Eigenvector_test(int k[NSYM], komplex *evec, komplex *tmp)
@@ -107,7 +102,8 @@ void FillHamilton(int k[], komplex **hamilton)
       next[index2] = zero;
     bitmap = unique[index1];
     diag = 0;
-    if (u_occ = Nocc[index1])
+    u_occ = Nocc[index1];
+    if (u_occ)
     {
       diag = HamDiag();
 #ifdef TEST_HAMILTON
@@ -169,10 +165,11 @@ void Hamilton(komplex *this_v, komplex *next_v, int k[])
     bitmap = unique[index1];
     diag = 0;
     printf("test_ham 2 \n");
-    if (u_occ = Nocc[index1] && (this_ != zero))
+    u_occ = Nocc[index1];
+    if (u_occ && (this_ != zero))
     {
       diag = HamDiag();
-      printf("test_ham 3: index1= %i \n", index1);
+      printf("test_ham 3: index1= %lu \n", index1);
       next_v[index1] += diag * this_; /* for off-diagonals this
                           update is done in matrix_element, called by Hamil2() */
 #ifdef TEST_HAMILTON
@@ -359,7 +356,8 @@ void matrixelement(komplex Jval, int k[],
   uniq = FindUnique(new_state, T); /* Unique after spin-flip */
   l = LookUpU(uniq);               /* Find position in table */
   /* Check for existence of new state with this k[] */
-  if (new_occ = Nocc[l])
+  new_occ = Nocc[l];
+  if (new_occ)
   {
     norm = sqroot[new_occ] / sqroot[u_occ];
     for (i = 0, j = 0; i < (Nsym); i++)
