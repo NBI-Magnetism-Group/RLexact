@@ -59,6 +59,14 @@ void Hamil_Zeeman(unsigned long long, unsigned long long *, long long,
 void Eigenvector_test(long long *, komplex *, komplex *, struct FLAGS *);
 
 // =============================================================================
+// Functions in RLhamil.dipole
+// =============================================================================
+void FillHamilton(int k[], komplex **hamilton, struct FLAGS *);
+double HamDiag(struct FLAGS *input_flags);
+void Hamil2(int *, komplex, komplex *, struct FLAGS*);
+void Hamilton(komplex *this_v, komplex *next_v, int k[], struct FLAGS *input_flags);
+
+// =============================================================================
 // Functions in Diagonal
 // =============================================================================
 void htred2(komplex **, long long, komplex *, komplex *, struct FLAGS *);
