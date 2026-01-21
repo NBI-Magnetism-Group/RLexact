@@ -34,10 +34,6 @@ void allocate(struct FLAGS *);
 void deallocate(struct FLAGS *);
 
 /* Functions declared elsewhere */
-extern long long intro(struct FLAGS *);
-extern void time_stamp(time_t *, long long, const char *);
-extern void outro();
-extern void fatalerror(const char *, long long);
 extern void Warning(const char *, long long);
 extern void LogMessageChar(const char *);
 extern void LogMessageInt(long long);
@@ -178,18 +174,12 @@ bool name_on_commandline = false;
 FILE *gscoinfile;
 
 /* Global output files */
-#ifdef FIND_CROSS
 FILE *outfilezz;
 
-#ifndef FIND_CROSS_PM
 FILE *outfilexx, *outfileyy;
-#endif
-#ifdef FIND_CROSS_PM
 FILE *outfilepm, *outfilemp;
-#endif
 
 /* Output file for storing data */
-#endif /* FIND_CROSS */
 FILE *outfile;
 FILE *logfile;
 
@@ -481,7 +471,7 @@ int main(int argc, char *argv[])
     }
   }
   time_stamp(&time_total, STOP, "\n Total execution");
-  outro();
+  outro(&input_flags);
   deallocate(&input_flags);
   LogMessageChar("deallocated correctly!");
 
@@ -725,120 +715,121 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   }
 #endif /*M_SYM*/
 
-#ifdef FIND_CROSS
+  if (input_flags->find_cross)
+  {
 
 #ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, START, "Cross sections");
+    time_stamp(&time_single, START, "Cross sections");
 #endif
 
-  if ((mode == MODEQ) && (rank == 0))
-  {
-    ReadGSdata(&gs_energy, q_gs, gs);
-    if (input_flags->write_states)
+    if ((mode == MODEQ) && (rank == 0))
     {
-      // print the groundstate vector to outfile
-      WriteState("Groundstate", gs);
-    }
-    q = &q_choice[0][0];
-#ifdef VERBOSE_TIME_LV2
-    time_stamp(&time_single2, START, "Cross section for one chosen q-value");
-    LogMessageChar("\nCrossection q-loop, q=(");
-    for (i = 0; i < Nsym; i++)
-      LogMessageCharInt(" ", q[i]);
-    LogMessageChar(") \n");
-#endif
-    BuildCycle(q, input_flags);
-
-#ifdef TEST_APPLYSZQ
-    LogMessageChar("\nCalling CrossLanczos \n \n");
-#endif // TEST_APPLYSZQ
-
-    CrossLanczos(q, input_flags);
-#ifdef VERBOSE_TIME_LV2
-    time_stamp(&time_single2, STOP, " ");
-#endif
-  }
-  else if (mode == MODEN)
-  {
-
-    // Set maxloop for translation symmetries before QLOOP
-    // Nsymvalue[transID].
-    //
-    // Depending on symmetries, optimization can be made using selection rules
-    // like SPINFLIP below.
-
-    long long *Nqvalue;
-    Nqvalue = (long long *)malloc(Nsym * sizeof(long long));
-    for (int i = 0; i < Nsym; i++)
-      Nqvalue[i] = Nsymvalue[i];
-    for (int i = 0; i < Ndimensions; i++)
-      Nqvalue[TransIds[i]] *= Trans_Qmax[i];
-
-    for (int i = 0; i < Nsym; i++)
-    {
-      LogMessageCharInt("\n", i);
-      LogMessageCharInt("Nqvalue", Nqvalue[i]);
-      LogMessageCharInt("Nsymvalue", Nsymvalue[i]);
-    }
-
-    /*for (int i=0; i<Ndimensions; i++){
-     //Trans_symvalue_dummy[TransIds[i]] = Nsymvalue[TransIds[i]];
-     Nsymvalue[TransIds[i]] *= Trans_Qmax[i]; //Nsymvalue bruges i loop for AppSz
-    }*/
-    int mpi_q_count = 0;
-    for (sym = 0; sym < Nsym; sym++)
-      q[sym] = 0;
-    sym = 0;
-    while (q[Nsym - 1] < Nqvalue[Nsym - 1])
-    {
-      // QLOOP_BEGIN
-
-      if (mpi_q_count % nprocs == rank)
+      ReadGSdata(&gs_energy, q_gs, gs);
+      if (input_flags->write_states)
       {
-#ifdef TEST_SPINFLIP
-        LogMessageCharInt("spinflip_GSvalue =", spinflip_GSvalue);
-        LogMessageCharInt("spinflip_number =", spinflip_number);
-        LogMessageCharInt("q[spinflip_number] =", q[spinflip_number]);
-#endif
-        if (spinflip_GSvalue != q[spinflip_number]) // consistent with spinflip not present also
-        {
+        // print the groundstate vector to outfile
+        WriteState("Groundstate", gs);
+      }
+      q = &q_choice[0][0];
 #ifdef VERBOSE_TIME_LV2
-          time_stamp(&time_single2, START, "Cross section for one q-value in loop");
-          LogMessageChar("\nCrossection q-loop, q=(");
-          for (i = 0; i < Nsym; i++)
-          {
-            LogMessageCharInt(" ", q[i]);
-          }
-          LogMessageChar(") \n");
-
+      time_stamp(&time_single2, START, "Cross section for one chosen q-value");
+      LogMessageChar("\nCrossection q-loop, q=(");
+      for (i = 0; i < Nsym; i++)
+        LogMessageCharInt(" ", q[i]);
+      LogMessageChar(") \n");
 #endif
-          BuildCycle(q, input_flags);
+      BuildCycle(q, input_flags);
 
 #ifdef TEST_APPLYSZQ
-          LogMessageChar("\nCalling CrossLanczos: \n \n");
+      LogMessageChar("\nCalling CrossLanczos \n \n");
 #endif // TEST_APPLYSZQ
 
-          CrossLanczos(q, input_flags);
+      CrossLanczos(q, input_flags);
+#ifdef VERBOSE_TIME_LV2
+      time_stamp(&time_single2, STOP, " ");
+#endif
+    }
+    else if (mode == MODEN)
+    {
+
+      // Set maxloop for translation symmetries before QLOOP
+      // Nsymvalue[transID].
+      //
+      // Depending on symmetries, optimization can be made using selection rules
+      // like SPINFLIP below.
+
+      long long *Nqvalue;
+      Nqvalue = (long long *)malloc(Nsym * sizeof(long long));
+      for (int i = 0; i < Nsym; i++)
+        Nqvalue[i] = Nsymvalue[i];
+      for (int i = 0; i < Ndimensions; i++)
+        Nqvalue[TransIds[i]] *= Trans_Qmax[i];
+
+      for (int i = 0; i < Nsym; i++)
+      {
+        LogMessageCharInt("\n", i);
+        LogMessageCharInt("Nqvalue", Nqvalue[i]);
+        LogMessageCharInt("Nsymvalue", Nsymvalue[i]);
+      }
+
+      /*for (int i=0; i<Ndimensions; i++){
+       //Trans_symvalue_dummy[TransIds[i]] = Nsymvalue[TransIds[i]];
+       Nsymvalue[TransIds[i]] *= Trans_Qmax[i]; //Nsymvalue bruges i loop for AppSz
+      }*/
+      int mpi_q_count = 0;
+      for (sym = 0; sym < Nsym; sym++)
+        q[sym] = 0;
+      sym = 0;
+      while (q[Nsym - 1] < Nqvalue[Nsym - 1])
+      {
+        // QLOOP_BEGIN
+
+        if (mpi_q_count % nprocs == rank)
+        {
+#ifdef TEST_SPINFLIP
+          LogMessageCharInt("spinflip_GSvalue =", spinflip_GSvalue);
+          LogMessageCharInt("spinflip_number =", spinflip_number);
+          LogMessageCharInt("q[spinflip_number] =", q[spinflip_number]);
+#endif
+          if (spinflip_GSvalue != q[spinflip_number]) // consistent with spinflip not present also
+          {
+#ifdef VERBOSE_TIME_LV2
+            time_stamp(&time_single2, START, "Cross section for one q-value in loop");
+            LogMessageChar("\nCrossection q-loop, q=(");
+            for (i = 0; i < Nsym; i++)
+            {
+              LogMessageCharInt(" ", q[i]);
+            }
+            LogMessageChar(") \n");
+
+#endif
+            BuildCycle(q, input_flags);
+
+#ifdef TEST_APPLYSZQ
+            LogMessageChar("\nCalling CrossLanczos: \n \n");
+#endif // TEST_APPLYSZQ
+
+            CrossLanczos(q, input_flags);
 
 #ifdef VERBOSE_TIME_LV2
-          time_stamp(&time_single2, STOP, " ");
+            time_stamp(&time_single2, STOP, " ");
 #endif
+          }
+        }
+        mpi_q_count++;
+        // QLOOP_END
+        for (sym = 0; ++q[sym] == Nqvalue[sym];)
+        {
+          if (sym < Nsym - 1)
+            q[sym++] = 0;
         }
       }
-      mpi_q_count++;
-      // QLOOP_END
-      for (sym = 0; ++q[sym] == Nqvalue[sym];)
-      {
-        if (sym < Nsym - 1)
-          q[sym++] = 0;
-      }
+      // for (int i=0; i <Ndimensions; i++) Nsymvalue[TransIds[i]] /= Trans_Qmax[i];
     }
-    // for (int i=0; i <Ndimensions; i++) Nsymvalue[TransIds[i]] /= Trans_Qmax[i];
-  }
 #ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, STOP, "\nCross sections ");
+    time_stamp(&time_single, STOP, "\nCross sections ");
 #endif
-#endif /* FIND_CROSS */
+  }
 
   return;
 }
@@ -936,17 +927,18 @@ void Solve_Matrix(struct FLAGS *input_flags)
     spinflip_GSvalue = Nspins + 1; // Set it to a never-used q-value
     // spinflip_number = 0;          // Need this to do the indexing, even if spin flip is not chosen
   }
-
-#ifdef FIND_CROSS
-  QLOOP_BEGIN
-  if (spinflip_GSvalue != q[spinflip_number])
+  if (input_flags->find_cross)
   {
-    time_stamp(&time_single, START, "Cross section for one q-value");
-    // CrossMatrix(q); //Does not work
-    time_stamp(&time_single, STOP, " ");
+
+    QLOOP_BEGIN
+    if (spinflip_GSvalue != q[spinflip_number])
+    {
+      time_stamp(&time_single, START, "Cross section for one q-value");
+      // CrossMatrix(q); //Does not work
+      time_stamp(&time_single, STOP, " ");
+    }
+    QLOOP_END
   }
-  QLOOP_END
-#endif /* FIND_CROSS */
   return;
 }
 
@@ -983,9 +975,8 @@ void allocate(struct FLAGS *input_flags)
 #ifdef FIND_MAG
     magnetisation = dvector(0, MAX_LANCZOS - 1);
 #endif /*FIND_MAG*/
-#ifdef FIND_CROSS
-    cross = dvector(0, MAX_LANCZOS - 1);
-#endif /* FIND_CROSS */
+    if (input_flags->find_cross)
+      cross = dvector(0, MAX_LANCZOS - 1);
   }
 
   if (input_flags->use_exact_matrix)
@@ -1015,9 +1006,8 @@ void allocate(struct FLAGS *input_flags)
 #ifdef FIND_MAG
     magnetisation = dvector(0, Nunique - 1);
 #endif /*FIND_MAG*/
-#ifdef FIND_CROSS
-    cross = dvector(1, Nunique);
-#endif /* FIND_CROSS */
+    if (input_flags->find_cross)
+      cross = dvector(1, Nunique);
   }
 
   return;
@@ -1042,9 +1032,8 @@ void deallocate(struct FLAGS *input_flags)
 #ifdef FIND_MAG
     freedvector(magnetisation, 0, MAX_LANCZOS - 1);
 #endif /* M_SYM */
-#ifdef FIND_CROSS
-    freedvector(cross, 0, MAX_LANCZOS - 1);
-#endif /* FIND_CROSS */
+    if (input_flags->find_cross)
+      freedvector(cross, 0, MAX_LANCZOS - 1);
   }
 
   if (input_flags->use_exact_matrix)
@@ -1059,11 +1048,10 @@ void deallocate(struct FLAGS *input_flags)
     freekmatrix(hamilton, 1, Longest_Matrix, 1, Longest_Matrix);
     freedvector(energies, 0, Longest_Matrix - 1); // There is something wrong with this vector can't deallocate
     free(uniq_k);
-
-#ifdef FIND_CROSS
+    if(input_flags->find_cross){
     freekvector(szxygs, 0, Longest_Matrix - 1);
     freedvector(cross, 1, Longest_Matrix);
-#endif /* FIND_CROSS */
+    }
 
     if (!input_flags->m_sym)
       free(mag);

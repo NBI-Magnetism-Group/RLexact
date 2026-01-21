@@ -36,8 +36,6 @@ void TransformCoup(long long);
 void WriteMaggs(long long *);
 #endif // FIND_MAG
 void time_stamp(time_t *, long long, const char *);
-void outro();
-void fatalerror(const char *, long long);
 void Warning(const char *, long long);
 void LogMessageChar(const char *);
 void OutMessageChar(const char *);
@@ -99,16 +97,10 @@ extern double maggs;
 #endif /* FIND_MAG */
 extern long long Nq_choice;
 extern long long **q_choice;
-#ifdef FIND_CROSS
 extern FILE *outfilezz;
-#ifndef FIND_CROSS_PM
 extern FILE *outfilexx, *outfileyy;
-#endif
-#ifdef FIND_CROSS_PM
 extern FILE *outfilepm, *outfilemp;
-#endif
 extern double *cross;
-#endif /* FIND_CROSS */
 #ifdef MOTIVE
 extern long long Nspins_in_uc;
 extern float **spin_positions;
@@ -210,12 +202,10 @@ long long intro(struct FLAGS *input_flags)
     OutMessageChar(" S^zz(q,w),");
     if (!input_flags->m_sym)
     {
-#ifndef FIND_CROSS_PM
-      OutMessageChar(" S^xx(q,w), S^yy(q,w),");
-#endif
-#ifdef FIND_CROSS_PM
-      OutMessageChar(" S^+-(q,w), S^-+(q,w),");
-#endif
+      if (!input_flags->find_cross_pm)
+        OutMessageChar(" S^xx(q,w), S^yy(q,w),");
+      else
+        OutMessageChar(" S^+-(q,w), S^-+(q,w),");
 #endif
     }
     OutMessageChar(" Energy.\n");
@@ -224,132 +214,134 @@ long long intro(struct FLAGS *input_flags)
 
   ReadCoupPattern(infile_name, input_flags); // this function does the actual file-input handling
 
-#ifdef FIND_CROSS
-  if (rank == 0)
+  if (input_flags->find_cross)
   {
-    if (mode == MODEQ || mode == MODERC)
+    if (rank == 0)
     {
-      strcpy(gscoinfile_name, infile_name);
-      strcat(gscoinfile_name, GSCOEND);
-      errno = 1;
-      gscoinfile = fopen(gscoinfile_name, "r");
-      if (gscoinfile == NULL)
+      if (mode == MODEQ || mode == MODERC)
       {
-        fatalerror("Cannot open gs file, sorry!", errno);
+        strcpy(gscoinfile_name, infile_name);
+        strcat(gscoinfile_name, GSCOEND);
+        errno = 1;
+        gscoinfile = fopen(gscoinfile_name, "r");
+        if (gscoinfile == NULL)
+        {
+          fatalerror("Cannot open gs file, sorry!", errno);
+          return -1;
+        }
+        fflush(gscoinfile);
+      }
+
+      if (mode == MODEGS)
+      {
+        strcpy(gscofile_name, infile_name);
+        strcat(gscofile_name, COEND);
+        errno = 1;
+        gscofile = fopen(gscofile_name, "w");
+        if (gscofile == NULL)
+        {
+          fatalerror("Cannot open carry over file, sorry!", errno);
+          return -1;
+        }
+        fflush(gscofile);
+      }
+      if (mode == MODERC)
+      {
+        strcpy(gscofile_name, infile_name);
+        strcat(gscofile_name, COEND);
+        errno = 1;
+        gscofile = fopen(gscofile_name, "a");
+        if (gscofile == NULL)
+        {
+          fatalerror("Cannot open carry over file, sorry!", errno);
+          return -1;
+        }
+        fflush(gscofile);
+      }
+    } // Not MODEN - Perl scripts are lost so I don't know how/if these should be
+      // parallelised. ABP - 2025/03/12
+
+    // strcpy(outfile_name,infile_name);
+    // strcat(outfile_name,SZZEND);
+    errno = 1;
+    if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SZZEND) >= 256)
+    {
+      fatalerror("infile_name too large", errno);
+      return -1;
+    }
+    if ((outfilezz = fopen(outfile_name, "w")) == NULL)
+    {
+      fatalerror("Cannot open output file for Szz, sorry!", errno);
+      return -1;
+    }
+    fflush(outfilezz);
+
+    if (!input_flags->find_cross_pm)
+    {
+      // strcpy(outfile_name,infile_name);
+      // strcat(outfile_name,SXXEND);
+      errno = 1;
+      if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SXXEND) >= 256)
+      {
+        fatalerror("infile_name too large", errno);
         return -1;
       }
-      fflush(gscoinfile);
-    }
-
-    if (mode == MODEGS)
-    {
-      strcpy(gscofile_name, infile_name);
-      strcat(gscofile_name, COEND);
-      errno = 1;
-      gscofile = fopen(gscofile_name, "w");
-      if (gscofile == NULL)
+      if ((outfilexx = fopen(outfile_name, "w")) == NULL)
       {
-        fatalerror("Cannot open carry over file, sorry!", errno);
+        fatalerror("Cannot open output file for S+-, sorry!", errno);
         return -1;
       }
-      fflush(gscofile);
-    }
-    if (mode == MODERC)
-    {
-      strcpy(gscofile_name, infile_name);
-      strcat(gscofile_name, COEND);
+      fflush(outfilexx);
+
+      // strcpy(outfile_name,infile_name);
+      // strcat(outfile_name,SYYEND);
       errno = 1;
-      gscofile = fopen(gscofile_name, "a");
-      if (gscofile == NULL)
+      if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SYYEND) >= 256)
       {
-        fatalerror("Cannot open carry over file, sorry!", errno);
+        fatalerror("infile_name too large", errno);
         return -1;
       }
-      fflush(gscofile);
+      if ((outfileyy = fopen(outfile_name, "w")) == NULL)
+      {
+        fatalerror("Cannot open output file for S-+, sorry!", errno);
+        return -1;
+      }
+      fflush(outfileyy);
     }
-  } // Not MODEN - Perl scripts are lost so I don't know how/if these should be
-    // parallelised. ABP - 2025/03/12
 
-  // strcpy(outfile_name,infile_name);
-  // strcat(outfile_name,SZZEND);
-  errno = 1;
-  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SZZEND) >= 256)
-  {
-    fatalerror("infile_name too large", errno);
-    return -1;
-  }
-  if ((outfilezz = fopen(outfile_name, "w")) == NULL)
-  {
-    fatalerror("Cannot open output file for Szz, sorry!", errno);
-    return -1;
-  }
-  fflush(outfilezz);
+    if (input_flags->find_cross_pm)
+    {
+      // strcpy(outfile_name,infile_name);
+      // strcat(outfile_name,SPMEND);
+      errno = 1;
+      if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SPMEND) >= 256)
+      {
+        fatalerror("infile_name too large", errno);
+        return -1;
+      }
+      if ((outfilepm = fopen(outfile_name, "w")) == NULL)
+      {
+        fatalerror("Cannot open output file for S+-, sorry!", errno);
+        return -1;
+      }
+      fflush(outfilepm);
 
-#ifndef FIND_CROSS_PM
-  // strcpy(outfile_name,infile_name);
-  // strcat(outfile_name,SXXEND);
-  errno = 1;
-  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SXXEND) >= 256)
-  {
-    fatalerror("infile_name too large", errno);
-    return -1;
+      // strcpy(outfile_name,infile_name);
+      // strcat(outfile_name,SMPEND);
+      if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SMPEND) >= 256)
+      {
+        fatalerror("infile_name too large", errno);
+        return -1;
+      }
+      errno = 1;
+      if ((outfilemp = fopen(outfile_name, "w")) == NULL)
+      {
+        fatalerror("Cannot open output file for S-+, sorry!", errno);
+        return -1;
+      }
+      fflush(outfilemp);
+    }
   }
-  if ((outfilexx = fopen(outfile_name, "w")) == NULL)
-  {
-    fatalerror("Cannot open output file for S+-, sorry!", errno);
-    return -1;
-  }
-  fflush(outfilexx);
-
-  // strcpy(outfile_name,infile_name);
-  // strcat(outfile_name,SYYEND);
-  errno = 1;
-  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SYYEND) >= 256)
-  {
-    fatalerror("infile_name too large", errno);
-    return -1;
-  }
-  if ((outfileyy = fopen(outfile_name, "w")) == NULL)
-  {
-    fatalerror("Cannot open output file for S-+, sorry!", errno);
-    return -1;
-  }
-  fflush(outfileyy);
-#endif
-
-#ifdef FIND_CROSS_PM
-  // strcpy(outfile_name,infile_name);
-  // strcat(outfile_name,SPMEND);
-  errno = 1;
-  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SPMEND) >= 256)
-  {
-    fatalerror("infile_name too large", errno);
-    return -1;
-  }
-  if ((outfilepm = fopen(outfile_name, "w")) == NULL)
-  {
-    fatalerror("Cannot open output file for S+-, sorry!", errno);
-    return -1;
-  }
-  fflush(outfilepm);
-
-  // strcpy(outfile_name,infile_name);
-  // strcat(outfile_name,SMPEND);
-  if (snprintf(outfile_name, 255, "%s-%d%s", infile_name, rank, SMPEND) >= 256)
-  {
-    fatalerror("infile_name too large", errno);
-    return -1;
-  }
-  errno = 1;
-  if ((outfilemp = fopen(outfile_name, "w")) == NULL)
-  {
-    fatalerror("Cannot open output file for S-+, sorry!", errno);
-    return -1;
-  }
-  fflush(outfilemp);
-#endif
-
-#endif /* FIND_CROSS */
 #ifdef TEST_INPUT
   LogMessageChar("All filenames are OK. \n");
 #endif /* TEST_INPUT */
@@ -372,14 +364,24 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   filereader(filename, filedata, filesize); // the entire file is now in filedata
   input_flags->use_lanczos = 1;             // Using lanczos is default.
   input_flags->use_exact_matrix = 0;
-  input_flags->m_sym = 1;           // Use m_sym as default
+  input_flags->m_sym = 1; // Use m_sym as default
+  input_flags->dipole = 0;
+  input_flags->ring_exchange = 0;
   input_flags->find_eigenstate = 1; // As default, find eigenstates
-  input_flags->write_energies = 1;  // Output energies and states as default
+  input_flags->find_cross = 1;
+  input_flags->find_cross_pm = 0;
+
+  input_flags->write_energies = 1; // Output energies and states as default
   input_flags->write_states = 1;
-  matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
+
   matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true);
+  matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
   matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true);
+  matchlines_wrapper(filedata, "Dipole", &input_flags->dipole, true);
+  matchlines_wrapper(filedata, "Ring_exchange", &input_flags->ring_exchange, true);
   matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
+  matchlines_wrapper(filedata, "Find_cross", &input_flags->find_cross, true);
+  matchlines_wrapper(filedata, "Find_cross_pm", &input_flags->find_cross_pm, true);
 
   matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true);
   matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true);
@@ -963,8 +965,6 @@ void TransformCoup(long long j)
 }
 #endif /* NEVER */
 
-#ifdef FIND_CROSS
-
 long long SortCross(long long Nener)
 {
   /* Finds and sums crosssections for same energies, and sorts energies and
@@ -1005,7 +1005,6 @@ long long SortCross(long long Nener)
   freedvector(tmpcross, 0, MAX_LANCZOS - 1);
   return XS;
 }
-#endif /* FIND_CROSS */
 
 void time_stamp(time_t *tim, long long flag, const char *string)
 {
@@ -1024,21 +1023,23 @@ void time_stamp(time_t *tim, long long flag, const char *string)
   return;
 }
 
-void outro()
+void outro(struct FLAGS *input_flags)
 {
   fclose(outfile);
-#ifdef FIND_CROSS
-  fclose(outfilezz);
-
-#ifndef FIND_CROSS_PM
-  fclose(outfilexx);
-  fclose(outfileyy);
-#endif
-#ifdef FIND_CROSS_PM
-  fclose(outfilepm);
-  fclose(outfilemp);
-#endif
-#endif /* FIND_CROSS */
+  if (input_flags->find_cross)
+  {
+    fclose(outfilezz);
+    if (!input_flags->find_cross_pm)
+    {
+      fclose(outfilexx);
+      fclose(outfileyy);
+    }
+    else
+    {
+      fclose(outfilepm);
+      fclose(outfilemp);
+    }
+  }
   LogMessageChar("\n End of diagonalization program RLexact.\n");
 
   return;
@@ -1258,8 +1259,6 @@ void WriteResults(long long N, struct FLAGS *input_flags)
   return;
 }
 
-#ifdef FIND_CROSS
-
 void WriteCross(long long Nener, long long *symvalue, long long flag, struct FLAGS *input_flags)
 {
   /* Output the cross sections of the ground state */
@@ -1269,28 +1268,29 @@ void WriteCross(long long Nener, long long *symvalue, long long flag, struct FLA
   {
     crossfile = outfilezz;
   } // SZZ
-#ifndef FIND_CROSS_PM
-  else if (flag == 1)
+  else if (!input_flags->find_cross_pm)
   {
-    crossfile = outfilexx;
-  } // SXX
-  else if (flag == 2)
-  {
-    crossfile = outfileyy;
-  } // SYY
-#endif
-#ifdef FIND_CROSS_PM
-  else if (flag == 1)
-  {
-    crossfile = outfilemp;
-  } // SMP
-  else if (flag == 2)
-  {
-    crossfile = outfilepm;
-  } // SPM
-#endif
-
+     if (flag == 1)
+    {
+      crossfile = outfilexx;
+    } // SXX
+    else if (flag == 2)
+    {
+      crossfile = outfileyy;
+    } // SYY
+  }
   else
+  {
+    if (flag == 1)
+    {
+      crossfile = outfilemp;
+    } // SMP
+    else if (flag == 2)
+    {
+      crossfile = outfilepm;
+    } // SPM
+  }
+  if (flag != 0)
   {
     LogMessageChar("\nError in WriteCross flag!\n");
   }
@@ -1382,7 +1382,6 @@ void WriteCross(long long Nener, long long *symvalue, long long flag, struct FLA
 #endif // CSVOUT
   return;
 }
-#endif /* FIND_CROSS */
 
 void WriteGSEnergy(komplex E)
 {

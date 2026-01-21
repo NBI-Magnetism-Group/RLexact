@@ -15,6 +15,7 @@ long long intro(struct FLAGS *);
 long long ReadCoupPattern(char *, struct FLAGS *);
 void fatalerror(const char *str, long long i);
 void time_stamp(time_t *tim, long long flag, const char *string);
+void outro(struct FLAGS*);
 
 // =============================================================================
 // Functions in RLcross

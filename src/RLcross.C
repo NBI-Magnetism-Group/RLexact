@@ -19,7 +19,6 @@
 #include <nr.h>
 #include <math.h> //TODO: Remove when tables implemented /ABP
 #include "Functions.h"
-#ifdef FIND_CROSS
 
 /* Functions declared elsewhere */
 extern unsigned long long SymOp(long long, unsigned long long);
@@ -96,15 +95,16 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
   /* For a start: Consider only periodic boundary conditions */
   /* Apply S+-(k),S-+(k),Sz(k) to groundstate */
 
-#ifndef FIND_CROSS_PM // otherwise not needed
-                      // initialize
-  Nener = 0;
-  for (int j = 0; j < Nunique; j++)
-  {
-    spgs[j] = zero;
-    smgs[j] = zero;
+  if (!input_flags->find_cross_pm)
+  { // otherwise not needed
+    // initialize
+    Nener = 0;
+    for (int j = 0; j < Nunique; j++)
+    {
+      spgs[j] = zero;
+      smgs[j] = zero;
+    }
   }
-#endif
 
   // how many cross sections can be calculated?
   if (input_flags->m_sym)
@@ -129,41 +129,43 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
     {
       ApplySzq(symvalue);
     }
-    if(!input_flags->m_sym){
-
-#ifndef FIND_CROSS_PM // find in terms of S^xx and S^yy
-    if (flag == 1)    // SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
+    if (!input_flags->m_sym)
     {
-      /* applysmp is calculated here, but also needed in flag==2 */
-      ApplySmp(symvalue, 0, spgs); // find s^+_q |gs>
-      ApplySmp(symvalue, 1, smgs); // find s^-_q |gs>
 
-      for (int i = 0; i < Nunique; i++)
-      {
-        szxygs[i] = (1.0 / (2.0)) * (spgs[i] + smgs[i]);
+      if (!input_flags->find_cross_pm)
+      {                // find in terms of S^xx and S^yy
+        if (flag == 1) // SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
+        {
+          /* applysmp is calculated here, but also needed in flag==2 */
+          ApplySmp(symvalue, 0, spgs); // find s^+_q |gs>
+          ApplySmp(symvalue, 1, smgs); // find s^-_q |gs>
+
+          for (int i = 0; i < Nunique; i++)
+          {
+            szxygs[i] = (1.0 / (2.0)) * (spgs[i] + smgs[i]);
+          }
+        }
+
+        if (flag == 2) // SYY, s^y |gs> = 1/(2i) (s^+_q |gs> - s^-_q |gs>)
+        {
+          for (int i = 0; i < Nunique; i++)
+          {
+            szxygs[i] = (1.0 / (2.0 * I)) * (spgs[i] - smgs[i]);
+          }
+        }
+      }
+      else
+      {                // find in terms of S^+- and S^-+
+        if (flag == 1) // SMP
+        {
+          ApplySmp(symvalue, 0, szxygs); // find s^+_q |gs>
+        }
+        if (flag == 2) // SPM
+        {
+          ApplySmp(symvalue, 1, szxygs); // find s^-_q |gs>
+        }
       }
     }
-
-    if (flag == 2) // SYY, s^y |gs> = 1/(2i) (s^+_q |gs> - s^-_q |gs>)
-    {
-      for (int i = 0; i < Nunique; i++)
-      {
-        szxygs[i] = (1.0 / (2.0 * I)) * (spgs[i] - smgs[i]);
-      }
-    }
-#endif // not FIND_CROSS_PM
-
-#ifdef FIND_CROSS_PM // find in terms of S^+- and S^-+
-    if (flag == 1)   // SMP
-    {
-      ApplySmp(symvalue, 0, szxygs); // find s^+_q |gs>
-    }
-    if (flag == 2) // SPM
-    {
-      ApplySmp(symvalue, 1, szxygs); // find s^-_q |gs>
-    }
-#endif // FIND_CROSS_PM
-  }
 
     szqlength = lengthofvector(szxygs); // for output in cross files
 
@@ -196,7 +198,6 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
 
   return;
 }
-#endif /* LANCZOS */
 
 /* ApplySzq applies the Sz(q) operator to a state vector */
 void ApplySzq(long long *q)

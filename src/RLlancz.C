@@ -198,30 +198,31 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
   for (i = 0; i < Nvec; i++)
     energies[i] = diag_copy[i];
 
-#ifdef FIND_CROSS
-  if (flag == CROSS)
+  if (input_flags->find_cross)
   {
-    for (i = 0; i < r; i++)
+    if (flag == CROSS)
     {
-      cross[i] = 2 * PI * sqrabs(scale * z[1][i + 1]); // TODO: check if this works!
+      for (i = 0; i < r; i++)
+      {
+        cross[i] = 2 * PI * sqrabs(scale * z[1][i + 1]); // TODO: check if this works!
 #ifdef TEST_LANCCROSS
-      LogMessageChar("k = [ ");
-      for (j = 0; j < Nsym; j++)
-        LogMessageInt(k[i]);
-      LogMessageChar("] \n");
-      LogMessageCharInt("Overlap from smpzq to exited state ", i);
-      LogMessageCharDouble(" with energy ", energies[i]);
-      LogMessageCharDouble(" is z =", real(z[1][i + 1]));
-      LogMessageCharDouble(" + i ", imag(z[1][i + 1]));
-      LogMessageCharInt("\n r =", r);
-      LogMessageCharDouble(", scale =", scale);
-      LogMessageCharDouble(" Cross section: ", cross[i]);
-      LogMessageCharInt(", Nvec =", Nvec);
-      LogMessageChar("\n");
+        LogMessageChar("k = [ ");
+        for (j = 0; j < Nsym; j++)
+          LogMessageInt(k[i]);
+        LogMessageChar("] \n");
+        LogMessageCharInt("Overlap from smpzq to exited state ", i);
+        LogMessageCharDouble(" with energy ", energies[i]);
+        LogMessageCharDouble(" is z =", real(z[1][i + 1]));
+        LogMessageCharDouble(" + i ", imag(z[1][i + 1]));
+        LogMessageCharInt("\n r =", r);
+        LogMessageCharDouble(", scale =", scale);
+        LogMessageCharDouble(" Cross section: ", cross[i]);
+        LogMessageCharInt(", Nvec =", Nvec);
+        LogMessageChar("\n");
 #endif // TEST_LANCCROSS
+      }
     }
   }
-#endif // FIND_CROSS
 
   /* Find index of smallest eigenvalue */
   emin = LARGE_NUMBER;
