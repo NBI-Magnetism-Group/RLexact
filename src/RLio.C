@@ -846,11 +846,11 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   MPI_Bcast(hamring, Nringstr, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 // MPI Not tested, since documentation is sparse on this functionality - ABP
 #endif /* RING_EXCHANGE */
-long long **dummyres;
+
   if (rank == 0)
   {
     long long *dummy = (long long *)malloc(Ncoup * sizeof(long long));
-    dummyres = (long long **)malloc(Ncoup * sizeof(long long *));
+    long long **dummyres = (long long **)malloc(Ncoup * sizeof(long long *));
     multimatch(filedata, filesize, "Coupling vector", dummyres, dummy, Ncoup);
 
     for (long long k = 0; k < Ncoup; k++)
@@ -860,6 +860,28 @@ long long **dummyres;
       Jzz[k] = hamzz[dummyres[k][2]];
       Jxy[k] = hamxy[dummyres[k][2]];
       Janis[k] = hamanis[dummyres[k][2]];
+    }
+    if (input_flags->dipole)
+    {
+      if (rank == 0)
+      {
+        for (long long k = 0; k < Ncoup; k++)
+        {
+          Jdip[k] = Dip[dummyres[k][2]];
+          r_vector[k][X] = dummyres[k][3];
+          r_vector[k][Y] = dummyres[k][4];
+          r_vector[k][Z] = dummyres[k][5];
+          NormalizeVector(r_vector[k]);
+          RotateVector(r_vector[k]);
+          geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
+#ifdef TEST_ROTATION
+          LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
+                                r_vector[k][Y],
+                                r_vector[k][Z]);
+          LogMessageChar("\n");
+#endif /* TEST_ROTATION */
+        }
+      } // Not parallelised Dipole is missing documentation
     }
     free(dummy);
     free(dummyres);
@@ -886,29 +908,6 @@ long long **dummyres;
     LogMessageChar("\n");
   }
 #endif /* TEST_INPUT */
-
-  if (input_flags->dipole)
-  {
-    if (rank == 0)
-    {
-      for (long long k = 0; k < Ncoup; k++)
-      {
-        Jdip[k] = Dip[dummyres[k][2]];
-        r_vector[k][X] = dummyres[k][3];
-        r_vector[k][Y] = dummyres[k][4];
-        r_vector[k][Z] = dummyres[k][5];
-        NormalizeVector(r_vector[k]);
-        RotateVector(r_vector[k]);
-        geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
-#ifdef TEST_ROTATION
-        LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
-                              r_vector[k][Y],
-                              r_vector[k][Z]);
-        LogMessageChar("\n");
-#endif /* TEST_ROTATION */
-      }
-    } // Not parallelised Dipole is missing documentation
-  }
 
 #ifdef RING_EXCHANGE
   if (rank == 0)

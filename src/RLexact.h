@@ -37,7 +37,6 @@ struct FLAGS
 };
 
 // Physics of problem
-// #define DIPOLE
 // #define RING_EXCHANGE
 
 // Calculation of problem and output requests
