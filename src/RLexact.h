@@ -21,7 +21,7 @@ struct FLAGS
   long long use_exact_matrix;
   long long m_sym;        // M_symmetry present = 1, absent = 0
   long long dipole;       // DLC: This is defineable, but needs testing
-  long long ring_exchang; // DLC: This is defineable, but needs testing
+  long long ring_exchange; // DLC: This is defineable, but needs testing
   long long find_eigenstate;
   
   // OUTPUT SPECIFIERS
@@ -60,10 +60,8 @@ struct FLAGS
 #define NSYMADD 10
 #define NUNIQUE 4500
 #define MAXARRAYSIZE 200 // max number of entries on a given line in the input file
-#ifdef RING_EXCHANGE
 #define NRING 100
 #define NRINGSTR 10
-#endif
 
 // Highest possible state
 //  #define MAX_STATE ((((unsigned long) 1)<<(Nspins-1)) -1)

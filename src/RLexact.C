@@ -76,12 +76,10 @@ long long Ncoup;
 /* Actual number of couplings */
 long long Ncoupstr;
 /* Actual number of coupling strengths */
-#ifdef RING_EXCHANGE
 long long Nring;
 /* Actual number of ring couplings */
 long long Nringstr;
 /* Actual number of ring coupling strengths */
-#endif /* RING_EXCHANGE */
 long long Nsym;
 /* Total number of symmetries in use */
 long long Nsymadd;
@@ -114,12 +112,10 @@ double Jxy[NCOUP];
 /* xy value of each coupling; Hxy=Jxy (Sx1 Sx2 + Sy1 Sy2) */
 double Janis[NCOUP];
 /* xy-anisotropy of each coupling; Ha=Ja(Sx1 Sx2-Sy1 Sy2) */
-#ifdef RING_EXCHANGE
 double Jr[NRING];
 /* value of ring exchange H_r = Jr sum_{ijkl in ring} (s_i . s_j) (s_k . s_l) + (s_i . s_l) (s_j . s_k) - (s_i . s_k) (s_j . s_l) */
 long long ring_coup[NRING][4];
 /* Table of spin quadruplets coupled together in rings */
-#endif /* RING_EXCHANGE */
 double Jdip[NCOUP];
 /* Strength of dipole interaction (will be 1/r^3 or 0) */
 double geom_13[NCOUP];

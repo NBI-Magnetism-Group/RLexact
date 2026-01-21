@@ -58,6 +58,10 @@ void Hamil_Zeeman(unsigned long long, unsigned long long *, long long,
                   FILE *, FILE *, FILE *, struct FLAGS *);
 void Eigenvector_test(long long *, komplex *, komplex *, struct FLAGS *);
 
+void Hamil4_sparse(unsigned long long, unsigned long long *, 
+                    long long, long long, int *, long long *, 
+                    int *, komplex *, double *, FILE *, FILE *, FILE *,
+                    struct FLAGS *);
 // =============================================================================
 // Functions in RLhamil.dipole
 // =============================================================================

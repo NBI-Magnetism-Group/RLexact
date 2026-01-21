@@ -45,9 +45,7 @@ extern long long Nspins, Ncoup, Nsym, Nsymvalue[NSYM], Nsymadd;
 extern long long hamil_coup[NCOUP][2], symlist[NSYM];
 extern long long **symadd;
 extern double Jxy[NCOUP], Jzz[NCOUP], Janis[NCOUP];
-#ifdef RING_EXCHANGE
 extern double Jr[NRING];
-#endif /* RING_EXCHANGE */
 extern double Jdip[NCOUP], geom_13[NCOUP], r_vector[NCOUP][3];
 
 /* Regional variables defined in this file */
