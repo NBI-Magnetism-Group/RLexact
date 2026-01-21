@@ -106,6 +106,7 @@ void ReadUniqueObservables(struct FLAGS *);
 // Functions in RLsymm
 // =============================================================================
 
+// Construct the Hamiltonian from the symmetry. TODO: Finish this function
 void MakeSymCoup(struct FLAGS *);
 
 
