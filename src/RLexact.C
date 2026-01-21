@@ -34,10 +34,6 @@ void allocate(struct FLAGS *);
 void deallocate(struct FLAGS *);
 
 /* Functions declared elsewhere */
-extern void BuildTables();
-extern void BuildCycle(long long *, struct FLAGS *);
-extern unsigned long long FillUnique(long long, int);
-extern void FillUniqueObservables();
 extern long long intro(struct FLAGS *);
 extern void time_stamp(time_t *, long long, const char *);
 extern void outro();
@@ -63,12 +59,8 @@ extern void WriteMaggs(long long *);
 #endif /*M_SYM*/
 extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
-//extern void CrossLanczos(long long *, struct FLAGS*);
+// extern void CrossLanczos(long long *, struct FLAGS*);
 extern void InitSym();
-extern long long ReadUnique(long long, int);
-extern void WriteUnique(long long);
-extern void WriteUniqueObservables();
-extern void ReadUniqueObservables();
 
 /* Global variables read from the input file */
 long long Nspins;
@@ -279,12 +271,12 @@ int main(int argc, char *argv[])
       { // UNIMODER Reads from file.
         // Not tested with MPI since perl
         // scripts are lost.
-        Nunique = ReadUnique((long long)(mstart * 2), 1);
+        Nunique = ReadUnique((long long)(mstart * 2), 1, &input_flags);
       }
       else
       {
         //	 LogMessageChar("FillUnique 1 \n");
-        Nunique = FillUnique((long long)(mstart * 2), 1);
+        Nunique = FillUnique((long long)(mstart * 2), 1, &input_flags);
       }
     }
     else
@@ -293,12 +285,12 @@ int main(int argc, char *argv[])
       {
         if ((unimode == UNIMODER) && (rank == 0))
         {
-          Nunique = ReadUnique((long long)(mend * 2), 1);
+          Nunique = ReadUnique((long long)(mend * 2), 1, &input_flags);
         }
         else
         {
           //	 LogMessageChar("FillUnique 2 \n");
-          Nunique = FillUnique((long long)(mend * 2), 1);
+          Nunique = FillUnique((long long)(mend * 2), 1, &input_flags);
         }
       }
       else
@@ -309,12 +301,12 @@ int main(int argc, char *argv[])
           if ((unimode == UNIMODER) && (rank == 0))
           {
             //	 LogMessageChar("ReadUnique 3 \n");
-            Nunique = ReadUnique((long long)(0), 1);
+            Nunique = ReadUnique((long long)(0), 1, &input_flags);
           }
           else
           {
             //	 LogMessageChar(" FillUnique 3 \n");
-            Nunique = FillUnique(0, 1); // twom=0 if this loop is entered
+            Nunique = FillUnique(0, 1, &input_flags); // twom=0 if this loop is entered
           }
         }
         else
@@ -322,12 +314,12 @@ int main(int argc, char *argv[])
           if ((unimode == UNIMODER) && (rank == 0))
           {
             //	 LogMessageChar("ReadUnique 4 \n");
-            Nunique = ReadUnique((long long)(1), 1);
+            Nunique = ReadUnique((long long)(1), 1, &input_flags);
           }
           else
           {
             //	 LogMessageChar("FillUnique 4 \n");
-            Nunique = FillUnique(1, 1);
+            Nunique = FillUnique(1, 1, &input_flags);
           }
         }
       }
@@ -350,11 +342,11 @@ int main(int argc, char *argv[])
 
     if ((unimode == UNIMODER) && (rank == 0))
     {
-      Nunique = ReadUnique(0, 1);
+      Nunique = ReadUnique(0, 1, &input_flags);
     }
     else
     {
-      Nunique = FillUnique(0, 1);
+      Nunique = FillUnique(0, 1, &input_flags);
     }
   } /* M_SYM */
   // LogMessageChar("Unique mode OK \n");
@@ -383,12 +375,12 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODER) && (rank == 0))
       {
-        Nunique = ReadUnique(twom, 0);
+        Nunique = ReadUnique(twom, 0, &input_flags);
       }
       else
       {
-        Nunique = FillUnique(twom, 0);
-        FillUniqueObservables();
+        Nunique = FillUnique(twom, 0, &input_flags);
+        FillUniqueObservables(&input_flags);
       }
 
       if (input_flags.VERBOSE_TIME_LV1)
@@ -401,7 +393,7 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODEW) && (rank == 0))
       {
-        WriteUnique(twom);
+        WriteUnique(twom, &input_flags);
         if (!input_flags.m_sym)
         {
           long long q_write[NSYM];
@@ -410,7 +402,7 @@ int main(int argc, char *argv[])
             q_write[i] = 0;
           }
           BuildCycle(q_write, &input_flags);
-          WriteUniqueObservables();
+          WriteUniqueObservables(&input_flags);
         }
       }
       else
@@ -438,16 +430,16 @@ int main(int argc, char *argv[])
     if ((unimode == UNIMODER) && (rank == 0))
     {
       LogMessageChar("The mode is UNIMODER \n");
-      ReadUniqueObservables();
-      Nunique = ReadUnique(0, 0);
+      ReadUniqueObservables(&input_flags);
+      Nunique = ReadUnique(0, 0, &input_flags);
     }
     else
     {
-      Nunique = FillUnique(0, 0); // TODO: CHECK THIS: slightly disgusting:
+      Nunique = FillUnique(0, 0, &input_flags); // TODO: CHECK THIS: slightly disgusting:
                                   // variable is never used - FillUnique takes care
                                   // of both M_SYM set and unset
       LogMessageChar("\n FillUnique is done \n");
-      FillUniqueObservables();
+      FillUniqueObservables( &input_flags);
       LogMessageChar("FillUniqueObservables is done \n");
     }
     if (input_flags.VERBOSE_TIME_LV1)
@@ -467,7 +459,7 @@ int main(int argc, char *argv[])
 
       if ((unimode == UNIMODEW) && (rank == 0))
       {
-        WriteUnique(twom);
+        WriteUnique(twom, &input_flags);
         if (!input_flags.m_sym)
         {
           long long q_write[NSYM];
@@ -476,7 +468,7 @@ int main(int argc, char *argv[])
             q_write[i] = 0;
           }
           BuildCycle(q_write, &input_flags);
-          WriteUniqueObservables();
+          WriteUniqueObservables(&input_flags);
         }
       }
       else

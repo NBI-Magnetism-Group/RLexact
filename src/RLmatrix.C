@@ -52,9 +52,7 @@ extern long long Nunique, Nuniq_k;
 extern komplex *gs, *smpgs, *szqgs, *tmp;
 // extern komplex **hamilton;
 extern double *energies;
-#ifndef M_SYM
 extern long long *mag;
-#endif /* M_SYM */
 #ifdef FIND_MAG
 extern double *magnetisation;
 #endif /* FIND_MAG */

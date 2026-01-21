@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <complex>
 #include "RLexact.h"
-#include <cnr.h>
+#include "cnr.h"
 #include "Functions.h"
 
 // Global variables defined in RLexact.c
