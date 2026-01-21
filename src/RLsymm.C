@@ -30,8 +30,6 @@ void InitSym();
 // Initialize the symmetry operations and corresponding tables
 void TestSym();
 // Test symmetry operations (during initialization)
-void MakeSymCoup();
-// Construct the Hamiltonian from the symmetry. TODO: Finish this function
 
 /* Functions defined elsewhere */
 extern void fatalerror(const char *, long long);
@@ -50,9 +48,7 @@ extern double Jxy[NCOUP], Jzz[NCOUP], Janis[NCOUP];
 #ifdef RING_EXCHANGE
 extern double Jr[NRING];
 #endif /* RING_EXCHANGE */
-#ifdef DIPOLE
 extern double Jdip[NCOUP], geom_13[NCOUP], r_vector[NCOUP][3];
-#endif /* DIPOLE */
 
 /* Regional variables defined in this file */
 unsigned long long flipmask;
@@ -333,7 +329,7 @@ void TestSym()
 }
 #endif /* TEST_SYM */
 
-void MakeSymCoup()
+void MakeSymCoup(struct FLAGS *input_flags)
 /* MakeSymCoup constructs the full Hamiltonian from a general
    pattern and knowledge of the symmetries */
 /* IN TESTING. TODO: Finish this function */
@@ -374,13 +370,14 @@ void MakeSymCoup()
       Jzz[Nc] = Jzz[i];
       Jxy[Nc] = Jxy[i];
       Janis[Nc] = Janis[i];
-#ifdef DIPOLE
-      Jdip[Nc] = Jdip[i];
-      r_vector[Nc][X] = r_vector[i][X];
-      r_vector[Nc][Y] = r_vector[i][Y];
-      r_vector[Nc][Z] = r_vector[i][Z];
-      geom_13[Nc] = geom_13[i];
-#endif /* DIPOLE */
+      if (input_flags->dipole)
+      {
+        Jdip[Nc] = Jdip[i];
+        r_vector[Nc][X] = r_vector[i][X];
+        r_vector[Nc][Y] = r_vector[i][Y];
+        r_vector[Nc][Z] = r_vector[i][Z];
+        geom_13[Nc] = geom_13[i];
+      }
 
       for (sym = 0; ++T[sym] == Nsymvalue[sym];)
         if (sym < Nsym - 1)

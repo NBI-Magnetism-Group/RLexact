@@ -61,10 +61,10 @@ void Eigenvector_test(long long *, komplex *, komplex *, struct FLAGS *);
 // =============================================================================
 // Functions in RLhamil.dipole
 // =============================================================================
-void FillHamilton(int k[], komplex **hamilton, struct FLAGS *);
-double HamDiag(struct FLAGS *input_flags);
-void Hamil2(int *, komplex, komplex *, struct FLAGS*);
-void Hamilton(komplex *this_v, komplex *next_v, int k[], struct FLAGS *input_flags);
+void FillHamilton(int k[], komplex **, struct FLAGS *);
+double HamDiag(struct FLAGS *);
+void Hamil2(int *, komplex, komplex *, struct FLAGS *);
+void Hamilton(komplex *, komplex *, int k[], struct FLAGS *);
 
 // =============================================================================
 // Functions in Diagonal
@@ -103,5 +103,10 @@ void ReadUniqueObservables(struct FLAGS *);
 // Read the diagonal elements of the uniques from file
 
 // =============================================================================
+// Functions in RLsymm
 // =============================================================================
+
+void MakeSymCoup(struct FLAGS *);
+
+
 #endif

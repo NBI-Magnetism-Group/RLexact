@@ -24,7 +24,6 @@
 
 /* Functions defined in this file */
 void Eigenvector_test(int *, komplex *, komplex *);
-void Hamilton(komplex *, komplex *, int *);
 void matrixelement(komplex, int *, komplex, komplex *);
 
 /* Functions defined elsewhere */
@@ -213,17 +212,14 @@ double HamDiag(struct FLAGS *input_flags)
 #endif
 
     if ((s0 + s1) == 1) /* Spins are of opposite sign */
-#ifdef DIPOLE
-      diagonal -= Jzz[j] - Jdip[j] * geom_13[j];
-#else
-      diagonal -= Jzz[j];
-#endif /* DIPOLE */
-    else
-#ifdef DIPOLE
+      if (input_flags->dipole)
+        diagonal -= Jzz[j] - Jdip[j] * geom_13[j];
+      else
+        diagonal -= Jzz[j];
+    else if (input_flags->dipole)
       diagonal += Jzz[j] + Jdip[j] * geom_13[j];
-#else
+    else
       diagonal += Jzz[j];
-#endif /* DIPOLE */
   }
 
   if (input_flags->m_sym)
@@ -251,69 +247,74 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
 #endif
     if (s0 == 0) /* case s0 down; S+.. terms (and Sz.. for DIPOLE) */
     {
-#ifdef DIPOLE /* S+Sz */
-      if (s1 == 0)
-        sz = -0.5;
-      else
-        sz = 0.5;
-      new_state = (bitmap | mask0);
-      matrixelement(((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                     I * (1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y])),
-                    k, coof, next);
-#endif
+      if (input_flags->dipole)
+      {
+        if (s1 == 0)
+          sz = -0.5;
+        else
+          sz = 0.5;
+        new_state = (bitmap | mask0);
+        matrixelement(((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                       I * (1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y])),
+                      k, coof, next);
+      }
       if (s1 == 0) /* down down: S+S+ term */
       {
         if (!input_flags->m_sym)
         {
           new_state = (bitmap | mask0 | mask1);
           matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next);
-#ifdef DIPOLE /* S+S+ and SzS+ */
-          matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
-                            I * (1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
-                        k, coof, next);
-          new_state = (bitmap | mask1);
-          matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                            I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                        k, coof, next);
-#endif
+          if (input_flags->dipole)
+          { /* S+S+ and SzS+ */
+            matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
+                              I * (1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
+                          k, coof, next);
+            new_state = (bitmap | mask1);
+            matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                              I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
+                          k, coof, next);
+          }
         }
       }
       else /* down up: S+S- terms */
       {
         new_state = ((bitmap | mask0) & ~mask1);
         matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next);
-#ifdef DIPOLE /* S+S- and SzS- */
-        matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
-        new_state = (bitmap & ~mask1);
-        matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                          I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                      k, coof, next);
-#endif
+        if (input_flags->dipole)
+        { /* S+S- and SzS- */
+          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
+          new_state = (bitmap & ~mask1);
+          matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                            I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
+                        k, coof, next);
+        }
       } /* if s1==0. */
     }
     else /* case s0 up; S-.. terms (and Sz.. for DIPOLE) */
     {
-#ifdef DIPOLE /* S-Sz term */
-      if (s1 == 0)
-        sz = -0.5;
-      else
-        sz = 0.5;
-      new_state = (bitmap & ~mask0);
-      matrixelement((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                        I * (-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                    k, coof, next);
-#endif
+      if (input_flags->dipole)
+      { /* S-Sz term */
+        if (s1 == 0)
+          sz = -0.5;
+        else
+          sz = 0.5;
+        new_state = (bitmap & ~mask0);
+        matrixelement((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                          I * (-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
+                      k, coof, next);
+      }
       if (s1 == 0) /* up down: S-S+ term (and SzS+) */
       {
         new_state = ((bitmap | mask1) & ~mask0);
         matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next);
-#ifdef DIPOLE /* S-S+ and SzS+ */
-        matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
-        new_state = (bitmap | mask1);
-        matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                          I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                      k, coof, next);
-#endif
+        if (input_flags->dipole)
+        { /* S-S+ and SzS+ */
+          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
+          new_state = (bitmap | mask1);
+          matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                            I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
+                        k, coof, next);
+        }
       }
       else /* up up: S-S- terms (and SzS-) */
       {
@@ -322,15 +323,16 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
           new_state = (bitmap & ~mask0) & ~mask1;
           matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next);
 
-#ifdef DIPOLE /*  S-S- and SzS-  */
-          matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
-                            I * (-1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
-                        k, coof, next);
-          new_state = (bitmap & ~mask1);
-          matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
-                            I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                        k, coof, next);
-#endif /* DIPOLE */
+          if (input_flags->dipole)
+          { /*  S-S- and SzS-  */
+            matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
+                              I * (-1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
+                          k, coof, next);
+            new_state = (bitmap & ~mask1);
+            matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
+                              I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
+                          k, coof, next);
+          }
         }
       } /* if s1==0.. */
     } /* if s0==0.. */

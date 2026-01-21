@@ -376,21 +376,18 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   filereader(filename, filedata, filesize); // the entire file is now in filedata
   input_flags->use_lanczos = 1;             // Using lanczos is default.
   input_flags->use_exact_matrix = 0;
-  input_flags->m_sym = 1; // Use m_sym as default
+  input_flags->m_sym = 1;           // Use m_sym as default
   input_flags->find_eigenstate = 1; // As default, find eigenstates
-  input_flags->write_energies = 1; // Output energies and states as default
+  input_flags->write_energies = 1;  // Output energies and states as default
   input_flags->write_states = 1;
   matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
   matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true);
   matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true);
   matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
 
-
   matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true);
   matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true);
 
-
-  
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true);
   matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true);
@@ -409,10 +406,8 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 #endif /* RING_EXCHANGE */
   long long n1, n2, str, i, j, symconstruct;
   double hamzz[NCOUPSTR], hamxy[NCOUPSTR], hamanis[NCOUPSTR];
-#ifdef DIPOLE
   double r, rx, ry, rz;
   double Dip[NCOUPSTR];
-#endif /* DIPOLE */
   double B2;
   char test[80];
   long long filesize; // of inputfile
@@ -803,12 +798,13 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
       hamzz[k] = dummyresdouble[k][0];
       hamxy[k] = dummyresdouble[k][1];
       hamanis[k] = dummyresdouble[k][2];
-#ifdef DIPOLE
-      Dip[k] = dummyresdouble[k][3];
-      printf("Coupling strengths: \g, \g, \g, \g",
-             hamzz[k], hamxy[k],
-             hamanis[k], Dip[k]);
-#endif /* DIPOLE */
+      if (input_flags->dipole)
+      {
+        Dip[k] = dummyresdouble[k][3];
+        printf("Coupling strengths: %g, %g, %g, %g",
+               hamzz[k], hamxy[k],
+               hamanis[k], Dip[k]);
+      }
     }
     free(dummy);
     free(dummyresdouble);
@@ -818,9 +814,8 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
     MPI_Bcast(&hamzz[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&hamxy[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&hamanis[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-#ifdef DIPOLE
-    MPI_Bcast(&Dip[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-#endif // DIPOLE
+    if (input_flags->dipole)
+      MPI_Bcast(&Dip[k], 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 #ifdef TEST_INPUT
     LogMessageChar3Vector(" Jzz, Jxy, Janis:", hamzz[k], hamxy[k], hamanis[k]);
@@ -851,11 +846,11 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   MPI_Bcast(hamring, Nringstr, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 // MPI Not tested, since documentation is sparse on this functionality - ABP
 #endif /* RING_EXCHANGE */
-
+long long **dummyres;
   if (rank == 0)
   {
     long long *dummy = (long long *)malloc(Ncoup * sizeof(long long));
-    long long **dummyres = (long long **)malloc(Ncoup * sizeof(long long *));
+    dummyres = (long long **)malloc(Ncoup * sizeof(long long *));
     multimatch(filedata, filesize, "Coupling vector", dummyres, dummy, Ncoup);
 
     for (long long k = 0; k < Ncoup; k++)
@@ -892,27 +887,28 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   }
 #endif /* TEST_INPUT */
 
-#ifdef DIPOLE
-  if (rank == 0)
+  if (input_flags->dipole)
   {
-    for (long long k = 0; k < Ncoup; k++)
+    if (rank == 0)
     {
-      Jdip[k] = Dip[dummyres[k][2]];
-      r_vector[k][X] = dummyres[k][3];
-      r_vector[k][Y] = dummyres[k][4];
-      r_vector[k][Z] = dummyres[k][5];
-      NormalizeVector(r_vector[k]);
-      RotateVector(r_vector[k]);
-      geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
+      for (long long k = 0; k < Ncoup; k++)
+      {
+        Jdip[k] = Dip[dummyres[k][2]];
+        r_vector[k][X] = dummyres[k][3];
+        r_vector[k][Y] = dummyres[k][4];
+        r_vector[k][Z] = dummyres[k][5];
+        NormalizeVector(r_vector[k]);
+        RotateVector(r_vector[k]);
+        geom_13[k] = 1.0 - 3.0 * SQR(r_vector[k][Z]);
 #ifdef TEST_ROTATION
-      LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
-                            r_vector[k][Y],
-                            r_vector[k][Z]);
-      LogMessageChar("\n");
+        LogMessageChar3Vector("   transformed direction: ", r_vector[k][X],
+                              r_vector[k][Y],
+                              r_vector[k][Z]);
+        LogMessageChar("\n");
 #endif /* TEST_ROTATION */
-    }
-  } // Not parallelised Dipole is missing documentation
-#endif /* DIPOLE */
+      }
+    } // Not parallelised Dipole is missing documentation
+  }
 
 #ifdef RING_EXCHANGE
   if (rank == 0)
@@ -947,7 +943,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   if (rank == 0)
   {
     if (symconstruct == 1)
-      MakeSymCoup();
+      MakeSymCoup(input_flags);
 
     LogMessageChar("RLio.C successful. \n");
     free(filedata);

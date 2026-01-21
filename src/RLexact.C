@@ -120,14 +120,12 @@ double Jr[NRING];
 long long ring_coup[NRING][4];
 /* Table of spin quadruplets coupled together in rings */
 #endif /* RING_EXCHANGE */
-#ifdef DIPOLE
 double Jdip[NCOUP];
 /* Strength of dipole interaction (will be 1/r^3 or 0) */
 double geom_13[NCOUP];
 /* geometrical factor */
 double r_vector[NCOUP][3];
 /* Distance and direction between to spins */
-#endif /* DIPOLE */
 long long hamil_coup[NCOUP][2];
 /* Table of spin pairs coupled together in pairs */
 double Ritz_conv;
