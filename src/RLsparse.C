@@ -34,11 +34,9 @@ extern long long hamil_coup[][2];
 extern long long Nsymvalue[NSYM];
 extern long long *Nocc;
 extern double Jzz[], Jxy[], Janis[];
-#ifdef RING_EXCHANGE
 extern double Jr[];
 extern long long ring_coup[][4];
 extern long long Nring, Ncoup;
-#endif /* RING_EXCHANGE */
 extern double sine[], cosine[];
 extern double h;
 extern double field[3];
@@ -55,9 +53,6 @@ extern void LogMessageInt(long long);
 extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
-#ifdef RING_EXCHANGE
-extern void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#endif /*RING_EXCHANGE*/
 
 // Functions defined in this file
 
@@ -192,16 +187,16 @@ void MakeSparse(struct FLAGS *input_flags)
       Hamil2_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile, input_flags);
     } /* loop over couplings, end */
 
-#ifdef RING_EXCHANGE
-    /*loop over ring couplings*/
-    for (j = 0; j < Nring; j++)
+    if (input_flags->ring_exchange)
     {
-      new_state = bitmap;
-      J = 0;
-      Hamil4_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile);
-    } /*loop over ring couplings, end*/
-
-#endif /* RING_EXCHANGE */
+      /*loop over ring couplings*/
+      for (j = 0; j < Nring; j++)
+      {
+        new_state = bitmap;
+        J = 0;
+        Hamil4_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile, input_flags);
+      } /*loop over ring couplings, end*/
+    }
 
     /* Write diagonal elements and non-diagonal counter to files */
     errno = 0;

@@ -24,19 +24,9 @@
 #include <complex>
 #include "Functions.h"
 
-/* Functions defined in this file */
-#ifdef RING_EXCHANGE
-void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#endif /*RING_EXCHANGE*/
-
 /* Functions defined elsewhere */
-extern long long LookUpU(unsigned long long);
-extern long long Count(unsigned long long);
-void fatalerror(const char *, long long);
-unsigned long long FindUnique(unsigned long long, int *);
 extern void WriteGSEnergy(komplex);
 extern void WriteState(const char *, komplex *);
-extern void time_stamp(time_t *, long long, const char *);
 
 extern void LogMessageChar(const char *);
 extern void LogMessageInt(long long);
@@ -61,10 +51,8 @@ extern long long m;
 extern double h, field[3];
 extern double sine[], cosine[], sqroot[];
 extern long long Ncoup;
-#ifdef RING_EXCHANGE
 extern double Jr[NRING];
 extern long long ring_coup[NRING][4];
-#endif /* RING_EXCHANGE */
 
 /* Regional variables in this file */
 unsigned long long bitmap, new_state;
@@ -142,7 +130,10 @@ void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long
   }
 }
 
-void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, long long i, long long j, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile, struct FLAGS *input_flags)
+void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, 
+                  long long i, long long j, int *nelem, long long *totcount, 
+                  int *T, komplex *J, double *diag, FILE *indexfile, 
+                  FILE *Tfile, FILE *Jfile, struct FLAGS *input_flags)
 {
 #ifdef TEST_HAM2
   LogMessageChar("Now entering Hamil2_sparse function \n");
@@ -211,8 +202,10 @@ void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
   WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 }
 
-#ifdef RING_EXCHANGE
-void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, long long i, long long j, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
+void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, 
+          long long i, long long j, int *nelem, long long *totcount, 
+          int *T, komplex *J, double *diag, 
+          FILE *indexfile, FILE *Tfile, FILE *Jfile, struct FLAGS* input_flags)
 {
   unsigned long long mask0, mask1, mask2, mask3, s0, s1, s2, s3;
 
@@ -262,7 +255,7 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((((bitmap | mask0) & ~mask1) | mask2) & ~mask3);
       *J = Jr[j] / 2.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 1 && s1 == 0 && s2 == 1 && s3 == 0)
     {
@@ -272,7 +265,7 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((((bitmap | mask1) & ~mask0) | mask3) & ~mask2);
       *J = Jr[j] / 2.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 0 && s1 == 0 && s2 == 1 && s3 == 1) /*Hzpm down down up up*/
     {
@@ -283,17 +276,17 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask1) & ~mask2);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask3);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask2);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 1 && s1 == 1 && s2 == 0 && s3 == 0) /*Hzpm up up down down*/
     {
@@ -304,17 +297,17 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask3) & ~mask0);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask0);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 0 && s1 == 1 && s2 == 1 && s3 == 0) /*Hzpm down up up down*/
     {
@@ -325,17 +318,17 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((bitmap | mask3) & ~mask2);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask2);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 1 && s1 == 0 && s2 == 0 && s3 == 1) /*Hzpm up down down  up*/
     {
@@ -345,17 +338,17 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((bitmap | mask1) & ~mask0);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask3);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask0);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 1 && s1 == 0 && s2 == 1 && s3 == 0) /*Hzpm up down up down */
     {
@@ -366,16 +359,16 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((bitmap | mask3) & ~mask2);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask0);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask2);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask0);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s0 == 0 && s1 == 1 && s2 == 0 && s3 == 1) /*Hzpm down up down up */
     {
@@ -387,16 +380,16 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask0) & ~mask1);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
   } /* if m=0 ring */
 
@@ -412,14 +405,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask1) & ~mask0);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask0);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask0);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s1 == 1) /*Hzpm down up down down*/
     {
@@ -431,14 +424,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask0) & ~mask1);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask1);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask1);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s2 == 1) /*Hzpm down down up down*/
     {
@@ -449,14 +442,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 #endif
       *new_state = ((bitmap | mask1) & ~mask2);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask2);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask2);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s3 == 1) /*Hzpm down down down up*/
     {
@@ -468,14 +461,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask0) & ~mask3);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask3);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
   } /* if m=-1*/
 
@@ -491,14 +484,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask0) & ~mask1);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask0) & ~mask2);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s1 == 0) /*Hzpm up down up up*/
     {
@@ -510,14 +503,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask1) & ~mask0);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask2);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask1) & ~mask3);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s2 == 0) /*Hzpm up up down up*/
     {
@@ -529,14 +522,14 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask2) & ~mask1);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask3);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask2) & ~mask0);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
     if (s3 == 0) /*Hzpm up up up down*/
     {
@@ -548,18 +541,17 @@ void Hamil4_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
 
       *new_state = ((bitmap | mask3) & ~mask0);
       *J = Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask2);
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 
       *new_state = ((bitmap | mask3) & ~mask1);
       *J = -Jr[j] / 8.0;
-      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+      WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
     }
   } /*for m=1 rings*/
 }
-#endif /*RING_EXCHANGE*/
 
 void Eigenvector_test(long long k[NSYM], komplex *evec, komplex *tmp, struct FLAGS *input_flags)
 {

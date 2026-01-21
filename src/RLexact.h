@@ -16,18 +16,22 @@
 // Struct definition for loading file
 struct FLAGS
 {
-  //The following long long ints are used as booleans.
+  // The following long long ints are used as booleans.
   long long use_lanczos; // long long is here to allow for use of matchlines function
   long long use_exact_matrix;
-  long long m_sym;        // M_symmetry present = 1, absent = 0
-  long long dipole;       // DLC: This is defineable, but needs testing
-  long long ring_exchang; // DLC: This is defineable, but needs testing
-  long long find_eigenstate;
-  
+  long long m_sym;           // M_symmetry present = 1, absent = 0
+  long long dipole;          // DLC: This is defineable, but needs testing
+  long long ring_exchange;   // DLC: This is defineable, but needs testing
+  long long find_eigenstate; //
+  long long find_cross;      // Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w)
+  long long find_cross_pm;   // Find cross in S^+-(q,w) and S^-+(q,w)
+                             //  instead of S^xx (q,w) and S^yy(q,w).
+                             // Requires MSYM and FIND_CROSS.
+
   // OUTPUT SPECIFIERS
   long long write_energies;
-  long long write_states;// Prints groundstate in dat-file
-                        // and all eigenstates if MATRIX;
+  long long write_states; // Prints groundstate in dat-file
+                          // and all eigenstates if MATRIX;
 
   // The following is all the old Test commands and verbose commands.
   // Putting them here, because they are making it difficult to see indentation.
@@ -35,17 +39,6 @@ struct FLAGS
   long long VERBOSE_TIME_LV2;
   long long VERBOSE;
 };
-
-// Physics of problem
-// #define RING_EXCHANGE
-
-// Calculation of problem and output requests
-#define FIND_CROSS // Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w)
-// #define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w)
-//                       instead of S^xx (q,w) and S^yy(q,w).
-//                       Requires MSYM and FIND_CROSS.
-
-#define WRITE_STATES 
 
 // #define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 // #define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM,
@@ -60,10 +53,8 @@ struct FLAGS
 #define NSYMADD 10
 #define NUNIQUE 4500
 #define MAXARRAYSIZE 200 // max number of entries on a given line in the input file
-#ifdef RING_EXCHANGE
 #define NRING 100
 #define NRINGSTR 10
-#endif
 
 // Highest possible state
 //  #define MAX_STATE ((((unsigned long) 1)<<(Nspins-1)) -1)

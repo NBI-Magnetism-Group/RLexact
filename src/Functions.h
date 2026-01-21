@@ -15,6 +15,7 @@ long long intro(struct FLAGS *);
 long long ReadCoupPattern(char *, struct FLAGS *);
 void fatalerror(const char *str, long long i);
 void time_stamp(time_t *tim, long long flag, const char *string);
+void outro(struct FLAGS*);
 
 // =============================================================================
 // Functions in RLcross
@@ -58,6 +59,10 @@ void Hamil_Zeeman(unsigned long long, unsigned long long *, long long,
                   FILE *, FILE *, FILE *, struct FLAGS *);
 void Eigenvector_test(long long *, komplex *, komplex *, struct FLAGS *);
 
+void Hamil4_sparse(unsigned long long, unsigned long long *, 
+                    long long, long long, int *, long long *, 
+                    int *, komplex *, double *, FILE *, FILE *, FILE *,
+                    struct FLAGS *);
 // =============================================================================
 // Functions in RLhamil.dipole
 // =============================================================================
