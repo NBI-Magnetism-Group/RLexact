@@ -436,10 +436,10 @@ int main(int argc, char *argv[])
     else
     {
       Nunique = FillUnique(0, 0, &input_flags); // TODO: CHECK THIS: slightly disgusting:
-                                  // variable is never used - FillUnique takes care
-                                  // of both M_SYM set and unset
+                                                // variable is never used - FillUnique takes care
+                                                // of both M_SYM set and unset
       LogMessageChar("\n FillUnique is done \n");
-      FillUniqueObservables( &input_flags);
+      FillUniqueObservables(&input_flags);
       LogMessageChar("FillUniqueObservables is done \n");
     }
     if (input_flags.VERBOSE_TIME_LV1)
@@ -965,14 +965,17 @@ void allocate(struct FLAGS *input_flags)
     Nocc = (long long *)malloc(sizeof(long long) * Nunique);
     Nocc_0 = (long long *)malloc(sizeof(long long) * Nunique);
     unique = (unsigned long long *)malloc(sizeof(unsigned long long) * Nunique);
-#ifdef FIND_EIGENSTATE
-    szxygs = kvector(0, Nunique - 1); // this is _always_ needed, either for cross section, or as 3 vector in lanczos algorithm
-    smgs = kvector(0, Nunique - 1);   //
-    spgs = kvector(0, Nunique - 1);
-    shadow = szxygs;
-#else  /* FIND_EIGENSTATE */
-    shadow = gs; // gs is not needed to hold groundstate: We dont want it
-#endif /* FIND_EIGENSTATE */
+    if (input_flags->find_eigenstate)
+    {
+      szxygs = kvector(0, Nunique - 1); // this is _always_ needed, either for cross section, or as 3 vector in lanczos algorithm
+      smgs = kvector(0, Nunique - 1);   //
+      spgs = kvector(0, Nunique - 1);
+      shadow = szxygs;
+    }
+    else
+    {             
+      shadow = gs; // gs is not needed to hold groundstate: We dont want it
+    }
     energies = dvector(0, MAX_LANCZOS - 1);
     if (!input_flags->m_sym)
       mag = (long long *)malloc(sizeof(long long) * Nunique);

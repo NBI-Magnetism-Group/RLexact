@@ -16,11 +16,13 @@
 // Struct definition for loading file
 struct FLAGS
 {
+  //The following long long ints are used as booleans.
   long long use_lanczos; // long long is here to allow for use of matchlines function
   long long use_exact_matrix;
   long long m_sym;        // M_symmetry present = 1, absent = 0
   long long dipole;       // DLC: This is defineable, but needs testing
   long long ring_exchang; // DLC: This is defineable, but needs testing
+  long long find_eigenstate;
 
   // The following is all the old Test commands and verbose commands.
   // Putting them here, because they are making it difficult to see indentation.
@@ -30,12 +32,10 @@ struct FLAGS
 };
 
 // Physics of problem
-#define M_SYM
 // #define DIPOLE
 // #define RING_EXCHANGE
 
 // Calculation of problem and output requests
-#define FIND_EIGENSTATE
 #define WRITE_ENERGIES
 #define FIND_CROSS // Find cross in terms of S^zz (q,w), S^xx (q,w) and S^yy(q,w)
 // #define FIND_CROSS_PM //Find cross in S^+-(q,w) and S^-+(q,w)

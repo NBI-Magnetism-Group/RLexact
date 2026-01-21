@@ -23,6 +23,7 @@
 #include <math.h>
 #include <RLexact.h>
 #include <cnr.h>
+#include "Functions.h"
 
 #define SIGN(a, b) ((b) < 0 ? -fabs(a) : fabs(a))
 
@@ -34,14 +35,12 @@ extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
 extern void fatalerror(const char *, long long);
 
-void Diagonalize(komplex **, long long, double *);
-void htred2(komplex **, long long, komplex *, komplex *);
 extern void time_stamp(time_t *, long long, const char *);
 
 long long htqli(double *, double *, long long, komplex **);
 void eigsrt(double *, komplex **, long long);
 
-void Diagonalize(komplex **H, long long num, double *ddin) // Naming: ddin = energies, num = Nuniq_k
+void Diagonalize(komplex **H, long long num, double *ddin, struct FLAGS *input_flags) // Naming: ddin = energies, num = Nuniq_k
 {
 	time_t time_single;
 
@@ -109,7 +108,7 @@ void Diagonalize(komplex **H, long long num, double *ddin) // Naming: ddin = ene
 	time_stamp(&time_single, START, "Tridiagonalizing matrix");
 #endif /* VERBOSE_TIME_LV1*/
 
-	htred2(H, num, d, e);
+	htred2(H, num, d, e, input_flags);
 
 #ifdef TEST_DIAGONALIZE
 	LogMessageChar("After htred2\n");
@@ -245,7 +244,7 @@ void Diagonalize(komplex **H, long long num, double *ddin) // Naming: ddin = ene
 	return;
 }
 
-void htred2(komplex **a, long long num, komplex *d, komplex *e)
+void htred2(komplex **a, long long num, komplex *d, komplex *e, struct FLAGS *input_flags)
 {
 	/* Implemented by Erik - borrowed from OpenMP implementation of the Householder reduction for complex
 	matrices by Andreas Honecker and Josef Sch�le.
@@ -325,10 +324,9 @@ void htred2(komplex **a, long long num, komplex *d, komplex *e)
 				a[i][l] = f - g;
 				for (j = 1; j <= l; j++)
 				{
-#ifdef FIND_EIGENSTATE
-					a[j][i] = a[i][j] / h;
+					if (input_flags->find_eigenstate)
+						a[j][i] = a[i][j] / h;
 
-#endif							 /* FIND_EIGENSTATE */
 					p[j] = zero; /* Initialize p=0 */
 				}
 				for (k = 1; k <= l; k++)
@@ -399,35 +397,37 @@ void htred2(komplex **a, long long num, komplex *d, komplex *e)
 
 	p[1] = zero; /* In the last transformation step, there is nothing to do */
 
-#ifdef FIND_EIGENSTATE
-	for (i = 1; i <= dim; i++)
+	if (input_flags->find_eigenstate)
 	{
-		l = i - 1;
-		if (real(p[i]))
-		{ /* skip block if we did not do a transformation */
-			for (j = 1; j <= l; j++)
-				p[j] = 0;
-			for (k = 1; k <= l; k++)
-			{
-				for (j = 0; j <= l; j++)	   /* Use u^t und u^t/H stored in m to form PQ */
-					p[k] += a[i][k] * a[k][j]; /* g += a[i][k]*a[k][j] */
-			}
-			for (k = 1; k <= l; k++)
-			{ /* Now we need a second loop */
+		for (i = 1; i <= dim; i++)
+		{
+			l = i - 1;
+			if (real(p[i]))
+			{ /* skip block if we did not do a transformation */
 				for (j = 1; j <= l; j++)
-					a[k][j] -= p[k] * (conj(a[k][i])); /* a[k][j] -= g * a[k][i]^* */
+					p[j] = 0;
+				for (k = 1; k <= l; k++)
+				{
+					for (j = 0; j <= l; j++)	   /* Use u^t und u^t/H stored in m to form PQ */
+						p[k] += a[i][k] * a[k][j]; /* g += a[i][k]*a[k][j] */
+				}
+				for (k = 1; k <= l; k++)
+				{ /* Now we need a second loop */
+					for (j = 1; j <= l; j++)
+						a[k][j] -= p[k] * (conj(a[k][i])); /* a[k][j] -= g * a[k][i]^* */
+				}
 			}
+			d[i] = a[i][i]; /* this statement must be kept in any case */
+			a[i][i] = one;	/* Reset row and column of a to identity matrix for next iteration */
+			for (j = 1; j <= l; j++)
+				a[i][j] = a[j][i] = zero;
 		}
-		d[i] = a[i][i]; /* this statement must be kept in any case */
-		a[i][i] = one;	/* Reset row and column of a to identity matrix for next iteration */
-		for (j = 1; j <= l; j++)
-			a[i][j] = a[j][i] = zero;
 	}
-#endif /*FIND_EIGENSTATE*/
-#ifndef FIND_EIGENSTATE
-	for (i = 1; i <= dim; i++)
-		d[i] = a[i][i]; /* this statement must be kept in any case */
-#endif					/*not defined FIND_EIGENSTATE*/
+	else
+	{
+		for (i = 1; i <= dim; i++)
+			d[i] = a[i][i]; /* this statement must be kept in any case */
+	}
 }
 
 // htqli used for both MATRIX and LANCZOS!

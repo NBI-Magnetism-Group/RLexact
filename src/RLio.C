@@ -59,7 +59,6 @@ void WriteGSdata(double, long long *);
 void WriteGSstate(komplex *);
 void ReadGSdata(double *, long long *, komplex *);
 void ReadGSenergy(double *, long long *);
-void ReadInputFlags(char *, struct FLAGS *);
 
 /* Functions in RLutils.C */
 extern void NormalizeVector(double *);
@@ -379,8 +378,11 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   input_flags->use_lanczos = 1;             // Using lanczos is default.
   input_flags->use_exact_matrix = 0;
   input_flags->m_sym = 1; // Use m_sym as default
-  matchlines_wrapper(filedata, "Use Exact Matrix", &input_flags->use_exact_matrix, true);
-  matchlines_wrapper(filedata, "Use Lanczos", &input_flags->use_lanczos, true);
+  input_flags->find_eigenstate = 1; // As default, find eigenstates
+  matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
+  matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true);
+  matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true);
+  matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true);
   matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true);
