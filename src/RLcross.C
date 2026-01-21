@@ -18,13 +18,12 @@
 #include <RLexact.h>
 #include <nr.h>
 #include <math.h> //TODO: Remove when tables implemented /ABP
-
+#include "Functions.h"
 #ifdef FIND_CROSS
 
 /* Functions declared elsewhere */
 extern unsigned long long SymOp(long long, unsigned long long);
-extern double LowestLanczos(long long *, komplex *, long long *, long long);
-extern void WriteCross(long long, long long *, long long);
+
 extern unsigned long long FindUnique(unsigned long long, int *);
 extern long long LookUpU(unsigned long long);
 extern void LogMessageChar(const char *);
@@ -36,12 +35,6 @@ extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
 extern void fatalerror(const char *, long long);
-
-/* Functions declared in this file */
-void ApplySzq(long long *);
-double lengthofvector(komplex *);
-void ApplySmp(long long *, long long, komplex *);
-void CrossLanczos(long long *, struct FLAGS*);
 
 #ifdef NEVER // doesnt work, SJ 270616
 void ApplySmpMsym(long long *, long long);
@@ -189,11 +182,11 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
     }
 #endif // TEST_CROSS
 
-    LowestLanczos(symvalue, NULL, &Nener, CROSS);
+    LowestLanczos(symvalue, NULL, &Nener, CROSS, input_flags);
     /*This will do the actual work! When done, global variables
      *energies and *Cross contains the relevant values for cross-section*/
 
-    WriteCross(Nener, symvalue, flag);
+    WriteCross(Nener, symvalue, flag, input_flags);
 
 #ifdef TEST_CROSS
     LogMessageChar("Data has been written to file\n");

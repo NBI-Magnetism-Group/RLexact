@@ -18,13 +18,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex>
-
+#include "Functions.h"
 #include <RLexact.h>
 #include <nr.h>
 #include <cnr.h>
-
-/* Functions defined in this file */
-double Matrix_gs(komplex **, long long *, long long *, komplex *);
 
 // long long CrossMatrix();   /* NOT IN USE !!! */
 #ifdef FIND_MAG
@@ -36,7 +33,6 @@ double CalculateM(komplex *);
 void BuildCycle(long long *, struct FLAGS *);
 extern void WriteEnergy(double);
 // extern void FillHamilton(long long *, long long *, komplex**); OLD version
-extern void FillHamilSparse(komplex **, long long *k);
 extern void Diagonalize(komplex **, long long, double *);
 extern void Eigenvector_test(long long *, komplex *, komplex *);
 extern void fatalerror(const char *, long long);
@@ -56,9 +52,7 @@ extern long long Nunique, Nuniq_k;
 extern komplex *gs, *smpgs, *szqgs, *tmp;
 // extern komplex **hamilton;
 extern double *energies;
-#ifndef M_SYM
 extern long long *mag;
-#endif /* M_SYM */
 #ifdef FIND_MAG
 extern double *magnetisation;
 #endif /* FIND_MAG */
@@ -77,7 +71,8 @@ unsigned long long i_min;
 k[] and given h/m and finds the ground state.
 The routine returns the energy of the ground state,
 and evec is the ground state vector */
-double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *evec, struct FLAGS *input_flags)
+double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], 
+                    komplex *evec, struct FLAGS *input_flags)
 {
   time_t time_single;
   double emin;
@@ -117,7 +112,7 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM], komplex *
 #ifdef MATRIX_MESSAGES
   LogMessageChar("\n Next step, fill hamiltonian and diagonalize it \n H= \n");
 #endif
-  FillHamilSparse(hamil, k);
+  FillHamilSparse(hamil, k, input_flags);
 #ifdef MATRIX_MESSAGES
   for (i = 1; i <= Nuniq_k; i++)
   {

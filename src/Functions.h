@@ -1,0 +1,81 @@
+
+#include "RLexact.h"
+
+
+
+#ifndef FUNCTIONS_H
+#define FUNCTIONS_H
+
+// Functions in RLio
+void WritehmQ(long long *, struct FLAGS *);
+void WriteResults(long long, struct FLAGS *);
+void WriteCross(long long, long long *, long long, struct FLAGS*);
+
+
+
+// Functions in RLcross
+void CrossLanczos(long long *, struct FLAGS*);
+void ApplySzq(long long *);
+double lengthofvector(komplex *);
+void ApplySmp(long long *, long long, komplex *);
+
+
+
+// Functions in RLsparse
+void MakeSparse(struct FLAGS*);
+void ApplySparse(komplex *vectin, komplex *vectout, long long *k, struct FLAGS*);
+void FillHamilSparse(komplex **hamil, long long *k, struct FLAGS*);
+void WriteCouplingFiles(unsigned long long, unsigned long long, int *, 
+    komplex, long long, long long, int *, long long *, 
+    FILE *, FILE *, FILE *, struct FLAGS*);
+
+
+// Functions in RLlancz
+double NextLanczos(komplex *, komplex *, komplex *,
+                   unsigned long long, long long *, struct FLAGS*);
+long long LanczosLoop(long long, long long *, komplex *, struct FLAGS*);
+double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS*);
+
+
+
+// Functions in RLmatrix
+double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS*);
+
+
+// Functions in RLhamil
+void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, 
+    int *, long long *, int *, komplex *, 
+    double *, FILE *, FILE *, FILE *, struct FLAGS*);
+void Hamil_Zeeman(unsigned long long, unsigned long long *, long long, 
+    int *, long long *, int *, komplex *, double *, 
+    FILE *, FILE *, FILE *, struct FLAGS*);
+
+// Functions in RLtables
+void BuildTables();
+// Fill the tables of often used math functions and complex phases
+long long Count(unsigned long long);
+// Count the number of up-spins in a state (represented by a bitmap)
+unsigned long long FillUnique(long long, int, struct FLAGS*);
+// Fill the table of unique states
+void FillUniqueObservables(struct FLAGS*);
+// Write diagonal values of the unique states to file
+void BuildCycle(long long *, struct FLAGS *);
+// Make table of number of occurences of a particular unique in a particular symmetry cycle
+unsigned long long FindUnique(unsigned long long, int *);
+// Find the unique corresponding to a particular state
+long long IsUnique(unsigned long long);
+// Test if a given state is a unique
+long long LookUpU(unsigned long long);
+// Find the index of a given unique state
+void InvertMatrix(long long, double[4][4], double[4][4]);
+// Inverts 1x1 and 2x2 matrices. TODO: test when this is used and if it should be generalized
+void WriteUnique(long long, struct FLAGS*);
+// Write list of uniques to file
+long long ReadUnique(long long, int, struct FLAGS*);
+// Read list of uniques from file
+void WriteUniqueObservables(struct FLAGS*);
+// Write the diagonal elements of the uniques to file
+void ReadUniqueObservables(struct FLAGS*);
+// Read the diagonal elements of the uniques from file
+
+#endif
