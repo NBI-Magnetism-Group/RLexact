@@ -22,15 +22,14 @@
 #include <errno.h>
 #include <string.h>
 #include <RLexact.h>
+#include "Functions.h"
 #include <nr.h>
 #include <cnr.h>
 
 /* Functions defined in this file */
-double LowestLanczos(long long *, komplex *, long long *, long long);
+
 long long CrossLanczos(long long *);
-long long LanczosLoop(long long, long long *, komplex *);
-double NextLanczos(komplex *, komplex *, komplex *,
-                   unsigned long long, long long *);
+
 void MakeSeed(komplex *);
 void MakeSeedCross(komplex *, long long);
 #ifdef FIND_MAG
@@ -86,7 +85,8 @@ double lanczmag[MAX_LANCZOS];
 /* LowestLanczos(k) constructs and diagonalizes the Hamilton operator for
 k[] and given h/m and finds the ground state.
 The routine returns the energy of the ground state.  */
-double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long long flag)
+double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
+                     long long flag, struct FLAGS *input_flags)
 {
   double scale, emin;
   long long j, Nvec;
@@ -164,7 +164,7 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
 
   z = kmatrix(1, MAX_LANCZOS, 1, MAX_LANCZOS);
 
-  Nvec = LanczosLoop(0, k, NULL);
+  Nvec = LanczosLoop(0, k, NULL, input_flags);
 
   /* Copy magnetisation to arrays */
 #ifdef FIND_MAG
@@ -285,7 +285,7 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
 #ifdef TEST_FINDGROUND
     LogMessageChar("Finding eigenvector\n");
 #endif
-    LanczosLoop(Nvec, k, resvect);
+    LanczosLoop(Nvec, k, resvect, input_flags);
 
 #ifdef FIND_MAG
     for (i = 0; i < Nvec; i++)
@@ -327,7 +327,8 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener, long
 // returns the number of vectors generated. If called with
 // Nvec > 0, it reconstructs the sequence without checking for
 // convergence.
-long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect)
+long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect,
+                      struct FLAGS *input_flags)
 {
   long long j;
   long long i;
@@ -392,7 +393,7 @@ long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect)
 #endif // TEST_FINDGROUND
     }
 
-    length = NextLanczos(first, second, third, r, k);
+    length = NextLanczos(first, second, third, r, k, input_flags);
 #ifdef TEST_FINDGROUND
     LogMessageCharInt("r = ", r);
     LogMessageCharDouble(", length = ", length);
@@ -478,10 +479,10 @@ long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect)
       if (subdiag[r] * abs(z[r][imin + 1]) < Ritz_conv)
       {
         length = 0;
-      /*          LogMessageCharDouble("subdiag is too low: ",subdiag[r]);
-                LogMessageCharDouble("Ritz_conv is : ",Ritz_conv);
-          LogMessageChar("\n");
-      */
+        /*          LogMessageCharDouble("subdiag is too low: ",subdiag[r]);
+                  LogMessageCharDouble("Ritz_conv is : ",Ritz_conv);
+            LogMessageChar("\n");
+        */
       }
       if (lastit == 0.0)
       {
@@ -541,7 +542,8 @@ is returned in dummy; vectors must be swapped after calling.
 vr = first, vr_1 = second, dummy = third */
 double NextLanczos(komplex *vr, komplex *vr_1,
                    komplex *dummy,
-                   unsigned long long r, long long k[NSYM])
+                   unsigned long long r, long long k[NSYM],
+                   struct FLAGS *input_flags)
 {
   long long j;
   long long i;
@@ -552,7 +554,7 @@ double NextLanczos(komplex *vr, komplex *vr_1,
   LogMessageCharInt("Starting Applysparse now, step ", r);
   LogMessageChar("\n");
 #endif
-  ApplySparse(vr, dummy, k); // make dummy = H |vr>
+  ApplySparse(vr, dummy, k, input_flags); // make dummy = H |vr>
 #ifdef TEST_APPLYSPARSE
   LogMessageChar("Stopping Applysparse now\n");
 #endif

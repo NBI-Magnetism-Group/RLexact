@@ -23,6 +23,7 @@
 #include <time.h>
 #include <complex>
 #include <cnr.h>
+#include "Functions.h"
 #include <RLexact.h>
 
 #include <mpi.h>
@@ -32,9 +33,7 @@ extern int rank, nprocs;
 long long
 intro();
 long long ReadCoupPattern(char *, struct FLAGS *);
-#ifndef M_SYM
 void TransformCoup(long long);
-#endif /* M_SYM */
 #ifdef FIND_MAG
 void WriteMaggs(long long *);
 #endif // FIND_MAG
@@ -52,9 +51,7 @@ void OutMessageCharInt(const char *, long long);
 void LogMessageChar3Vector(const char *, double, double, double);
 void WriteState(const char *, komplex *);
 void WriteStates(komplex **);
-void WritehmQ(long long *);
-void WriteResults(long long, struct FLAGS *);
-void WriteCross(long long, long long *, long long);
+
 void WriteGSEnergy(komplex);
 void WriteEnergy(double);
 void WriteQvalue(long long *);
@@ -92,13 +89,10 @@ extern long long hamil_coup[NCOUP][2], Ncoup;
 extern long long ring_coup[NCOUP][4], Nring;
 #endif /* RING_EXCHANGE */
 extern komplex *gs;
-#ifdef M_SYM
 extern long long twom;
 extern double mstart, mend;
-#else
 extern double h, hstart, hend, hstep;
 extern double field[3];
-#endif /* M_SYM */
 extern double Jzz[NCOUP], Jxy[NCOUP], Janis[NCOUP];
 #ifdef RING_EXCHANGE
 extern double Jr[NCOUP];
@@ -210,26 +204,26 @@ long long intro(struct FLAGS *input_flags)
     else if (input_flags->use_lanczos)
       OutMessageChar("Using Lanczos");
     OutMessageCharInt("diagonalization. BUFFERSIZE =", BUFFERSIZE);
-#ifdef M_SYM
-    OutMessageChar("M-symmetry present. \n");
-#else
-    OutMessageChar(" M-symmetry absent. \n");
-#endif /* M_SYM */
+    if (input_flags->m_sym)
+      OutMessageChar("M-symmetry present. \n");
+    else
+      OutMessageChar(" M-symmetry absent. \n");
     OutMessageChar(" Observables:");
 #ifdef FIND_MAG
     OutMessageChar(" Magnetization,");
 #endif /* FIND_MAG */
 #ifdef CROSS
     OutMessageChar(" S^zz(q,w),");
-#ifndef M_SYM
+    if (!input_flags->m_sym)
+    {
 #ifndef FIND_CROSS_PM
-    OutMessageChar(" S^xx(q,w), S^yy(q,w),");
+      OutMessageChar(" S^xx(q,w), S^yy(q,w),");
 #endif
 #ifdef FIND_CROSS_PM
-    OutMessageChar(" S^+-(q,w), S^-+(q,w),");
+      OutMessageChar(" S^+-(q,w), S^-+(q,w),");
 #endif
 #endif
-#endif /* CROSS */
+    }
     OutMessageChar(" Energy.\n");
     OutMessageChar(" For more information, see the manual.\n");
   }
@@ -390,7 +384,6 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true);
   matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true);
-
 }
 
 /* ----------------------------------------------------------------------- */
@@ -410,9 +403,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   double r, rx, ry, rz;
   double Dip[NCOUPSTR];
 #endif /* DIPOLE */
-#ifndef M_SYM
   double B2;
-#endif /* M_SYM */
   char test[80];
   long long filesize; // of inputfile
   char *filedata;
@@ -711,69 +702,70 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
 #endif // MOTIVE
 
-#ifdef M_SYM
-
-  if (rank == 0)
+  if (input_flags->m_sym)
   {
-    matchlines(filedata, "M start", &mstart, true);
-    matchlines(filedata, "M end", &mend, true);
-  }
-  MPI_Bcast(&mstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&mend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (rank == 0)
+    {
+      matchlines(filedata, "M start", &mstart, true);
+      matchlines(filedata, "M end", &mend, true);
+    }
+    MPI_Bcast(&mstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&mend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 #ifdef TEST_INPUT
-  LogMessageCharDouble("mstart:", mstart);
-  LogMessageCharDouble("mend:", mend);
-  LogMessageChar("\n");
+    LogMessageCharDouble("mstart:", mstart);
+    LogMessageCharDouble("mend:", mend);
+    LogMessageChar("\n");
 #endif /* TEST_INPUT */
-
-#else
-
-  if (rank == 0)
-  {
-    matchlines(filedata, "H start", &hstart, true);
-    matchlines(filedata, "H end", &hend, true);
-    matchlines(filedata, "H step", &hstep, true);
   }
-  MPI_Bcast(&hstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&hend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&hstep, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-#ifdef TEST_INPUT
-  LogMessageCharDouble("hstart:", hstart);
-  LogMessageCharDouble("hend:", hend);
-  LogMessageCharDouble("hstep:", hstep);
-  LogMessageChar("\n");
-#endif /* TEST_INPUT */
-
-  if (rank == 0)
-  {
-    matchlines(filedata, "Hx", &field[X], true);
-    matchlines(filedata, "Hy", &field[Y], true);
-    matchlines(filedata, "Hz", &field[Z], true);
-  }
-  MPI_Bcast(field, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-#ifdef TEST_INPUT
-  LogMessageChar3Vector("Field direction:", field[X], field[Y], field[Z]);
-  LogMessageChar("\n");
-#endif /* TEST_INPUT */
-  for (B2 = 0, j = X; j <= Z; j++)
-    B2 += SQR(field[j]);
-  if (B2 > 0)
-    for (j = X; j <= Z; field[j++] /= sqrt(B2))
-      ;
   else
-    fatalerror(" Field direction not well defined", 0);
-#ifdef TEST_INPUT
-  LogMessageChar3Vector("Normalized field direction:", field[X],
-                        field[Y],
-                        field[Z]);
-  LogMessageChar("\n");
-#endif /* TEST_INPUT */
-  // FillRotationMatrix(field); //doesnt work and unnecessary, SJ 20.02.17
-#endif /* M_SYM */
+  {
 
+    if (rank == 0)
+    {
+      matchlines(filedata, "H start", &hstart, true);
+      matchlines(filedata, "H end", &hend, true);
+      matchlines(filedata, "H step", &hstep, true);
+    }
+    MPI_Bcast(&hstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&hend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&hstep, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef TEST_INPUT
+    LogMessageCharDouble("hstart:", hstart);
+    LogMessageCharDouble("hend:", hend);
+    LogMessageCharDouble("hstep:", hstep);
+    LogMessageChar("\n");
+#endif /* TEST_INPUT */
+
+    if (rank == 0)
+    {
+      matchlines(filedata, "Hx", &field[X], true);
+      matchlines(filedata, "Hy", &field[Y], true);
+      matchlines(filedata, "Hz", &field[Z], true);
+    }
+    MPI_Bcast(field, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+#ifdef TEST_INPUT
+    LogMessageChar3Vector("Field direction:", field[X], field[Y], field[Z]);
+    LogMessageChar("\n");
+#endif /* TEST_INPUT */
+    for (B2 = 0, j = X; j <= Z; j++)
+      B2 += SQR(field[j]);
+    if (B2 > 0)
+      for (j = X; j <= Z; field[j++] /= sqrt(B2))
+        ;
+    else
+      fatalerror(" Field direction not well defined", 0);
+#ifdef TEST_INPUT
+    LogMessageChar3Vector("Normalized field direction:", field[X],
+                          field[Y],
+                          field[Z]);
+    LogMessageChar("\n");
+#endif /* TEST_INPUT */
+    // FillRotationMatrix(field); //doesnt work and unnecessary, SJ 20.02.17
+  }
   if (input_flags->use_lanczos)
   {
     // ********* Lanzcos-Mandatory input : Read Lanzcos numbers *********
@@ -971,7 +963,7 @@ void TransformCoup(long long j)
   LogMessageChar("\n");
   return;
 }
-#endif /* M_SYM */
+#endif /* NEVER */
 
 #ifdef FIND_CROSS
 
@@ -1206,16 +1198,15 @@ void ReadGSenergy(double *energy, long long *symmetry)
   return;
 }
 
-void WritehmQ(long long *q)
+void WritehmQ(long long *q, struct FLAGS *input_flags)
 {
   long long i;
 
   fprintf(outfile, "!");
-#ifdef M_SYM
-  fprintf(outfile, " m= %g ; ", double(twom) / 2);
-#else
-  fprintf(outfile, " h= %g ; ", h);
-#endif
+  if (input_flags->m_sym)
+    fprintf(outfile, " m= %g ; ", double(twom) / 2);
+  else
+    fprintf(outfile, " h= %g ; ", h);
 #ifdef TEST_WRITEHMQ
   printf("\n no of q values in dat files, Nsym=%d\n", Nsym);
 #endif
@@ -1271,7 +1262,7 @@ void WriteResults(long long N, struct FLAGS *input_flags)
 
 #ifdef FIND_CROSS
 
-void WriteCross(long long Nener, long long *symvalue, long long flag)
+void WriteCross(long long Nener, long long *symvalue, long long flag, struct FLAGS *input_flags)
 {
   /* Output the cross sections of the ground state */
 
@@ -1308,9 +1299,8 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 
 #ifdef TEST_WRITECROSS
   LogMessageChar("In WriteCross, ");
-#ifdef M_SYM
-  LogMessageCharInt(", m =", twom / 2);
-#endif
+  if (input_flags->m_sym)
+    LogMessageCharInt(", m =", twom / 2);
   LogMessageCharDouble(", gs_energy=", gs_energy);
 
   LogMessageCharInt(", q_gs = (", q_gs[0]);
@@ -1326,12 +1316,11 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
 #endif
 
 #ifdef CSVOUT
-// Print header
-#ifdef M_SYM
-  fprintf(crossfile, "m,");
-#else
-  fprintf(crossfile, "h,");
-#endif
+  // Print header
+  if (input_flags->m_sym)
+    fprintf(crossfile, "m,");
+  else
+    fprintf(crossfile, "h,");
 
   for (int i = 0; i < Nsym; i++)
     fprintf(crossfile, "q%d,", i);
@@ -1342,11 +1331,10 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   // at data there.
   for (long long i = 0; i < Nener; i++)
   {
-#ifdef M_SYM
-    fprintf(crossfile, "%g,", double(twom) / 2);
-#else
-    fprintf(crossfile, "%g,", double(h));
-#endif
+    if (input_flags->m_sym)
+      fprintf(crossfile, "%g,", double(twom) / 2);
+    else
+      fprintf(crossfile, "%g,", double(h));
     for (int i = 0; i < Nsym; i++)
       fprintf(crossfile, "%lld,", symvalue[i] - q_gs[i]);
 
@@ -1354,13 +1342,16 @@ void WriteCross(long long Nener, long long *symvalue, long long flag)
   }
 #else
 
-#ifdef M_SYM
-  fprintf(crossfile, "[\n m= %g, q= (%lld", double(twom) / 2, symvalue[0] - q_gs[0]);
-  // fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]);
-#else
-  fprintf(crossfile, "[ \n h= %g, q= (%lld", double(h), symvalue[0] - q_gs[0]);
-  // fprintf(crossfile, "[ \n h= %g, q= (%lld",double(h),symvalue[0]-q_gs[0]);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+  {
+    fprintf(crossfile, "[\n m= %g, q= (%lld", double(twom) / 2, symvalue[0] - q_gs[0]);
+    // fprintf(crossfile, "[ \n m= %g, q= (%lld",double(twom)/2,symvalue[0]);
+  }
+  else
+  {
+    fprintf(crossfile, "[ \n h= %g, q= (%lld", double(h), symvalue[0] - q_gs[0]);
+    // fprintf(crossfile, "[ \n h= %g, q= (%lld",double(h),symvalue[0]-q_gs[0]);
+  }
 
   for (long long i = 1; i < Nsym; i++) // print spin-wave q: q'=symvalue[i]-q_gs[i]
   {

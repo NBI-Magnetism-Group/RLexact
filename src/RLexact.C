@@ -20,7 +20,7 @@
 #include <string.h>
 #include <complex>
 #include <iostream>
-
+#include "Functions.h"
 #include <RLexact.h>
 #include <cnr.h>
 
@@ -50,8 +50,6 @@ extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
 extern void OutMessageChar(const char *);
-extern void WriteResults(long long, struct FLAGS *);
-extern void WritehmQ(long long *);
 extern void WriteState(const char *, komplex *);
 extern void WriteStates(komplex **);
 extern void WriteGSdata(double, long long *);
@@ -65,10 +63,7 @@ extern void WriteMaggs(long long *);
 #endif /*M_SYM*/
 extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
-extern void MakeSparse();
-extern double LowestLanczos(long long *, komplex *, long long *, long long);
-extern void CrossLanczos(long long *, struct FLAGS*);
-extern void MakeSparse();
+//extern void CrossLanczos(long long *, struct FLAGS*);
 extern void InitSym();
 extern long long ReadUnique(long long, int);
 extern void WriteUnique(long long);
@@ -534,7 +529,7 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     // Make sparse matrix (writing to file)
     LogMessageChar("\nwriting sparse matrix to file: begin");
     if (rank == 0)
-      MakeSparse();
+      MakeSparse(input_flags);
     LogMessageChar("writing sparse matrix to file: end\n");
     if (input_flags->VERBOSE_TIME_LV1)
       time_stamp(&time_makesparse, STOP, "..");
@@ -567,10 +562,10 @@ void Solve_Lanczos(struct FLAGS *input_flags)
 
           LogMessageChar(") \n");
           BuildCycle(q, input_flags);
-          etmp = LowestLanczos(q, NULL, &Nener, NORMAL);
+          etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
 #ifdef WRITE_ENERGIES
-          WritehmQ(q);
+          WritehmQ(q, input_flags);
           WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
@@ -608,10 +603,10 @@ void Solve_Lanczos(struct FLAGS *input_flags)
 #endif /* VERBOSE_TIME_LV2 */
 
         BuildCycle(q, input_flags);
-        etmp = LowestLanczos(q, NULL, &Nener, NORMAL);
+        etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
 
 #ifdef WRITE_ENERGIES
-        WritehmQ(q);
+        WritehmQ(q, input_flags);
         WriteResults(Nener, input_flags);
 #endif /* WRITE_ENERGIES */
 
@@ -687,7 +682,7 @@ void Solve_Lanczos(struct FLAGS *input_flags)
     if (gs_rank == rank)
     {
       BuildCycle(q_gs, input_flags);
-      LowestLanczos(q_gs, gs, &Nener, RECONSTRUCT);
+      LowestLanczos(q_gs, gs, &Nener, RECONSTRUCT, input_flags);
     }
     MPI_Bcast(gs, Nunique, MPI_C_DOUBLE_COMPLEX, gs_rank,
               MPI_COMM_WORLD);
@@ -872,7 +867,7 @@ void Solve_Matrix(struct FLAGS *input_flags)
   time_stamp(&time_single, START, "finding the ground state");
 
   // Find elements of the hamiltonian and write them to file
-  MakeSparse();
+  MakeSparse(input_flags);
 
   if (Nq_choice > 0)
   {
@@ -890,7 +885,7 @@ void Solve_Matrix(struct FLAGS *input_flags)
 #endif /* TEST_GS_SEARCH */
       gs_energy = Matrix_gs(hamilton, uniq_k, q, gs, input_flags);
 #ifdef WRITE_ENERGIES
-      WritehmQ(q);
+      WritehmQ(q, input_flags);
       WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES
@@ -917,7 +912,7 @@ void Solve_Matrix(struct FLAGS *input_flags)
     if (etmp < LARGE_NUMBER) /* else: illegal symmetry combination */
     {
 #ifdef WRITE_ENERGIES
-      WritehmQ(q);
+      WritehmQ(q, input_flags);
       WriteResults(Nuniq_k, input_flags);
 #endif /* WRITE_ENERGIES */
 #ifdef WRITE_STATES

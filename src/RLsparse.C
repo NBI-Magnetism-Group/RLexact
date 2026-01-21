@@ -21,6 +21,7 @@
 #include <complex>
 #include "RLexact.h"
 #include <cnr.h>
+#include "Functions.h"
 
 // Global variables defined in RLexact.c
 extern unsigned long long *unique;
@@ -54,19 +55,12 @@ extern void LogMessageInt(long long);
 extern void LogMessageCharDouble(const char *, double);
 extern void LogMessageCharInt(const char *, long long);
 extern void LogMessageChar3Vector(const char *, double, double, double);
-#ifndef M_SYM
-extern void Hamil_Zeeman(unsigned long long, unsigned long long *, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-#endif
-extern void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #ifdef RING_EXCHANGE
 extern void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #endif /*RING_EXCHANGE*/
 
 // Functions defined in this file
-void MakeSparse();
-void ApplySparse(komplex *vectin, komplex *vectout, long long *k);
-void FillHamilSparse(komplex **hamil, long long *k);
-void WriteCouplingFiles(unsigned long long, unsigned long long, int *, komplex, long long, long long, int *, long long *, FILE *, FILE *, FILE *);
+
 // extern void WriteCouplingFiles(unsigned long long, unsigned long long, long long *, double, long long, long long, long long *, long long *, FILE*, FILE*, FILE*);
 //  File buffers
 char Indexbuf[BUFFERSIZE];
@@ -79,7 +73,7 @@ char Ntotbuf[BUFFERSIZE];
 /* MakeSparse writes a series of 6 files containing all information on the q-independent matrix elements */
 /* TODO: isolate file opening/closing in separate functions in RLio.C  */
 
-void MakeSparse()
+void MakeSparse(struct FLAGS *input_flags)
 {
   long long i, strength, l, index, j, u_cycle, totcount = 0;
   int nelem;
@@ -91,12 +85,11 @@ void MakeSparse()
 
   FILE *indexfile, *Jfile, *Tfile, *nelemfile, *diagfile, *ntotfile;
 
-/* Open files, begin */
-#ifdef M_SYM
-  sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  /* Open files, begin */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   indexfile = fopen(filename, "w");
   if (indexfile == NULL)
@@ -104,11 +97,10 @@ void MakeSparse()
     fatalerror("Cannot open indexfile, sorry!", errno);
   }
   setvbuf(indexfile, Indexbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Jfile = fopen(filename, "w");
   if (Jfile == NULL)
@@ -116,11 +108,11 @@ void MakeSparse()
     fatalerror("Cannot open Jfile, sorry!", errno);
   }
   setvbuf(Jfile, Jbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Tfile = fopen(filename, "w");
   if (Tfile == NULL)
@@ -128,11 +120,11 @@ void MakeSparse()
     fatalerror("Cannot open Tfile, sorry!", errno);
   }
   setvbuf(Tfile, Tbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   nelemfile = fopen(filename, "w");
   if (nelemfile == NULL)
@@ -140,11 +132,11 @@ void MakeSparse()
     fatalerror("Cannot open nelemfile, sorry!", errno);
   }
   setvbuf(nelemfile, Nbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   diagfile = fopen(filename, "w");
   if (diagfile == NULL)
@@ -152,11 +144,11 @@ void MakeSparse()
     fatalerror("Cannot open diagfile, sorry!", errno);
   }
   setvbuf(diagfile, Diagbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sNtot%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sNtot%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sNtot%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sNtot%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   ntotfile = fopen(filename, "w");
   if (ntotfile == NULL)
@@ -181,12 +173,12 @@ void MakeSparse()
     bitmap = unique[i];
     diag = 0;
     nelem = 0;
-
-#ifndef M_SYM /*The Zeeman term*/
-    new_state = bitmap;
-    J = 0;
-    Hamil_Zeeman(bitmap, &new_state, i, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile);
-#endif
+    if (!input_flags->m_sym)
+    {
+      new_state = bitmap;
+      J = 0;
+      Hamil_Zeeman(bitmap, &new_state, i, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile, input_flags);
+    }
 
     /*Calculate on- and off-diagonal elements for normal Heisenberg */
     /* Loop over couplings, begin */
@@ -197,7 +189,7 @@ void MakeSparse()
    reset to true values later. - treue 20080204 */
       new_state = bitmap;
       J = 0;
-      Hamil2_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile);
+      Hamil2_sparse(bitmap, &new_state, i, j, &nelem, &totcount, T, &J, &diag, indexfile, Tfile, Jfile, input_flags);
     } /* loop over couplings, end */
 
 #ifdef RING_EXCHANGE
@@ -256,7 +248,8 @@ void MakeSparse()
 }
 
 void WriteCouplingFiles(unsigned long long bitmap, unsigned long long new_state, int *T, komplex J, long long i,
-                        long long j, int *nelem, long long *totcount, FILE *indexfile, FILE *Tfile, FILE *Jfile)
+                        long long j, int *nelem, long long *totcount, FILE *indexfile, FILE *Tfile, FILE *Jfile,
+                        struct FLAGS *input_flags)
 {
   long long l;
   unsigned long long u;
@@ -340,7 +333,7 @@ void WriteCouplingFiles(unsigned long long bitmap, unsigned long long new_state,
 // DONE: Test if BUFFERSIZE is optimal
 //            There isn't anything to see when changing BUFFERSIZE - ABP 20250408
 
-void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
+void ApplySparse(komplex *vectin, komplex *vectout, long long *k, struct FLAGS *input_flags)
 {
   int T[NSYM];
   long long l, s, index, j, phi, u_occ, elemcount = 0;
@@ -354,11 +347,10 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
   FILE *indexfile, *Jfile, *Tfile, *nelemfile, *diagfile, *ntotfile;
 
   /* Open files, begin */
-#ifdef M_SYM
-  sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   indexfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -366,11 +358,10 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
     fatalerror("Cannot open indexfile, sorry! Error was: ", errno);
   }
   setvbuf(indexfile, Indexbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Jfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -378,11 +369,10 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
     fatalerror("Cannot open Jfile, sorry! Error was: ", errno);
   }
   setvbuf(Jfile, Jbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Tfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -405,11 +395,10 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
   Tfile = fopen(filename, "r");
 #endif
   setvbuf(Tfile, Tbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   nelemfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -417,11 +406,11 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
     fatalerror("Cannot open nelemfile, sorry! Error was: %s", errno);
   }
   setvbuf(nelemfile, Nbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   diagfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -429,11 +418,11 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
     fatalerror("Cannot open indexfile, sorry! Error was: ", errno);
   }
   setvbuf(diagfile, Diagbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sNtot%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sNtot%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+
+  if (input_flags->m_sym)
+    sprintf(filename, "%sNtot%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sNtot%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   ntotfile = fopen(filename, "r");
   if (ntotfile == NULL)
@@ -644,7 +633,7 @@ void ApplySparse(komplex *vectin, komplex *vectout, long long *k)
 
 // FillHamilSparse fills Hamiltonian for exact matrix diagonalization with help of
 // sparse matrix file. SJ 12-01-17
-void FillHamilSparse(komplex **hamilI, long long *k)
+void FillHamilSparse(komplex **hamilI, long long *k, struct FLAGS *input_flags)
 {
   int T[NSYM];
   long long l, s, index, j, phi, u_occ, elemcount = 0;
@@ -662,11 +651,10 @@ void FillHamilSparse(komplex **hamilI, long long *k)
   FILE *indexfile, *Jfile, *Tfile, *nelemfile, *diagfile;
 
   /* Open files */
-#ifdef M_SYM
-  sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sIndex%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sIndex%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   indexfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -674,11 +662,10 @@ void FillHamilSparse(komplex **hamilI, long long *k)
     fatalerror("Cannot open indexfile, sorry! Error was: ", errno);
   }
   setvbuf(indexfile, Indexbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sJ%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sJ%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Jfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -686,11 +673,10 @@ void FillHamilSparse(komplex **hamilI, long long *k)
     fatalerror("Cannot open Jfile, sorry! Error was: ", errno);
   }
   setvbuf(Jfile, Jbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sT%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sT%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   Tfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -698,11 +684,10 @@ void FillHamilSparse(komplex **hamilI, long long *k)
     fatalerror("Cannot open Tfile, sorry! Error was: ", errno);
   }
   setvbuf(Tfile, Tbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sN%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sN%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   nelemfile = fopen(filename, "r");
   if (indexfile == NULL)
@@ -710,11 +695,10 @@ void FillHamilSparse(komplex **hamilI, long long *k)
     fatalerror("Cannot open nelemfile, sorry! Error was: %s", errno);
   }
   setvbuf(nelemfile, Nbuf, _IOFBF, BUFFERSIZE);
-#ifdef M_SYM
-  sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
-#else
-  sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
-#endif /* M_SYM */
+  if (input_flags->m_sym)
+    sprintf(filename, "%sDiag%llu_%llu.bin", MATRIXFILENAME, Nspins, twom);
+  else
+    sprintf(filename, "%sDiag%llu.bin", MATRIXFILENAME, Nspins);
   errno = 0;
   diagfile = fopen(filename, "r");
   if (indexfile == NULL)

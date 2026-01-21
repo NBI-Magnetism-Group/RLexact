@@ -22,10 +22,9 @@
 #include <cnr.h>
 #include <RLexact.h>
 #include <complex>
+#include "Functions.h"
 
 /* Functions defined in this file */
-void Hamil2_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
-void Hamil_Zeeman(unsigned long long, unsigned long long *, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #ifdef RING_EXCHANGE
 void Hamil4_sparse(unsigned long long, unsigned long long *, long long, long long, int *, long long *, int *, komplex *, double *, FILE *, FILE *, FILE *);
 #endif /*RING_EXCHANGE*/
@@ -75,7 +74,7 @@ long long n_2, u_occ;
 unsigned long long index1, index2;
 komplex this_;
 
-void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long long i, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
+void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long long i, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile, struct FLAGS *input_flags)
 { // only supports fields along one coordinate axis
 #ifdef TEST_HAMZEE
   LogMessageCharDouble("\nIn Hamil_Zeeman. h =", h);
@@ -139,13 +138,13 @@ void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long
           LogMessageChar("\n");
 #endif
         }
-        WriteCouplingFiles(bitmap, *new_state, T, *J, i, i, nelem, totcount, indexfile, Tfile, Jfile);
+        WriteCouplingFiles(bitmap, *new_state, T, *J, i, i, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
       }
     }
   }
 }
 
-void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, long long i, long long j, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile)
+void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, long long i, long long j, int *nelem, long long *totcount, int *T, komplex *J, double *diag, FILE *indexfile, FILE *Tfile, FILE *Jfile, struct FLAGS* input_flags)
 {
 #ifdef TEST_HAM2
   LogMessageChar("Now entering Hamil2_sparse function \n");
@@ -210,7 +209,7 @@ void Hamil2_sparse(unsigned long long bitmap, unsigned long long *new_state, lon
   LogMessageChar("\n");
 #endif
 
-  WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile);
+  WriteCouplingFiles(bitmap, *new_state, T, *J, i, j, nelem, totcount, indexfile, Tfile, Jfile, input_flags);
 }
 
 #ifdef RING_EXCHANGE
