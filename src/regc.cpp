@@ -15,13 +15,15 @@
 #include <iostream>
 #include <fstream>
 #include <regex.h>
-#include <RLexact.h>
 #include <regex>
 #include <string>
 #include <sstream>
 #include <vector>
 #include <cctype>
 #include <cstring>
+#include <complex>
+#include "cnr.h"
+#include <RLexact.h>
 #include "Functions.h"
 
 using std::cerr;
