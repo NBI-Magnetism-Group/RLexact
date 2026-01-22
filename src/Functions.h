@@ -174,7 +174,7 @@ void InitSym(struct FLAGS *);                            // Initialize the symme
 
 void reverse(char *);
 void itoa(long long, char *);
-void FillRotationMatrix(double *);
+void FillRotationMatrix(double *, struct FLAGS*);
 void NormalizeVector(double *);
 void RotateVector(double *);
 void Bubblesort(double *, double *, long long);
