@@ -112,7 +112,7 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
 
     if (flag == 0) // SZZ
     {
-      ApplySzq(symvalue);
+      ApplySzq(symvalue, input_flags);
     }
     if (!input_flags->m_sym)
     {
@@ -122,8 +122,8 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
         if (flag == 1) // SXX, s^x |gs> = 1/2 (s^+_q |gs> + s^-_q |gs>)
         {
           /* applysmp is calculated here, but also needed in flag==2 */
-          ApplySmp(symvalue, 0, spgs); // find s^+_q |gs>
-          ApplySmp(symvalue, 1, smgs); // find s^-_q |gs>
+          ApplySmp(symvalue, 0, spgs, input_flags); // find s^+_q |gs>
+          ApplySmp(symvalue, 1, smgs, input_flags); // find s^-_q |gs>
 
           for (int i = 0; i < Nunique; i++)
           {
@@ -143,11 +143,11 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
       {                // find in terms of S^+- and S^-+
         if (flag == 1) // SMP
         {
-          ApplySmp(symvalue, 0, szxygs); // find s^+_q |gs>
+          ApplySmp(symvalue, 0, szxygs, input_flags); // find s^+_q |gs>
         }
         if (flag == 2) // SPM
         {
-          ApplySmp(symvalue, 1, szxygs); // find s^-_q |gs>
+          ApplySmp(symvalue, 1, szxygs, input_flags); // find s^-_q |gs>
         }
       }
     }
@@ -299,7 +299,7 @@ void ApplySzq(long long *q, struct FLAGS *input_flags)
               }
 
               if (input_flags->TEST_APPLYSZQ)
-                LogMessageCharKomplex("\nspin_pos_res:", spin_pos_res);
+                // LogMessageCharKomplex("\nspin_pos_res:", spin_pos_res); // DLC: This function is no longer implented. Please implement again if necessary
               LogMessageChar("\n");
 
               if (Ndimensions == 3)
@@ -527,7 +527,7 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec, struct FLAGS
 
                 if (input_flags->TEST_APPLYSMP)
                 {
-                  LogMessageCharKomplex("Partial result: ", tmp);
+                  // LogMessageCharKomplex("Partial result: ", tmp); // DLC: This function is not implented. Please implement if necessary
                   LogMessageChar("\n");
                 }
                 double dummy_phase =
@@ -560,8 +560,8 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec, struct FLAGS
 
                 if (input_flags->TEST_APPLYSMP)
                 {
-                  LogMessageCharKomplex("Contribution from this operation: ",
-                                        tmp / gs[i]);
+                  // LogMessageCharKomplex("Contribution from this operation: ", // This function is not implemented. Please implement if necessary
+                  //                       tmp / gs[i]);
                   LogMessageChar("\n");
                 }
 

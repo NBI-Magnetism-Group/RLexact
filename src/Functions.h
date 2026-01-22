@@ -12,7 +12,6 @@ void Solve_Matrix(struct FLAGS *);
 void allocate(struct FLAGS *);
 void deallocate(struct FLAGS *);
 
-
 // =============================================================================
 // Functions in RLio
 // =============================================================================
@@ -25,7 +24,7 @@ long long intro(struct FLAGS *);
 long long ReadCoupPattern(char *, struct FLAGS *);
 void fatalerror(const char *str, long long i);
 void time_stamp(time_t *tim, long long flag, const char *string);
-void outro(struct FLAGS*);
+void outro(struct FLAGS *);
 void TransformCoup(long long);
 void Warning(const char *, long long);
 void LogMessageChar(const char *);
@@ -47,30 +46,27 @@ void WriteGSstate(komplex *);
 void ReadGSdata(double *, long long *, komplex *);
 void ReadGSenergy(double *, long long *);
 
-
 // =============================================================================
 // Functions in regc
 // =============================================================================
 
 double atod(char *);
 long long regexperr(long long, const char *, bool);
-long long multimatch(char *, long long, const char *, double **, long long *, long long, struct FLAGS*);
-long long multimatch(char *, long long, const char *, long long **, long long*, long long, struct FLAGS*);
-long long matchlines_wrapper(char *, const char *, long long *, bool , struct FLAGS *);
-long long matchlines(char *, const char *, double *, bool , struct FLAGS*);
+long long multimatch(char *, long long, const char *, double **, long long *, long long, struct FLAGS *);
+long long multimatch(char *, long long, const char *, long long **, long long *, long long, struct FLAGS *);
+long long matchlines_wrapper(char *, const char *, long long *, bool, struct FLAGS *);
+long long matchlines(char *, const char *, double *, bool, struct FLAGS *);
 
 void filereader(char *, char *, long long, struct FLAGS *);
 long long filesizer(char *);
-
-
 
 // =============================================================================
 // Functions in RLcross
 // =============================================================================
 void CrossLanczos(long long *, struct FLAGS *);
-void ApplySzq(long long *);
+void ApplySzq(long long *, struct FLAGS *);
 double lengthofvector(komplex *);
-void ApplySmp(long long *, long long, komplex *);
+void ApplySmp(long long *, long long, komplex *, struct FLAGS *);
 
 // =============================================================================
 // Functions in RLsparse
@@ -99,7 +95,6 @@ double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *
 void CalculateMatrixM(komplex **, double *);
 double CalculateM(komplex *);
 
-
 // =============================================================================
 // Functions in RLhamil
 // =============================================================================
@@ -111,10 +106,10 @@ void Hamil_Zeeman(unsigned long long, unsigned long long *, long long,
                   FILE *, FILE *, FILE *, struct FLAGS *);
 void Eigenvector_test(long long *, komplex *, komplex *, struct FLAGS *);
 
-void Hamil4_sparse(unsigned long long, unsigned long long *, 
-                    long long, long long, int *, long long *, 
-                    int *, komplex *, double *, FILE *, FILE *, FILE *,
-                    struct FLAGS *);
+void Hamil4_sparse(unsigned long long, unsigned long long *,
+                   long long, long long, int *, long long *,
+                   int *, komplex *, double *, FILE *, FILE *, FILE *,
+                   struct FLAGS *);
 // =============================================================================
 // Functions in RLhamil.dipole
 // =============================================================================
@@ -177,7 +172,6 @@ void itoa(long long, char *);
 void FillRotationMatrix(double *);
 void NormalizeVector(double *);
 void RotateVector(double *);
-void Bubblesort(double *, double *, long long );
-
+void Bubblesort(double *, double *, long long);
 
 #endif
