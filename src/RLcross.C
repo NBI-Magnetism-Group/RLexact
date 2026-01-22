@@ -104,7 +104,7 @@ void CrossLanczos(long long *symvalue, struct FLAGS *input_flags) //(Note: symva
     {
       szxygs[j] = zero;
     }
-    if (input_flags)
+    if (input_flags->TEST_CROSS)
     {
       LogMessageCharInt("\n\nFlag:", flag);
       LogMessageChar("\n\n");

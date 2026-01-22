@@ -58,18 +58,21 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
   long long i;
   long long j;
 
-#ifdef MATRIX_MESSAGES
-  LogMessageChar(" Matrix_gs called: \n");
-#endif
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, START, "\n timer of intiallizing and filling matrix");
-#endif /* VERBOSE_TIME_LV1*/
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    LogMessageChar(" Matrix_gs called: \n");
+  }
+  if (input_flags->VERBOSE_TIME_LV1)
+  {
+    time_stamp(&time_single, START, "\n timer of intiallizing and filling matrix");
+  }
   BuildCycle(k, input_flags);
-#ifdef MATRIX_MESSAGES
-  LogMessageCharInt(" Nuniq_k: ", Nuniq_k);
-  hamil[1][1] = zero;
-  LogMessageChar(" , hamil accessed, Fill zeros H=\n");
-#endif
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    LogMessageCharInt(" Nuniq_k: ", Nuniq_k);
+    hamil[1][1] = zero;
+    LogMessageChar(" , hamil accessed, Fill zeros H=\n");
+  }
   if (Nuniq_k == 0)
     return LARGE_NUMBER;
   for (i = 1; i <= Nuniq_k; i++)
@@ -77,86 +80,96 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
     for (j = 1; j <= Nuniq_k; j++)
     { // Nuniq_k
       hamil[i][j] = zero;
-#ifdef MATRIX_MESSAGES
-      LogMessageCharDouble("  (", real(hamil[i][j]));
-      LogMessageCharDouble("+ i", imag(hamil[i][j]));
-      LogMessageChar(")");
-#endif
+      if (input_flags->MATRIX_MESSAGES)
+      {
+        LogMessageCharDouble("  (", real(hamil[i][j]));
+        LogMessageCharDouble("+ i", imag(hamil[i][j]));
+        LogMessageChar(")");
+      }
     }
-#ifdef MATRIX_MESSAGES
-    LogMessageChar("\n");
-#endif
+    if (input_flags->MATRIX_MESSAGES)
+    {
+      LogMessageChar("\n");
+    }
   }
   // FillHamilton(k, uniqk, hamil); Old Version
-#ifdef MATRIX_MESSAGES
-  LogMessageChar("\n Next step, fill hamiltonian and diagonalize it \n H= \n");
-#endif
-  FillHamilSparse(hamil, k, input_flags);
-#ifdef MATRIX_MESSAGES
-  for (i = 1; i <= Nuniq_k; i++)
+  if (input_flags->MATRIX_MESSAGES)
   {
-    for (j = 1; j <= Nuniq_k; j++)
+    LogMessageChar("\n Next step, fill hamiltonian and diagonalize it \n H= \n");
+  }
+  FillHamilSparse(hamil, k, input_flags);
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    for (i = 1; i <= Nuniq_k; i++)
     {
-      LogMessageCharDouble("  (", real(hamil[i][j]));
-      LogMessageCharDouble("+ i", imag(hamil[i][j]));
-      LogMessageChar(")");
+      for (j = 1; j <= Nuniq_k; j++)
+      {
+        LogMessageCharDouble("  (", real(hamil[i][j]));
+        LogMessageCharDouble("+ i", imag(hamil[i][j]));
+        LogMessageChar(")");
+      }
+      LogMessageChar("\n");
     }
     LogMessageChar("\n");
   }
-  LogMessageChar("\n");
-#endif
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, STOP, " ");
-  time_stamp(&time_single, START, "timer of total Diagonalization time");
-#endif /*VERBOSE_TIME_LV1*/
+  if (input_flags->VERBOSE_TIME_LV1)
+  {
+    time_stamp(&time_single, STOP, " ");
+    time_stamp(&time_single, START, "timer of total Diagonalization time");
+  }
 
   Diagonalize(hamil, Nuniq_k, energies, input_flags);
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, STOP, " Total diagonalization time for this symmetry=S");
-#endif /* VERBOSE_TIME_LV1*/
-
-#ifdef MATRIX_MESSAGES
-  LogMessageChar("\n Hamiltonian has been diagonalized \nH = \n");
-  for (i = 1; i <= Nuniq_k; i++)
+  if (input_flags->VERBOSE_TIME_LV1)
   {
-    for (j = 1; j <= Nuniq_k; j++)
+    time_stamp(&time_single, STOP, " Total diagonalization time for this symmetry=S");
+  }
+
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    LogMessageChar("\n Hamiltonian has been diagonalized \nH = \n");
+    for (i = 1; i <= Nuniq_k; i++)
     {
-      LogMessageCharDouble("  (", real(hamil[i][j]));
-      LogMessageCharDouble("+ i", imag(hamil[i][j]));
-      LogMessageChar(")");
+      for (j = 1; j <= Nuniq_k; j++)
+      {
+        LogMessageCharDouble("  (", real(hamil[i][j]));
+        LogMessageCharDouble("+ i", imag(hamil[i][j]));
+        LogMessageChar(")");
+      }
+      LogMessageChar("\n");
     }
     LogMessageChar("\n");
   }
-  LogMessageChar("\n");
-#endif
 
   if (input_flags->find_mag)
   {
-    CalculateMatrixM(hamil, magnetisation);
+    CalculateMatrixM(hamil, magnetisation, input_flags);
 
-#ifdef TEST_MATRIXMAG
-    LogMessageChar("Testing: \n");
-    for (int i = 0; i < Nuniq_k; i++)
+    if (input_flags->TEST_MATRIXMAG)
     {
-      LogMessageCharDouble("magn = ", magnetisation[i]);
-      LogMessageCharDouble(", E =", energies[i]);
-      LogMessageChar("\n");
+      LogMessageChar("Testing: \n");
+      for (int i = 0; i < Nuniq_k; i++)
+      {
+        LogMessageCharDouble("magn = ", magnetisation[i]);
+        LogMessageCharDouble(", E =", energies[i]);
+        LogMessageChar("\n");
+      }
     }
-#endif // TEST_MATRIXMAG
   }
 
-#ifdef MATRIX_MESSAGES
-  LogMessageChar(" Matrix_gs, Hamilton diagonalized \n");
-#endif
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    LogMessageChar(" Matrix_gs, Hamilton diagonalized \n");
+  }
 
   /* Find index of smallest eigenvalue */
   emin = LARGE_NUMBER;
   for (i = 0; i < Nuniq_k; i++)
   {
-#ifdef TEST_ENERGIES
-    WriteEnergy(energies[i]);
-#endif /* TEST_ENERGIES */
+    if (input_flags->TEST_ENERGIES)
+    {
+      WriteEnergy(energies[i]);
+    }
     if (energies[i] < emin)
     {
       emin = energies[i];
@@ -164,30 +177,33 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
     }
   }
 
-#ifdef MATRIX_MESSAGES
-  LogMessageCharDouble(" Smallest eigenvalue:", emin);
-  LogMessageCharInt(" number:", i_min);
-#endif
+  if (input_flags->MATRIX_MESSAGES)
+  {
+    LogMessageCharDouble(" Smallest eigenvalue:", emin);
+    LogMessageCharInt(" number:", i_min);
+  }
 
   /* Now: Save ground state in evec  */
   for (i = 0; i < Nuniq_k; i++)
   {
     evec[i] = hamil[i + 1][i_min + 1];
 
-#ifdef TEST_EVEC
-    LogMessageCharDouble(" ", real(evec[i]));
-    LogMessageCharDouble(" + i ", imag(evec[i]));
-    LogMessageChar("\n");
-#endif
+    if (input_flags->TEST_EVEC)
+    {
+      LogMessageCharDouble(" ", real(evec[i]));
+      LogMessageCharDouble(" + i ", imag(evec[i]));
+      LogMessageChar("\n");
+    }
   }
 
-#ifdef TEST_EIG
-  Eigenvector_test(k, evec, tmp);
-#endif /* TEST_EIG */
+  if (input_flags->TEST_EIG)
+  {
+    Eigenvector_test(k, evec, tmp, input_flags);
+  }
   return emin;
 }
 
-void CalculateMatrixM(komplex **matrix, double *mvector)
+void CalculateMatrixM(komplex **matrix, double *mvector, struct FLAGS* input_flags)
 {
   long long v;
   double sum;
@@ -204,29 +220,31 @@ void CalculateMatrixM(komplex **matrix, double *mvector)
       sum += mag[uniq_k[j]] * sqrabs(matrix[j + 1][v + 1]);
       // assuming bloody vectors arent normalized
       norm += sqrabs(matrix[j + 1][v + 1]);
-#ifdef TEST_CALC_M
-      LogMessageCharInt("j=", j);
-      LogMessageCharDouble(", m_uniq=", mag[uniq_k[j]]);
-      LogMessageCharDouble(", uniq_k=", uniq_k[j]);
-      LogMessageCharDouble(", norm=", sqrabs(matrix[j + 1][v + 1]));
-      LogMessageCharDouble(", matrix=", real(matrix[j + 1][v + 1]));
-      LogMessageCharDouble("+ i", imag(matrix[v + 1][j + 1]));
-      LogMessageChar("\n");
-#endif /* TEST_CALC_M */
+      if (input_flags->TEST_CALC_M)
+      {
+        LogMessageCharInt("j=", j);
+        LogMessageCharDouble(", m_uniq=", mag[uniq_k[j]]);
+        LogMessageCharDouble(", uniq_k=", uniq_k[j]);
+        LogMessageCharDouble(", norm=", sqrabs(matrix[j + 1][v + 1]));
+        LogMessageCharDouble(", matrix=", real(matrix[j + 1][v + 1]));
+        LogMessageCharDouble("+ i", imag(matrix[v + 1][j + 1]));
+        LogMessageChar("\n");
+      }
     }
 
-#ifdef TEST_CALC_M
-    LogMessageCharDouble("Sum = ", sum);
-    LogMessageCharDouble("Norm = ", norm);
-    LogMessageChar("\n");
-#endif
+    if (input_flags->TEST_CALC_M)
+    {
+      LogMessageCharDouble("Sum = ", sum);
+      LogMessageCharDouble("Norm = ", norm);
+      LogMessageChar("\n");
+    }
     mvector[v] = sum; // sqrt(norm);
   }
 
   return;
 }
 
-double CalculateM(komplex *state) // currently obsolete SJ 100616
+double CalculateM(komplex *state, struct FLAGS* input_flags) // currently obsolete SJ 100616
 {
 
   long long j;
@@ -235,21 +253,23 @@ double CalculateM(komplex *state) // currently obsolete SJ 100616
   for (j = 0; j < Nunique; j++)
   {
     sum += mag[uniq_k[j]] * sqrabs(state[j + 1]);
-#ifdef TEST_CALC_M
-    LogMessageCharInt("j=", j);
-    LogMessageCharDouble(", m_uniq=", mag[uniq_k[j]]);
-    LogMessageCharDouble(", uniq_k=", uniq_k[j]);
-    LogMessageCharDouble(", norm=", sqrabs(state[j + 1]));
-    LogMessageCharDouble(", state=", real(state[j + 1]));
-    LogMessageCharDouble("+ i", imag(state[j + 1]));
-    LogMessageChar("\n");
-#endif /* TEST_CALC_M */
+    if (input_flags->TEST_CALC_M)
+    {
+      LogMessageCharInt("j=", j);
+      LogMessageCharDouble(", m_uniq=", mag[uniq_k[j]]);
+      LogMessageCharDouble(", uniq_k=", uniq_k[j]);
+      LogMessageCharDouble(", norm=", sqrabs(state[j + 1]));
+      LogMessageCharDouble(", state=", real(state[j + 1]));
+      LogMessageCharDouble("+ i", imag(state[j + 1]));
+      LogMessageChar("\n");
+    }
   }
 
-#ifdef TEST_CALC_M
-  LogMessageCharDouble("Sum = ", sum);
-  LogMessageChar("\n");
-#endif
+  if (input_flags->TEST_CALC_M)
+  {
+    LogMessageCharDouble("Sum = ", sum);
+    LogMessageChar("\n");
+  }
 
   return sum;
 }

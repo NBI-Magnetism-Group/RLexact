@@ -94,8 +94,8 @@ void MakeSeedCross(komplex *, long long, struct FLAGS*);
 // Functions in RLmatrix
 // =============================================================================
 double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
-void CalculateMatrixM(komplex **, double *);
-double CalculateM(komplex *);
+void CalculateMatrixM(komplex **, double *, struct FLAGS*);
+double CalculateM(komplex *, struct FLAGS*);
 
 // =============================================================================
 // Functions in RLhamil
