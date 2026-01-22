@@ -1,7 +1,7 @@
 
 #include "RLexact.h"
 
-#ifndef FUNCTIONS_H
+#ifndef FUNCTIONS_H // Make sure to only include this once
 #define FUNCTIONS_H
 
 // =============================================================================
@@ -108,6 +108,7 @@ void FillHamilton(int k[], komplex **, struct FLAGS *);
 double HamDiag(struct FLAGS *);
 void Hamil2(int *, komplex, komplex *, struct FLAGS *);
 void Hamilton(komplex *, komplex *, int k[], struct FLAGS *);
+void matrixelement(komplex, int *, komplex, komplex *);
 
 // =============================================================================
 // Functions in Diagonal

@@ -23,6 +23,7 @@
 #include <RLexact.h>
 #include <complex>
 #include "Functions.h"
+#include "Max_problem.h"
 
 /* Global variables defined in RLexact.c */
 extern unsigned long long *unique;

@@ -21,10 +21,11 @@
 #include <complex>
 #include <iostream>
 #include "Functions.h"
-#include <RLexact.h>
-#include <cnr.h>
-
+#include "RLexact.h"
+#include "Max_problem.h"
+#include "cnr.h"
 #include <mpi.h>
+
 int rank, nprocs, gs_rank;
 
 // extern void CrossMatrix(long long*); //out of order, SJ 270616

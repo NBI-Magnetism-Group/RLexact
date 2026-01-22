@@ -10,6 +10,7 @@
 *
 ============================================
 */
+#include "Max_problem.h"
 #ifndef HEADER // Firstly make sure to only include all this once.
 
 #define HEADER
@@ -44,16 +45,7 @@ struct FLAGS
   long long VERBOSE;
 };
 
-// Dimensions of problem
-#define NCOUP 400
-#define NCOUPSTR 10
-#define NSPINS 100
-#define NSYM 20
-#define NSYMADD 10
-#define NUNIQUE 4500
-#define MAXARRAYSIZE 200 // max number of entries on a given line in the input file
-#define NRING 100
-#define NRINGSTR 10
+
 
 // Highest possible state
 //  #define MAX_STATE ((((unsigned long) 1)<<(Nspins-1)) -1)
@@ -64,7 +56,6 @@ struct FLAGS
 // Set up size of buffer for sparse matrix read/write
 #define BUFFERSIZE 4194304
 
-#define USE_COMPLEX
 
 // Generated vectors with squared lengths below the following
 // cutoff are considered to be zero in Lanczos calculation because of numerical precision.
@@ -97,11 +88,7 @@ struct FLAGS
 #define SYMNUM(i, j) ((long long)(log((double)SymOp((long long)i, ((unsigned long long)1) << j) + 1E-6) / log((double)2)))
 
 // Deal with complex numbers
-#ifdef USE_COMPLEX
-// typedef std::complex<double> komplex;
 #define komplex std::complex<double>
-//  #define komplex _Complex double
-//  #define komplex std::complex<double>;
 #define kvector cvector
 #define freekvector freecvector
 #define kmatrix cmatrix
@@ -116,25 +103,6 @@ struct FLAGS
 #define eksp(a) exp(real(a)) * (cos(imag(a)) + I * sin(imag(a)))
 #define conj(a) (real(a) - I * imag(a))
 #define skrt(a) (sqrt(abs(a)) * (cos(Arg(a) / 2.0) + I * sin(Arg(a) / 2.0)))
-// #define skrt(a) (sqrt(real(a))*(cos(Arg(a)/2.0)+I*sin(Arg(a)/2.0) ) )
-
-#else
-#define komplex double
-#define skrt(a) sqrt(a)
-#define real(a) (a)
-#define imag(a) 0.0
-#define conj(a) (a)
-#define abs(a) fabs(a)
-#define eksp(a) exp(a)
-#define Arg(a) 0.0
-#define I 0.0
-#define zero 0.0
-#define sqrabs(a) a *a
-#define kvector dvector
-#define freekvector freedvector
-#define kmatrix dmatrix
-#define freekmatrix freedmatrix
-#endif
 
 // Various definitions
 #define SPIN_0_UP ((unsigned long long)1)
