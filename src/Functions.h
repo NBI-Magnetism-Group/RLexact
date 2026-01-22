@@ -85,17 +85,17 @@ double NextLanczos(komplex *, komplex *, komplex *,
                    unsigned long long, long long *, struct FLAGS *);
 long long LanczosLoop(long long, long long *, komplex *, struct FLAGS *);
 double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS *);
-double findmag(komplex *, struct FLAGS*);
+double findmag(komplex *, struct FLAGS *);
 void findmaggs();
-void MakeSeed(komplex *, struct FLAGS*);
-void MakeSeedCross(komplex *, long long, struct FLAGS*);
+void MakeSeed(komplex *, struct FLAGS *);
+void MakeSeedCross(komplex *, long long, struct FLAGS *);
 
 // =============================================================================
 // Functions in RLmatrix
 // =============================================================================
 double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
-void CalculateMatrixM(komplex **, double *, struct FLAGS*);
-double CalculateM(komplex *, struct FLAGS*);
+void CalculateMatrixM(komplex **, double *, struct FLAGS *);
+double CalculateM(komplex *, struct FLAGS *);
 
 // =============================================================================
 // Functions in RLhamil
@@ -163,8 +163,11 @@ void ReadUniqueObservables(struct FLAGS *);
 // =============================================================================
 
 // Construct the Hamiltonian from the symmetry. TODO: Finish this function
-void MakeSymCoup(struct FLAGS *);
-
+unsigned long long SymOp(long long, unsigned long long); // Perform the actual symmetry operation on the states
+unsigned long long SymOpSite(long long, long long);      // Similar to SymOp. TODO: Merge the two functions
+void MakeSymCoup(struct FLAGS *);                        // TODO: Beskriv
+void TestSym(struct FLAGS *);                            // Test symmetry operations (during initialization)
+void InitSym(struct FLAGS *);                            // Initialize the symmetry operations and corresponding tables
 // =============================================================================
 // Functions in RLutil
 // =============================================================================

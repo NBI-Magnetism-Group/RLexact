@@ -30,7 +30,6 @@ int rank, nprocs, gs_rank;
 
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 // extern void CrossLanczos(long long *, struct FLAGS*);
-extern void InitSym();
 
 /* Global variables read from the input file */
 long long Nspins;
@@ -198,7 +197,7 @@ int main(int argc, char *argv[])
     time_stamp(&time_single, START, "filling basic arrays");
 
   BuildTables();
-  InitSym();
+  InitSym(&input_flags);
 
   if (input_flags.m_sym)
     LogMessageChar("With M-symmetry \n");
