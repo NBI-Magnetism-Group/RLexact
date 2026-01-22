@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
   if (input_flags.VERBOSE_TIME_LV1)
     time_stamp(&time_single, START, "filling basic arrays");
 
-  BuildTables();
+  BuildTables(&input_flags);
   InitSym(&input_flags);
 
   if (input_flags.m_sym)

@@ -20,11 +20,6 @@
 #include <math.h> //TODO: Remove when tables implemented /ABP
 #include "Functions.h"
 
-/* Functions declared elsewhere */
-extern unsigned long long SymOp(long long, unsigned long long);
-
-
-
 // Global variables defined in RLexact.c
 extern long long twom;
 
@@ -502,11 +497,11 @@ void ApplySmp(long long *q, long long SPMcross, komplex *resultvec, struct FLAGS
                 smp_state = (gsstate & ~(new_state));
               }
 
-              u = FindUnique(smp_state, Tl); // Unique after updown operation;
+              u = FindUnique(smp_state, Tl, input_flags); // Unique after updown operation;
                                              // Tl is the translation needed
                                              // from smp_state to unique
 
-              l = LookUpU(u); // Find position in table
+              l = LookUpU(u, input_flags); // Find position in table
               if (input_flags->TEST_APPLYSMP)
               {
                 LogMessageCharInt("Changing to unique ", u);
@@ -662,8 +657,8 @@ void ApplySmpMsym(long long *q, long long which_q, struct FLAGS *input_flags)
               LogMessageCharInt("smp_state=", smp_state);
             }
 
-            u = FindUnique(smp_state, T); // Unique after updown operation
-            l = LookUpU(u);               // Find position in table
+            u = FindUnique(smp_state, T, input_flags); // Unique after updown operation
+            l = LookUpU(u, input_flags);               // Find position in table
             if (input_flags->TEST_APPLYSMP)
             {
               LogMessageCharInt("SMP: Nocc[l]=", Nocc[l]);
@@ -884,8 +879,8 @@ void ApplySmp(long long *q, long long SPMcross)
           LogMessageCharInt("smp_state=", smp_state);
 #endif
 
-          u = FindUnique(smp_state, T); // Unique after updown operation
-          l = LookUpU(u);               // Find position in table
+          u = FindUnique(smp_state, T, input_flags); // Unique after updown operation
+          l = LookUpU(u, input_flags);               // Find position in table
           LogMessageCharInt(", unique ", u);
           LogMessageCharInt(", Nocc[l]=", Nocc[l]);
           LogMessageCharInt(", Nocc[i]=", Nocc[i]);

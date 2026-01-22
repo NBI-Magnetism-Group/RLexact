@@ -68,10 +68,10 @@ void Hamil_Zeeman(unsigned long long bitmap, unsigned long long *new_state, long
     if (field[2] > 0) /* Mag field along z*/
     {
       double sz;
-      sz = Count(bitmap) - Nspins / 2;
+      sz = Count(bitmap, input_flags) - Nspins / 2;
       if (input_flags->TEST_HAMZEE)
       {
-        LogMessageCharInt("\nHamzee Sz: Count(bitmap) =", Count(bitmap));
+        LogMessageCharInt("\nHamzee Sz: Count(bitmap) =", Count(bitmap, input_flags));
         LogMessageCharInt(" , and sz =", sz);
         LogMessageChar("\n");
       }

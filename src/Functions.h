@@ -119,7 +119,7 @@ void FillHamilton(int k[], komplex **, struct FLAGS *);
 double HamDiag(struct FLAGS *);
 void Hamil2(int *, komplex, komplex *, struct FLAGS *);
 void Hamilton(komplex *, komplex *, int k[], struct FLAGS *);
-void matrixelement(komplex, int *, komplex, komplex *);
+void matrixelement(komplex, int *, komplex, komplex *, struct FLAGS*);
 
 // =============================================================================
 // Functions in Diagonal
@@ -131,9 +131,9 @@ void Diagonalize(komplex **, long long, double *, struct FLAGS *);
 // =============================================================================
 // Functions in RLtables
 // =============================================================================
-void BuildTables();
+void BuildTables(struct FLAGS*);
 // Fill the tables of often used math functions and complex phases
-long long Count(unsigned long long);
+long long Count(unsigned long long, struct FLAGS*);
 // Count the number of up-spins in a state (represented by a bitmap)
 unsigned long long FillUnique(long long, int, struct FLAGS *);
 // Fill the table of unique states
@@ -141,13 +141,13 @@ void FillUniqueObservables(struct FLAGS *);
 // Write diagonal values of the unique states to file
 void BuildCycle(long long *, struct FLAGS *);
 // Make table of number of occurences of a particular unique in a particular symmetry cycle
-unsigned long long FindUnique(unsigned long long, int *);
+unsigned long long FindUnique(unsigned long long, int *, struct FLAGS*);
 // Find the unique corresponding to a particular state
-long long IsUnique(unsigned long long);
+long long IsUnique(unsigned long long, struct FLAGS*);
 // Test if a given state is a unique
-long long LookUpU(unsigned long long);
+long long LookUpU(unsigned long long, struct FLAGS*);
 // Find the index of a given unique state
-void InvertMatrix(long long, double[4][4], double[4][4]);
+void InvertMatrix(long long, double[4][4], double[4][4], struct FLAGS*);
 // Inverts 1x1 and 2x2 matrices. TODO: test when this is used and if it should be generalized
 void WriteUnique(long long, struct FLAGS *);
 // Write list of uniques to file

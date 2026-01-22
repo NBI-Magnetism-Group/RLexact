@@ -238,8 +238,8 @@ void WriteCouplingFiles(unsigned long long bitmap, unsigned long long new_state,
 {
   long long l;
   unsigned long long u;
-  u = FindUnique(new_state, T); /* Unique */
-  l = LookUpU(u);               /* Find position in table */
+  u = FindUnique(new_state, T, input_flags); /* Unique */
+  l = LookUpU(u, input_flags);               /* Find position in table */
 
   /* For elements in lower triangle of H, begin write couplings to file */
   if (input_flags->TEST_MAKESPARSE)

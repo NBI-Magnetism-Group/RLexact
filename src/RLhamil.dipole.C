@@ -162,7 +162,7 @@ double HamDiag(struct FLAGS *input_flags)
   /* Field Sz term */
   if (!input_flags->m_sym)
   {
-    sz = Count(bitmap) - Nspins / 2;
+    sz = Count(bitmap, input_flags) - Nspins / 2;
 #ifdef TEST_HAMDIAG
     printf(" Sz = %g ", sz);
 #endif /* TEST_HAMDIAG */
@@ -225,37 +225,37 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
         new_state = (bitmap | mask0);
         matrixelement(((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                        I * (1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y])),
-                      k, coof, next);
+                      k, coof, next, input_flags);
       }
       if (s1 == 0) /* down down: S+S+ term */
       {
         if (!input_flags->m_sym)
         {
           new_state = (bitmap | mask0 | mask1);
-          matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next);
+          matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next, input_flags);
           if (input_flags->dipole)
           { /* S+S+ and SzS+ */
             matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
                               I * (1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
-                          k, coof, next);
+                          k, coof, next, input_flags);
             new_state = (bitmap | mask1);
             matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                               I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                          k, coof, next);
+                          k, coof, next, input_flags);
           }
         }
       }
       else /* down up: S+S- terms */
       {
         new_state = ((bitmap | mask0) & ~mask1);
-        matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next);
+        matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next, input_flags);
         if (input_flags->dipole)
         { /* S+S- and SzS- */
-          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
+          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next, input_flags);
           new_state = (bitmap & ~mask1);
           matrixelement((0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                             I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                        k, coof, next);
+                        k, coof, next, input_flags);
         }
       } /* if s1==0. */
     }
@@ -270,19 +270,19 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
         new_state = (bitmap & ~mask0);
         matrixelement((-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                           I * (-1.5 * sz * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                      k, coof, next);
+                      k, coof, next, input_flags);
       }
       if (s1 == 0) /* up down: S-S+ term (and SzS+) */
       {
         new_state = ((bitmap | mask1) & ~mask0);
-        matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next);
+        matrixelement(komplex(Jxy[j] / 2.0, 0.0), k, coof, next, input_flags);
         if (input_flags->dipole)
         { /* S-S+ and SzS+ */
-          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next);
+          matrixelement(komplex(-0.25 * Jdip[j] * geom_13[j], 0.0), k, coof, next, input_flags);
           new_state = (bitmap | mask1);
           matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                             I * (0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                        k, coof, next);
+                        k, coof, next, input_flags);
         }
       }
       else /* up up: S-S- terms (and SzS-) */
@@ -290,17 +290,17 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
         if (!input_flags->m_sym)
         {
           new_state = (bitmap & ~mask0) & ~mask1;
-          matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next);
+          matrixelement(komplex(Janis[j] / 2.0, 0.0), k, coof, next, input_flags);
 
           if (input_flags->dipole)
           { /*  S-S- and SzS-  */
             matrixelement((-0.75 * Jdip[j] * (SQR(r_vector[j][X]) - SQR(r_vector[j][Y]))) +
                               I * (-1.5 * Jdip[j] * r_vector[j][X] * r_vector[j][Y]),
-                          k, coof, next);
+                          k, coof, next, input_flags);
             new_state = (bitmap & ~mask1);
             matrixelement((-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][X]) +
                               I * (-0.75 * Jdip[j] * r_vector[j][Z] * r_vector[j][Y]),
-                          k, coof, next);
+                          k, coof, next, input_flags);
           }
         }
       } /* if s1==0.. */
@@ -310,7 +310,7 @@ void Hamil2(int k[], komplex coof, komplex *next, struct FLAGS *input_flags)
 }
 
 void matrixelement(komplex Jval, int k[],
-                   komplex coof, komplex *next)
+                   komplex coof, komplex *next, struct FLAGS* input_flags)
 {
   long l;
   int i, new_occ, j, T[NSYM];
@@ -321,8 +321,8 @@ void matrixelement(komplex Jval, int k[],
 #ifdef TEST_MAT_ELEM
   printf("J: (%g + %g i)", real(Jval), imag(Jval));
 #endif
-  uniq = FindUnique(new_state, T); /* Unique after spin-flip */
-  l = LookUpU(uniq);               /* Find position in table */
+  uniq = FindUnique(new_state, T, input_flags); /* Unique after spin-flip */
+  l = LookUpU(uniq, input_flags);               /* Find position in table */
   /* Check for existence of new state with this k[] */
   new_occ = Nocc[l];
   if (new_occ)
