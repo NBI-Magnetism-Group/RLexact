@@ -25,19 +25,6 @@
 
 // long long CrossMatrix();   /* NOT IN USE !!! */
 
-/* Functions declared elsewhere */
-extern void WriteEnergy(double);
-// extern void FillHamilton(long long *, long long *, komplex**); OLD version
-extern void Eigenvector_test(long long *, komplex *, komplex *);
-extern void fatalerror(const char *, long long);
-extern void Warning(const char *, long long);
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
-extern void time_stamp(time_t *, long long, const char *);
-
 /* Global variables defined in RLexact.c */
 extern unsigned long long *unique;
 extern long long *uniq_k;

@@ -29,39 +29,7 @@
 #include <mpi.h>
 extern int rank, nprocs;
 
-/* Functions defined in this file */
-
-void TransformCoup(long long);
-void time_stamp(time_t *, long long, const char *);
-void Warning(const char *, long long);
-void LogMessageChar(const char *);
-void OutMessageChar(const char *);
-void LogMessageInt(long long);
-void LogMessageImag(long long);
-void LogMessageCharDouble(const char *, double);
-void LogMessageCharInt(const char *, long long);
-void OutMessageCharInt(const char *, long long);
-void LogMessageChar3Vector(const char *, double, double, double);
-void WriteState(const char *, komplex *);
-void WriteStates(komplex **);
-
-void WriteGSEnergy(komplex);
-void WriteEnergy(double);
-void WriteQvalue(long long *);
-void WriteGSdata(double, long long *);
-void WriteGSstate(komplex *);
-void ReadGSdata(double *, long long *, komplex *);
-void ReadGSenergy(double *, long long *);
-
-/* Functions in RLutils.C */
-extern void NormalizeVector(double *);
-extern void RotateVector(double *);
-extern void Bubblesort(double *, double *, long long);
-extern void FillRotationMatrix(double *);
-
 /* Functions defined elsewhere */
-extern void MakeSymCoup();
-extern void itoa(long long, char[]);
 extern void filereader(char *, char *, long long);
 extern long long filesizer(char *);
 extern long long multimatch(char *, long long, const char *, double **, long long *, long long);

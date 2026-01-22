@@ -27,17 +27,6 @@
 
 #define SIGN(a, b) ((b) < 0 ? -fabs(a) : fabs(a))
 
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageImag(const double, const double);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
-extern void fatalerror(const char *, long long);
-
-extern void time_stamp(time_t *, long long, const char *);
-
-long long htqli(double *, double *, long long, komplex **);
 void eigsrt(double *, komplex **, long long);
 
 void Diagonalize(komplex **H, long long num, double *ddin, struct FLAGS *input_flags) // Naming: ddin = energies, num = Nuniq_k

@@ -19,25 +19,18 @@
 #include <complex>
 
 #include <RLexact.h>
-#include "Functions.h"
 #include <nr.h>
 #include <cnr.h>
 #include <errno.h>
 #include <string.h>
+#include "Functions.h"
 
 /* Functions defined in this file */
 
 
 /* Functions defined elsewhere */
 extern unsigned long long SymOp(long long, unsigned long long);
-extern void itoa(long long, char[]);
-extern void fatalerror(const char *, long long);
-extern void Warning(const char *, long long);
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
+
 
 /* Variables defined in RLexact.c */
 extern long long Nspins, Nsym, Nsymvalue[], symlist[];

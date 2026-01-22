@@ -26,10 +26,6 @@
 void Eigenvector_test(int *, komplex *, komplex *);
 void matrixelement(komplex, int *, komplex, komplex *);
 
-/* Functions defined elsewhere */
-extern void WriteGSEnergy(komplex);
-extern void WriteState(char *, komplex *);
-
 /* Global variables defined in RLexact.c */
 extern unsigned long unique[];
 extern int Nunique, Nuniq_k, Nsym, Nspins;
