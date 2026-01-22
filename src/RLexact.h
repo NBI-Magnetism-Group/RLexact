@@ -127,6 +127,7 @@ struct FLAGS
   long long VERBOSE_TIME_LV1;
   long long VERBOSE_TIME_LV2;
   long long VERBOSE;
+  long long FILEREAD_VERBOSE;
 };
 
 // Highest possible state

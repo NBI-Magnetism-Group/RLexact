@@ -29,15 +29,6 @@
 #include <mpi.h>
 extern int rank, nprocs;
 
-/* Functions defined elsewhere */
-extern void filereader(char *, char *, long long);
-extern long long filesizer(char *);
-extern long long multimatch(char *, long long, const char *, double **, long long *, long long);
-extern long long multimatch(char *, long long, const char *, long long **, long long *, long long);
-extern long long matchlines(char *, const char *, double *, bool);
-extern long long matchlines_wrapper(char *, const char *, long long *, bool);
-extern double *dvector(long long, long long);
-
 /* Global variables defined in RLexact.c */
 extern long long Nspins, Nsym, Nsymadd, Nunique, Nuniq_k;
 extern long long **symadd;
@@ -321,7 +312,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
     printf("\nERROR: Filedata not allocated");
     exit(1);
   }
-  filereader(filename, filedata, filesize); // the entire file is now in filedata
+  filereader(filename, filedata, filesize, input_flags); // the entire file is now in filedata
   input_flags->use_lanczos = 1;             // Using lanczos is default.
   input_flags->use_exact_matrix = 0;
   input_flags->m_sym = 1; // Use m_sym as default
@@ -335,22 +326,22 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   input_flags->write_energies = 1; // Output energies and states as default
   input_flags->write_states = 1;
 
-  matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true);
-  matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true);
-  matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true);
-  matchlines_wrapper(filedata, "Dipole", &input_flags->dipole, true);
-  matchlines_wrapper(filedata, "Ring_exchange", &input_flags->ring_exchange, true);
-  matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
-  matchlines_wrapper(filedata, "Find_cross", &input_flags->find_cross, true);
-  matchlines_wrapper(filedata, "Find_cross_pm", &input_flags->find_cross_pm, true);
-  matchlines_wrapper(filedata, "Find_magnetisation", &input_flags->find_mag, true);
+  matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true,input_flags);
+  matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true,input_flags);
+  matchlines_wrapper(filedata, "M_Symmetry", &input_flags->m_sym, true,input_flags);
+  matchlines_wrapper(filedata, "Dipole", &input_flags->dipole, true,input_flags);
+  matchlines_wrapper(filedata, "Ring_exchange", &input_flags->ring_exchange, true,input_flags);
+  matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true,input_flags);
+  matchlines_wrapper(filedata, "Find_cross", &input_flags->find_cross, true,input_flags);
+  matchlines_wrapper(filedata, "Find_cross_pm", &input_flags->find_cross_pm, true,input_flags);
+  matchlines_wrapper(filedata, "Find_magnetisation", &input_flags->find_mag, true,input_flags);
 
-  matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true);
-  matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true);
+  matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true,input_flags);
+  matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true,input_flags);
 
-  matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true);
-  matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true);
-  matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true);
+  matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true,input_flags);
+  matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true,input_flags);
+  matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true,input_flags);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -380,13 +371,13 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
       printf("\nERROR: Filedata not allocated");
       exit(1);
     }
-    filereader(filename, filedata, filesize); // the entire file is now in filedata
+    filereader(filename, filedata, filesize, input_flags); // the entire file is now in filedata
 
 #ifdef TEST_INPUT
     LogMessageChar("Input file opened...\n");
 #endif /* TEST_INPUT */
 
-    matchlines_wrapper(filedata, "Number of spins", &Nspins, true);
+    matchlines_wrapper(filedata, "Number of spins", &Nspins, true, input_flags);
 #ifdef TEST_INPUT
     LogMessageCharInt(" Nspins:", Nspins);
     LogMessageChar("\n");
@@ -397,7 +388,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   // *********** Mandatory input: Mode *************
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Mode", &mode, true);
+    matchlines_wrapper(filedata, "Mode", &mode, true, input_flags);
 #ifdef TEST_INPUT
     switch (mode)
     {
@@ -420,7 +411,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   if (rank == 0)
   {
     // *********** Mandatory input: Unique mode *************
-    matchlines_wrapper(filedata, "Unimode", &unimode, true);
+    matchlines_wrapper(filedata, "Unimode", &unimode, true, input_flags);
 #ifdef TEST_INPUT
     switch (unimode)
     {
@@ -443,8 +434,8 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   // ******** Mandatory input: Read number of lines to input **********
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Number of couplings", &Ncoup, true);
-    matchlines_wrapper(filedata, "Number of coupling strengths", &Ncoupstr, true);
+    matchlines_wrapper(filedata, "Number of couplings", &Ncoup, true, input_flags);
+    matchlines_wrapper(filedata, "Number of coupling strengths", &Ncoupstr, true, input_flags);
   }
   MPI_Bcast(&Ncoup, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&Ncoupstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -452,8 +443,8 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   {
     if (rank == 0)
     {
-      matchlines_wrapper(filedata, "Number of rings", &Nring, true);
-      matchlines_wrapper(filedata, "Number of ringstrength", &Nringstr, true);
+      matchlines_wrapper(filedata, "Number of rings", &Nring, true, input_flags);
+      matchlines_wrapper(filedata, "Number of ringstrength", &Nringstr, true, input_flags);
     }
     MPI_Bcast(&Nring, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&Nringstr, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -472,9 +463,9 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Number of hardcoded symmetries", &Nsym, true);
-    matchlines_wrapper(filedata, "Number of custom symmetries", &Nsymadd, true);
-    matchlines_wrapper(filedata, "Construct symmetries", &symconstruct, true);
+    matchlines_wrapper(filedata, "Number of hardcoded symmetries", &Nsym, true, input_flags);
+    matchlines_wrapper(filedata, "Number of custom symmetries", &Nsymadd, true, input_flags);
+    matchlines_wrapper(filedata, "Construct symmetries", &symconstruct, true, input_flags);
     if ((Nsym + Nsymadd) <= 0)
     {
       printf("\nNsym=%lld, Nsymadd=%lld\n", Nsym, Nsymadd);
@@ -495,7 +486,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   // ********* Input symmetry info ********************
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Hardcoded symmetries", symlist, false);
+    matchlines_wrapper(filedata, "Hardcoded symmetries", symlist, false, input_flags);
   }
   MPI_Bcast(&symlist, Nsym, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
@@ -511,7 +502,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   if (rank == 0)
   {
     long long *dummy = (long long *)malloc(Nsymadd * sizeof(long long));
-    multimatch(filedata, filesize, "Custom symmetry", symadd, dummy, Nsymadd);
+    multimatch(filedata, filesize, "Custom symmetry", symadd, dummy, Nsymadd,input_flags );
     free(dummy);
   }
   for (int i = 0; i < Nsymadd; i++)
@@ -519,7 +510,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Number of dimensions", &Ndimensions, true);
+    matchlines_wrapper(filedata, "Number of dimensions", &Ndimensions, true, input_flags);
   }
   MPI_Bcast(&Ndimensions, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
@@ -528,7 +519,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   {
     for (int i = 0; i < 3; i++)
       TransIds[i] = 0; // Ugly,but needed for loop in RLcross.
-    matchlines_wrapper(filedata, "Translation indices", TransIds, 1);
+    matchlines_wrapper(filedata, "Translation indices", TransIds, 1, input_flags);
   }
 
   MPI_Bcast(TransIds, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -584,7 +575,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   // ************ Input GS q-values ******************
   if (rank == 0)
   {
-    matchlines_wrapper(filedata, "Number of chosen GS q-values", &Nq_choice, true);
+    matchlines_wrapper(filedata, "Number of chosen GS q-values", &Nq_choice, true, input_flags);
   }
   MPI_Bcast(&Nq_choice, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 #ifdef TEST_INPUT
@@ -595,7 +586,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   if (rank == 0)
   {
     long long *dummy = (long long *)malloc(Nq_choice * sizeof(long long));
-    multimatch(filedata, filesize, "Chosen GS q-value", q_choice, dummy, Nq_choice);
+    multimatch(filedata, filesize, "Chosen GS q-value", q_choice, dummy, Nq_choice, input_flags);
     free(dummy);
   }
   MPI_Bcast(q_choice, Nq_choice, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
@@ -616,7 +607,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   {
     if (rank == 0)
     {
-      matchlines_wrapper(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
+      matchlines_wrapper(filedata, "Number of spins in unit cell", &Nspins_in_uc, true, input_flags);
     }
     MPI_Bcast(&Nspins_in_uc, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
@@ -634,7 +625,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
     {
       long long *dummy = (long long *)malloc(Nspins_in_uc * sizeof(long long));
       multimatch(filedata, filesize, "Relative position", spin_positions,
-                 dummy, Nspins_in_uc);
+                 dummy, Nspins_in_uc, input_flags);
       free(dummy);
     }
 
@@ -654,7 +645,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
     if (rank == 0)
     {
-      matchlines_wrapper(filedata, "Qmax translation", Trans_Qmax, true);
+      matchlines_wrapper(filedata, "Qmax translation", Trans_Qmax, true, input_flags);
     }
     MPI_Bcast(Trans_Qmax, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 #ifdef TEST_INPUT
@@ -670,8 +661,8 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
     if (rank == 0)
     {
-      matchlines(filedata, "M start", &mstart, true);
-      matchlines(filedata, "M end", &mend, true);
+      matchlines(filedata, "M start", &mstart, true, input_flags);
+      matchlines(filedata, "M end", &mend, true, input_flags);
     }
     MPI_Bcast(&mstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&mend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -687,9 +678,9 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
     if (rank == 0)
     {
-      matchlines(filedata, "H start", &hstart, true);
-      matchlines(filedata, "H end", &hend, true);
-      matchlines(filedata, "H step", &hstep, true);
+      matchlines(filedata, "H start", &hstart, true, input_flags);
+      matchlines(filedata, "H end", &hend, true, input_flags);
+      matchlines(filedata, "H step", &hstep, true, input_flags);
     }
     MPI_Bcast(&hstart, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(&hend, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -704,9 +695,9 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
 
     if (rank == 0)
     {
-      matchlines(filedata, "Hx", &field[X], true);
-      matchlines(filedata, "Hy", &field[Y], true);
-      matchlines(filedata, "Hz", &field[Z], true);
+      matchlines(filedata, "Hx", &field[X], true, input_flags);
+      matchlines(filedata, "Hy", &field[Y], true, input_flags);
+      matchlines(filedata, "Hz", &field[Z], true, input_flags);
     }
     MPI_Bcast(field, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -734,7 +725,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
     // ********* Lanzcos-Mandatory input : Read Lanzcos numbers *********
     if (rank == 0)
     {
-      matchlines(filedata, "Ritz_conv", &Ritz_conv, true);
+      matchlines(filedata, "Ritz_conv", &Ritz_conv, true, input_flags);
     }
     MPI_Bcast(&Ritz_conv, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -749,7 +740,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
     long long *dummy = (long long *)malloc(Ncoupstr * sizeof(long long));
     double **dummyresdouble = (double **)malloc(Ncoupstr * sizeof(double *));
     multimatch(filedata, filesize, "Coupling strength vector", dummyresdouble,
-               dummy, Ncoupstr);
+               dummy, Ncoupstr, input_flags);
 
     for (long long k = 0; k < Ncoupstr; k++)
     {
@@ -788,7 +779,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
       long long *dummy = (long long *)malloc(Nringstr * sizeof(long long));
       double **dummyresdouble1 = (double **)malloc(Nringstr * sizeof(double *));
       multimatch(filedata, filesize, "Ring strength", dummyresdouble1, dummy,
-                 Nringstr);
+                 Nringstr, input_flags);
 
       for (long long k = 0; k < Nringstr; k++)
       {
@@ -809,7 +800,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   {
     long long *dummy = (long long *)malloc(Ncoup * sizeof(long long));
     long long **dummyres = (long long **)malloc(Ncoup * sizeof(long long *));
-    multimatch(filedata, filesize, "Coupling vector", dummyres, dummy, Ncoup);
+    multimatch(filedata, filesize, "Coupling vector", dummyres, dummy, Ncoup, input_flags);
 
     for (long long k = 0; k < Ncoup; k++)
     {
@@ -872,7 +863,7 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
       long long *dummy = (long long *)malloc(Nring * sizeof(long long));
       long long **dummyresring = (long long **)malloc(Nring * sizeof(long long *));
       multimatch(filedata, filesize, "Coupling ring vector", dummyresring, dummy,
-                 Nring);
+                 Nring, input_flags);
 
       for (long long k = 0; k < Nring; k++)
       {

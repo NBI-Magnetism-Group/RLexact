@@ -48,6 +48,20 @@ void ReadGSdata(double *, long long *, komplex *);
 void ReadGSenergy(double *, long long *);
 
 
+// =============================================================================
+// Functions in regc
+// =============================================================================
+
+double atod(char *);
+long long regexperr(long long, const char *, bool);
+long long multimatch(char *, long long, const char *, double **, long long *, long long, struct FLAGS*);
+long long multimatch(char *, long long, const char *, long long **, long long*, long long, struct FLAGS*);
+long long matchlines_wrapper(char *, const char *, long long *, bool , struct FLAGS *);
+long long matchlines(char *, const char *, double *, bool , struct FLAGS*);
+
+void filereader(char *, char *, long long, struct FLAGS *);
+long long filesizer(char *);
+
 
 
 // =============================================================================
