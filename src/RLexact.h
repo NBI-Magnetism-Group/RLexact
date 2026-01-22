@@ -30,6 +30,7 @@ struct FLAGS
                              // Requires MSYM and FIND_CROSS.
   long long motive;          // DLC TODO: We need a description of the MOTIVE. Maybe
   long long find_mag;        // DLC TODO: Needs description. Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
+  long long cross;           // DLC: I have literally no idea what this is
 
   // OUTPUT SPECIFIERS
   long long write_energies;
@@ -108,6 +109,7 @@ struct FLAGS
   long long TEST_SPINFLIP;
   long long TEST_INPUT;
   long long TEST_ROTATION;
+  long long TEST_WRITEHMQ;
 
   // --- From RLcross.c ---
   long long TEST_APPLYSMP;

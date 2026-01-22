@@ -85,8 +85,10 @@ double NextLanczos(komplex *, komplex *, komplex *,
                    unsigned long long, long long *, struct FLAGS *);
 long long LanczosLoop(long long, long long *, komplex *, struct FLAGS *);
 double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS *);
-double findmag(komplex *);
+double findmag(komplex *, struct FLAGS*);
 void findmaggs();
+void MakeSeed(komplex *, struct FLAGS*);
+void MakeSeedCross(komplex *, long long, struct FLAGS*);
 
 // =============================================================================
 // Functions in RLmatrix
