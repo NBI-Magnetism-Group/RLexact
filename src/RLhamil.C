@@ -23,19 +23,7 @@
 #include <RLexact.h>
 #include <complex>
 #include "Functions.h"
-
-/* Functions defined elsewhere */
-extern void WriteGSEnergy(komplex);
-extern void WriteState(const char *, komplex *);
-
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageImag(long long);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, long long, long long, long long);
-// extern void WriteCouplingFiles(unsigned long long, unsigned long long, long long *, double, long long, long long, long long *, long long *, FILE*, FILE*, FILE*);
-void WriteCouplingFiles(unsigned long long, unsigned long long, int *, komplex, long long, long long, int *, long long *, FILE *, FILE *, FILE *);
+#include "Max_problem.h"
 
 /* Global variables defined in RLexact.c */
 extern unsigned long long *unique;

@@ -43,20 +43,7 @@ extern double field[3];
 
 extern int rank;
 
-// Functions defined elsewhere
-extern long long LookUpU(unsigned long long);
-void fatalerror(const char *, long long);
-unsigned long long FindUnique(unsigned long long, int *);
-long long Count(unsigned long long);
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
 
-// Functions defined in this file
-
-// extern void WriteCouplingFiles(unsigned long long, unsigned long long, long long *, double, long long, long long, long long *, long long *, FILE*, FILE*, FILE*);
 //  File buffers
 char Indexbuf[BUFFERSIZE];
 char Jbuf[BUFFERSIZE];

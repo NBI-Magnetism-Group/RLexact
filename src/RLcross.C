@@ -23,18 +23,6 @@
 /* Functions declared elsewhere */
 extern unsigned long long SymOp(long long, unsigned long long);
 
-extern unsigned long long FindUnique(unsigned long long, int *);
-extern long long LookUpU(unsigned long long);
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageImag(const double, const double);
-extern void LogMessageKomlex(const komplex);
-extern void LogMessageCharKomplex(const char *, const komplex);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
-extern void fatalerror(const char *, long long);
-
 #ifdef NEVER // doesnt work, SJ 270616
 void ApplySmpMsym(long long *, long long);
 void CrossMatrix();

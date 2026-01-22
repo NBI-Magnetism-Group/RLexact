@@ -32,33 +32,13 @@ long long CrossLanczos(long long *);
 
 void MakeSeed(komplex *);
 void MakeSeedCross(komplex *, long long);
-#ifdef FIND_MAG
-double findmag(komplex *);
-void findmaggs();
-#endif /* FIND_MAG*/
 double Normalize(komplex *);
-
-/* Functions declared elsewhere */
-extern void WriteEnergy(double);
-extern void WriteState(const char *, double **);
-extern void ApplySparse(komplex *vectin, komplex *vectout, long long *k);
-extern void fatalerror(const char *, long long);
-extern void Warning(const char *, long long);
-extern void LogMessageChar(const char *);
-extern void LogMessageInt(long long);
-extern void LogMessageCharDouble(const char *, double);
-extern void LogMessageCharInt(const char *, long long);
-extern void LogMessageChar3Vector(const char *, double, double, double);
-extern void OutMessageChar(const char *);
-extern long long htqli(double *, double *, long long, komplex **);
 
 /* Global variables declared in RLexact.c */
 extern unsigned long long *unique;
 extern long long Nunique;
 extern long long *mag;
-#ifdef FIND_MAG
 extern double *magnetisation;
-#endif // FIND_MAG
 extern long long *Nocc;
 extern komplex *vec1, *vec2, *vec3;
 extern komplex *gs, *szxygs;
@@ -67,9 +47,7 @@ extern double cosine[], sine[], invsqrt[];
 extern long long Ncoup, Nspins;
 extern long long m;
 extern long Nsym;
-#ifdef FIND_MAG
 extern double maggs;
-#endif // end M_SYM
 
 extern double Ritz_conv;
 
@@ -79,9 +57,7 @@ unsigned long long r, imin;
 komplex **z, *first, *second, *third, *temp;
 double diag[MAX_LANCZOS], subdiag[MAX_LANCZOS];
 double diag_copy[MAX_LANCZOS], subdiag_copy[MAX_LANCZOS];
-#ifdef FIND_MAG
 double lanczmag[MAX_LANCZOS];
-#endif // end FIND_MAG
 /* LowestLanczos(k) constructs and diagonalizes the Hamilton operator for
 k[] and given h/m and finds the ground state.
 The routine returns the energy of the ground state.  */
@@ -168,31 +144,32 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
   Nvec = LanczosLoop(0, k, NULL, input_flags);
 
   /* Copy magnetisation to arrays */
-#ifdef FIND_MAG
-  if (flag == NORMAL)
+  if (input_flags->find_mag)
   {
-
-    for (i = 0; i < Nvec; i++)
+    if (flag == NORMAL)
     {
-#ifdef TEST_LANCZOS_VECTOR
-      LogMessageCharInt("Vector number ", i);
-      LogMessageChar(": (");
-#endif
-      magnetisation[i] = 0;
-      for (int j = 0; j < Nvec; j++)
+
+      for (i = 0; i < Nvec; i++)
       {
-        magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
 #ifdef TEST_LANCZOS_VECTOR
-        LogMessageCharDouble("(", real(z[j + 1][i + 1]));
-        LogMessageCharDouble(" i ) ,", imag(z[j + 1][i + 1]));
+        LogMessageCharInt("Vector number ", i);
+        LogMessageChar(": (");
+#endif
+        magnetisation[i] = 0;
+        for (int j = 0; j < Nvec; j++)
+        {
+          magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
+#ifdef TEST_LANCZOS_VECTOR
+          LogMessageCharDouble("(", real(z[j + 1][i + 1]));
+          LogMessageCharDouble(" i ) ,", imag(z[j + 1][i + 1]));
+#endif
+        }
+#ifdef TEST_LANCZOS_VECTOR
+        LogMessageChar(")\n");
 #endif
       }
-#ifdef TEST_LANCZOS_VECTOR
-      LogMessageChar(")\n");
-#endif
     }
   }
-#endif /* FIND_MAG */
 
   /* Copy eigenvalues and cross-sections to arrays */
   for (i = 0; i < Nvec; i++)
@@ -289,31 +266,31 @@ double LowestLanczos(long long k[NSYM], komplex *resvect, long long *Nener,
       LogMessageChar("Finding eigenvector\n");
 #endif
       LanczosLoop(Nvec, k, resvect, input_flags);
-
-#ifdef FIND_MAG
-      for (i = 0; i < Nvec; i++)
+      if (input_flags->find_mag)
       {
-#ifdef TEST_FINDGROUND
-        LogMessageCharInt("AFTER GS Vector number", i);
-        LogMessageChar("\n");
-#endif
-        magnetisation[i] = 0;
-        for (int j = 0; j < Nvec; j++)
+        for (i = 0; i < Nvec; i++)
         {
-          magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
 #ifdef TEST_FINDGROUND
-          LogMessageCharDouble("", real(z[j + 1][i + 1]));
-          LogMessageCharDouble("+ i ", imag(z[j + 1][i + 1]));
-          LogMessageCharDouble(" with ", lanczmag[j]);
+          LogMessageCharInt("AFTER GS Vector number", i);
+          LogMessageChar("\n");
+#endif
+          magnetisation[i] = 0;
+          for (int j = 0; j < Nvec; j++)
+          {
+            magnetisation[i] += ((real(z[j + 1][i + 1]) * real(z[j + 1][i + 1])) + (imag(z[j + 1][i + 1]) * imag(z[j + 1][i + 1]))) * lanczmag[j];
+#ifdef TEST_FINDGROUND
+            LogMessageCharDouble("", real(z[j + 1][i + 1]));
+            LogMessageCharDouble("+ i ", imag(z[j + 1][i + 1]));
+            LogMessageCharDouble(" with ", lanczmag[j]);
+            LogMessageChar("\n");
+#endif
+          }
+#ifdef TEST_FINDGROUND
+          LogMessageCharDouble("REAL MAG IS ", magnetisation[i]);
           LogMessageChar("\n");
 #endif
         }
-#ifdef TEST_FINDGROUND
-        LogMessageCharDouble("REAL MAG IS ", magnetisation[i]);
-        LogMessageChar("\n");
-#endif
       }
-#endif // FIND_MAG
 
 #ifdef TEST_EIG
       //  eigenvector_test(k,resvect,third);
@@ -343,9 +320,8 @@ long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect,
   length = 1;
   /* Construct Lanczos sequence */
   r = 0;
-#ifdef FIND_MAG
-  lanczmag[0] = findmag(first);
-#endif /* FIND_MAG */
+  if (input_flags->find_mag)
+    lanczmag[0] = findmag(first);
 #ifdef VERBOSE_LANCZOS
   LogMessageChar("Starting LanczosLoop()\n");
 #endif
@@ -408,9 +384,8 @@ long long LanczosLoop(long long Nvec, long long k[NSYM], komplex *eigvect,
     first = temp;
 
     r++;
-#ifdef FIND_MAG
-    lanczmag[r] = findmag(first);
-#endif /* not M_SYM */
+    if (input_flags->find_mag)
+      lanczmag[r] = findmag(first);
 
     // If not reconstructing, check for convergence
     if (Nvec == 0)
@@ -668,7 +643,6 @@ void MakeSeedCross(komplex *first, long long flag)
 }
 
 // findmag finds the magnetisation of a given vector
-#ifdef FIND_MAG
 double findmag(komplex *vector)
 {
   double result = 0;
@@ -703,7 +677,6 @@ void findmaggs()
     maggs += 1 / numSpins * (real(gs[i]) * real(gs[i]) + imag(gs[i]) * imag(gs[i])) * (mag[i]);
   }
 }
-#endif /* FIND_MAG */
 
 // Normalize() normalizes a komplex vector, returning the length before normalization
 double Normalize(komplex *vector1)

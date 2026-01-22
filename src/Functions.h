@@ -1,8 +1,17 @@
 
 #include "RLexact.h"
 
-#ifndef FUNCTIONS_H
+#ifndef FUNCTIONS_H // Make sure to only include this once
 #define FUNCTIONS_H
+
+// =============================================================================
+// Functions in RLexact.C
+// =============================================================================
+void Solve_Lanczos(struct FLAGS *);
+void Solve_Matrix(struct FLAGS *);
+void allocate(struct FLAGS *);
+void deallocate(struct FLAGS *);
+
 
 // =============================================================================
 // Functions in RLio
@@ -10,12 +19,36 @@
 void WritehmQ(long long *, struct FLAGS *);
 void WriteResults(long long, struct FLAGS *);
 void WriteCross(long long, long long *, long long, struct FLAGS *);
+void WriteMaggs(long long *);
 void ReadInputFlags(char *, struct FLAGS *);
 long long intro(struct FLAGS *);
 long long ReadCoupPattern(char *, struct FLAGS *);
 void fatalerror(const char *str, long long i);
 void time_stamp(time_t *tim, long long flag, const char *string);
 void outro(struct FLAGS*);
+void TransformCoup(long long);
+void Warning(const char *, long long);
+void LogMessageChar(const char *);
+void OutMessageChar(const char *);
+void LogMessageInt(long long);
+void LogMessageImag(long long);
+void LogMessageCharDouble(const char *, double);
+void LogMessageCharInt(const char *, long long);
+void OutMessageCharInt(const char *, long long);
+void LogMessageChar3Vector(const char *, double, double, double);
+void WriteState(const char *, komplex *);
+void WriteStates(komplex **);
+
+void WriteGSEnergy(komplex);
+void WriteEnergy(double);
+void WriteQvalue(long long *);
+void WriteGSdata(double, long long *);
+void WriteGSstate(komplex *);
+void ReadGSdata(double *, long long *, komplex *);
+void ReadGSenergy(double *, long long *);
+
+
+
 
 // =============================================================================
 // Functions in RLcross
@@ -42,11 +75,16 @@ double NextLanczos(komplex *, komplex *, komplex *,
                    unsigned long long, long long *, struct FLAGS *);
 long long LanczosLoop(long long, long long *, komplex *, struct FLAGS *);
 double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS *);
+double findmag(komplex *);
+void findmaggs();
 
 // =============================================================================
 // Functions in RLmatrix
 // =============================================================================
 double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
+void CalculateMatrixM(komplex **, double *);
+double CalculateM(komplex *);
+
 
 // =============================================================================
 // Functions in RLhamil
@@ -70,11 +108,13 @@ void FillHamilton(int k[], komplex **, struct FLAGS *);
 double HamDiag(struct FLAGS *);
 void Hamil2(int *, komplex, komplex *, struct FLAGS *);
 void Hamilton(komplex *, komplex *, int k[], struct FLAGS *);
+void matrixelement(komplex, int *, komplex, komplex *);
 
 // =============================================================================
 // Functions in Diagonal
 // =============================================================================
 void htred2(komplex **, long long, komplex *, komplex *, struct FLAGS *);
+long long htqli(double *, double *, long long, komplex **);
 void Diagonalize(komplex **, long long, double *, struct FLAGS *);
 
 // =============================================================================
@@ -113,6 +153,17 @@ void ReadUniqueObservables(struct FLAGS *);
 
 // Construct the Hamiltonian from the symmetry. TODO: Finish this function
 void MakeSymCoup(struct FLAGS *);
+
+// =============================================================================
+// Functions in RLutil
+// =============================================================================
+
+void reverse(char *);
+void itoa(long long, char *);
+void FillRotationMatrix(double *);
+void NormalizeVector(double *);
+void RotateVector(double *);
+void Bubblesort(double *, double *, long long );
 
 
 #endif

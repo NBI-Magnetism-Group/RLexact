@@ -22,14 +22,6 @@
 #include "RLexact.h"
 #include "Functions.h"
 
-/* Functions defined in this file */
-void Eigenvector_test(int *, komplex *, komplex *);
-void matrixelement(komplex, int *, komplex, komplex *);
-
-/* Functions defined elsewhere */
-extern void WriteGSEnergy(komplex);
-extern void WriteState(char *, komplex *);
-
 /* Global variables defined in RLexact.c */
 extern unsigned long unique[];
 extern int Nunique, Nuniq_k, Nsym, Nspins;
@@ -47,29 +39,6 @@ extern unsigned long long bitmap, new_state;
 extern int n_2, u_occ;
 extern unsigned long index1, index2;
 extern komplex this_;
-
-#ifdef TEST_EIG
-void Eigenvector_test(int k[NSYM], komplex *evec, komplex *tmp)
-{
-  int i;
-  komplex product;
-
-  printf("Entering Eigenvector_test \n");
-  Hamilton(evec, tmp, k);
-  product = zero;
-  printf("Middle of Eigenvector_test \n");
-  for (i = 0; i < Nunique; i++)
-    product += evec[i] * conj(tmp[i]);
-  WriteGSEnergy(product);
-
-#ifdef WRITE_STATES
-  WriteState("Eigenvector:", evec);
-  WriteState("H|e>:", tmp);
-#endif /* WRITE_STATES */
-
-  return;
-}
-#endif /* TEST_EIG */
 
 void FillHamilton(int k[], komplex **hamilton, struct FLAGS *input_flags)
 /* Fills the Hamiltonian matrix, used only with MATRIX */
