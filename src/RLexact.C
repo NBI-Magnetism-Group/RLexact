@@ -30,7 +30,6 @@ int rank, nprocs, gs_rank;
 
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 // extern void CrossLanczos(long long *, struct FLAGS*);
-extern void InitSym();
 
 /* Global variables read from the input file */
 long long Nspins;
@@ -164,7 +163,8 @@ double maggs;
 
 int main(int argc, char *argv[])
 {
-  struct FLAGS input_flags;
+  static struct FLAGS EmptyFlags;
+  struct FLAGS input_flags = EmptyFlags;
   gs_rank = 0;
   rank = 0; // Don't know if this is necessary, but it's a nice fail safe. -ABP
   nprocs = 1;
@@ -196,8 +196,8 @@ int main(int argc, char *argv[])
   if (input_flags.VERBOSE_TIME_LV1)
     time_stamp(&time_single, START, "filling basic arrays");
 
-  BuildTables();
-  InitSym();
+  BuildTables(&input_flags);
+  InitSym(&input_flags);
 
   if (input_flags.m_sym)
     LogMessageChar("With M-symmetry \n");
@@ -543,13 +543,14 @@ void Solve_Lanczos(struct FLAGS *input_flags)
       if (mpi_q_count % nprocs == rank)
       {
 
-#ifdef VERBOSE_TIME_LV2
-        LogMessageChar("\nSolve_Lanzcos: GS q-loop, q=(");
-        for (i = 0; i < Nsym; i++)
-          LogMessageInt(q[i]);
-        LogMessageChar(") \n");
-        time_stamp(&time_single2, START, "Ground state search for one q ");
-#endif /* VERBOSE_TIME_LV2 */
+        if (input_flags->VERBOSE_TIME_LV2)
+        {
+          LogMessageChar("\nSolve_Lanzcos: GS q-loop, q=(");
+          for (i = 0; i < Nsym; i++)
+            LogMessageInt(q[i]);
+          LogMessageChar(") \n");
+          time_stamp(&time_single2, START, "Ground state search for one q ");
+        }
 
         BuildCycle(q, input_flags);
         etmp = LowestLanczos(q, NULL, &Nener, NORMAL, input_flags);
@@ -572,9 +573,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
           //	gs[i] = evec[i];
         }
 
-#ifdef VERBOSE_TIME_LV2
-        time_stamp(&time_single2, STOP, " ");
-#endif
+        if (input_flags->VERBOSE_TIME_LV2)
+          time_stamp(&time_single2, STOP, " ");
       }
       mpi_q_count++;
       QLOOP_END
@@ -584,9 +584,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
         Warning("YOU SHOULD SPECIFY Q-VALUES TO DETECT FOR MODEGS", 0);
       }
 
-#ifdef VERBOSE_TIME_LV1
-      time_stamp(&time_single, STOP, "finding the ground state ");
-#endif
+      if (input_flags->VERBOSE_TIME_LV1)
+        time_stamp(&time_single, STOP, "finding the ground state ");
 
       struct
       {
@@ -617,9 +616,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   } /* End of if(mode == MODEGS || mode == MODEN) */
 
   // Now, reconstruct the groundstate.
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single, START, "reconstructing the ground state ");
-#endif
+  if (input_flags->VERBOSE_TIME_LV1)
+    time_stamp(&time_single, START, "reconstructing the ground state ");
 
   if (mode == MODEN || mode == MODERC)
   {
@@ -654,15 +652,15 @@ void Solve_Lanczos(struct FLAGS *input_flags)
       // done with moderc
     }
 
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_single, STOP, "reconstructing the ground state ");
-#endif
+    if (input_flags->VERBOSE_TIME_LV1)
+      time_stamp(&time_single, STOP, "reconstructing the ground state ");
   }
 
-#ifdef TEST_SPINFLIP
-  LogMessageCharInt("\nspinflip_number=", spinflip_number);
-  LogMessageCharInt("spinflip_present =", spinflip_present);
-#endif
+  if (input_flags->TEST_SPINFLIP)
+  {
+    LogMessageCharInt("\nspinflip_number=", spinflip_number);
+    LogMessageCharInt("spinflip_present =", spinflip_present);
+  }
 
   if (spinflip_present == 1)
   {
@@ -675,9 +673,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
                                    // flip is not chosen
   }
 
-#ifdef VERBOSE_TIME_LV1
-  time_stamp(&time_single0, STOP, "dealing with the ground state ");
-#endif
+  if (input_flags->VERBOSE_TIME_LV1)
+    time_stamp(&time_single0, STOP, "dealing with the ground state ");
 
   if (input_flags->find_mag)
   {
@@ -691,9 +688,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   if (input_flags->find_cross)
   {
 
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_single, START, "Cross sections");
-#endif
+    if (input_flags->VERBOSE_TIME_LV1)
+      time_stamp(&time_single, START, "Cross sections");
 
     if ((mode == MODEQ) && (rank == 0))
     {
@@ -704,23 +700,22 @@ void Solve_Lanczos(struct FLAGS *input_flags)
         WriteState("Groundstate", gs);
       }
       q = &q_choice[0][0];
-#ifdef VERBOSE_TIME_LV2
-      time_stamp(&time_single2, START, "Cross section for one chosen q-value");
-      LogMessageChar("\nCrossection q-loop, q=(");
-      for (i = 0; i < Nsym; i++)
-        LogMessageCharInt(" ", q[i]);
-      LogMessageChar(") \n");
-#endif
+      if (input_flags->VERBOSE_TIME_LV2)
+      {
+        time_stamp(&time_single2, START, "Cross section for one chosen q-value");
+        LogMessageChar("\nCrossection q-loop, q=(");
+        for (i = 0; i < Nsym; i++)
+          LogMessageCharInt(" ", q[i]);
+        LogMessageChar(") \n");
+      }
       BuildCycle(q, input_flags);
 
-#ifdef TEST_APPLYSZQ
-      LogMessageChar("\nCalling CrossLanczos \n \n");
-#endif // TEST_APPLYSZQ
+      if (input_flags->TEST_APPLYSZQ)
+        LogMessageChar("\nCalling CrossLanczos \n \n");
 
       CrossLanczos(q, input_flags);
-#ifdef VERBOSE_TIME_LV2
-      time_stamp(&time_single2, STOP, " ");
-#endif
+      if (input_flags->VERBOSE_TIME_LV2)
+        time_stamp(&time_single2, STOP, " ");
     }
     else if (mode == MODEN)
     {
@@ -759,34 +754,33 @@ void Solve_Lanczos(struct FLAGS *input_flags)
 
         if (mpi_q_count % nprocs == rank)
         {
-#ifdef TEST_SPINFLIP
-          LogMessageCharInt("spinflip_GSvalue =", spinflip_GSvalue);
-          LogMessageCharInt("spinflip_number =", spinflip_number);
-          LogMessageCharInt("q[spinflip_number] =", q[spinflip_number]);
-#endif
+          if (input_flags->TEST_SPINFLIP)
+          {
+            LogMessageCharInt("spinflip_GSvalue =", spinflip_GSvalue);
+            LogMessageCharInt("spinflip_number =", spinflip_number);
+            LogMessageCharInt("q[spinflip_number] =", q[spinflip_number]);
+          }
           if (spinflip_GSvalue != q[spinflip_number]) // consistent with spinflip not present also
           {
-#ifdef VERBOSE_TIME_LV2
-            time_stamp(&time_single2, START, "Cross section for one q-value in loop");
-            LogMessageChar("\nCrossection q-loop, q=(");
-            for (i = 0; i < Nsym; i++)
+            if (input_flags->VERBOSE_TIME_LV2)
             {
-              LogMessageCharInt(" ", q[i]);
+              time_stamp(&time_single2, START, "Cross section for one q-value in loop");
+              LogMessageChar("\nCrossection q-loop, q=(");
+              for (i = 0; i < Nsym; i++)
+              {
+                LogMessageCharInt(" ", q[i]);
+              }
+              LogMessageChar(") \n");
             }
-            LogMessageChar(") \n");
-
-#endif
             BuildCycle(q, input_flags);
 
-#ifdef TEST_APPLYSZQ
-            LogMessageChar("\nCalling CrossLanczos: \n \n");
-#endif // TEST_APPLYSZQ
+            if (input_flags->TEST_APPLYSZQ)
+              LogMessageChar("\nCalling CrossLanczos: \n \n");
 
             CrossLanczos(q, input_flags);
 
-#ifdef VERBOSE_TIME_LV2
-            time_stamp(&time_single2, STOP, " ");
-#endif
+            if (input_flags->VERBOSE_TIME_LV2)
+              time_stamp(&time_single2, STOP, " ");
           }
         }
         mpi_q_count++;
@@ -799,9 +793,8 @@ void Solve_Lanczos(struct FLAGS *input_flags)
       }
       // for (int i=0; i <Ndimensions; i++) Nsymvalue[TransIds[i]] /= Trans_Qmax[i];
     }
-#ifdef VERBOSE_TIME_LV1
-    time_stamp(&time_single, STOP, "\nCross sections ");
-#endif
+    if (input_flags->VERBOSE_TIME_LV1)
+      time_stamp(&time_single, STOP, "\nCross sections ");
   }
 
   return;
@@ -830,14 +823,15 @@ void Solve_Matrix(struct FLAGS *input_flags)
     for (j = 0; j < Nq_choice; j++)
     {
       q = &q_choice[j][0];
-#ifdef TEST_GS_SEARCH
-      LogMessageChar("TEST_GS1: chosen q, q=(");
-      for (i = 0; i < Nsym; i++)
-        LogMessageInt(q[i]);
-      LogMessageChar(") \n");
-      hamilton[1][1] = zero;
-      LogMessageChar("Hamiltonian accessed. \n");
-#endif /* TEST_GS_SEARCH */
+      if (input_flags->TEST_GS_SEARCH)
+      {
+        LogMessageChar("TEST_GS1: chosen q, q=(");
+        for (i = 0; i < Nsym; i++)
+          LogMessageInt(q[i]);
+        LogMessageChar(") \n");
+        hamilton[1][1] = zero;
+        LogMessageChar("Hamiltonian accessed. \n");
+      }
       gs_energy = Matrix_gs(hamilton, uniq_k, q, gs, input_flags);
       if (input_flags->write_energies)
       {
@@ -854,15 +848,16 @@ void Solve_Matrix(struct FLAGS *input_flags)
     QLOOP_BEGIN
     // hamilton = kmatrix(1, Nunique, 1, Nunique); //Allocating each time to avoid bug (THIS IS A TEMPERARY FIX)
 
-#ifdef TEST_GS_SEARCH
-    LogMessageCharInt("TEST_GS2: GS q-loop, 2*m =", twom);
-    LogMessageChar(", q=(");
-    for (i = 0; i < Nsym; i++)
-      LogMessageInt(q[i]);
-    LogMessageChar(") \n");
-    hamilton[1][1] = zero;
-    LogMessageChar("Hamiltonian accessed. \n");
-#endif /* TEST_GS_SEARCH */
+    if (input_flags->TEST_GS_SEARCH)
+    {
+      LogMessageCharInt("TEST_GS2: GS q-loop, 2*m =", twom);
+      LogMessageChar(", q=(");
+      for (i = 0; i < Nsym; i++)
+        LogMessageInt(q[i]);
+      LogMessageChar(") \n");
+      hamilton[1][1] = zero;
+      LogMessageChar("Hamiltonian accessed. \n");
+    }
     etmp = Matrix_gs(hamilton, uniq_k, q, evec, input_flags);
     if (etmp < LARGE_NUMBER) /* else: illegal symmetry combination */
     {
@@ -968,12 +963,13 @@ void allocate(struct FLAGS *input_flags)
     uniq_k = (long long *)malloc(sizeof(long long) * Nunique);
     hamilton = kmatrix(1, Nunique, 1, Nunique);
 
-#ifdef TEST_ALLOCATE
-    MessageCharInt("Hamiltonian matrix defined, size; ", Nunique);
-    MessageChar("\n");
-    hamilton[1][1] = zero;
-    MessageChar("Hamiltonian matrix accessed \n");
-#endif /* TEST_ALLOCATE */
+    if (input_flags->TEST_ALLOCATE)
+    {
+      LogMessageCharInt("Hamiltonian matrix defined, size; ", Nunique);
+      LogMessageChar("\n");
+      hamilton[1][1] = zero;
+      LogMessageChar("Hamiltonian matrix accessed \n");
+    }
     if (!input_flags->m_sym)
       mag = (long long *)malloc(sizeof(long long) * Nunique);
     if (input_flags->find_mag)
