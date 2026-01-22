@@ -24,10 +24,6 @@
 #include <cnr.h>
 
 // long long CrossMatrix();   /* NOT IN USE !!! */
-#ifdef FIND_MAG
-void CalculateMatrixM(komplex **, double *);
-double CalculateM(komplex *);
-#endif /* FIND_MAG */
 
 /* Functions declared elsewhere */
 extern void WriteEnergy(double);
@@ -51,9 +47,7 @@ extern komplex *gs, *smpgs, *szqgs, *tmp;
 // extern komplex **hamilton;
 extern double *energies;
 extern long long *mag;
-#ifdef FIND_MAG
 extern double *magnetisation;
-#endif /* FIND_MAG */
 #ifdef CROSS
 extern double *cross, *sz;
 #endif /* CROSS */
@@ -150,19 +144,20 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
   LogMessageChar("\n");
 #endif
 
-#ifdef FIND_MAG
-  CalculateMatrixM(hamil, magnetisation);
+  if (input_flags->find_mag)
+  {
+    CalculateMatrixM(hamil, magnetisation);
 
 #ifdef TEST_MATRIXMAG
-  LogMessageChar("Testing: \n");
-  for (int i = 0; i < Nuniq_k; i++)
-  {
-    LogMessageCharDouble("magn = ", magnetisation[i]);
-    LogMessageCharDouble(", E =", energies[i]);
-    LogMessageChar("\n");
-  }
+    LogMessageChar("Testing: \n");
+    for (int i = 0; i < Nuniq_k; i++)
+    {
+      LogMessageCharDouble("magn = ", magnetisation[i]);
+      LogMessageCharDouble(", E =", energies[i]);
+      LogMessageChar("\n");
+    }
 #endif // TEST_MATRIXMAG
-#endif /* FIND_MAG */
+  }
 
 #ifdef MATRIX_MESSAGES
   LogMessageChar(" Matrix_gs, Hamilton diagonalized \n");
@@ -205,7 +200,6 @@ double Matrix_gs(komplex **hamil, long long *uniqk, long long k[NSYM],
   return emin;
 }
 
-#ifdef FIND_MAG
 void CalculateMatrixM(komplex **matrix, double *mvector)
 {
   long long v;
@@ -272,4 +266,3 @@ double CalculateM(komplex *state) // currently obsolete SJ 100616
 
   return sum;
 }
-#endif /* FIND_MAG */

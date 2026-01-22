@@ -27,11 +27,15 @@ struct FLAGS
   long long find_cross_pm;   // Find cross in S^+-(q,w) and S^-+(q,w)
                              //  instead of S^xx (q,w) and S^yy(q,w).
                              // Requires MSYM and FIND_CROSS.
+  long long motive;          // DLC TODO: We need a description of the MOTIVE. Maybe
+  long long find_mag;        // DLC TODO: Needs description. Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
 
   // OUTPUT SPECIFIERS
   long long write_energies;
-  long long write_states; // Prints groundstate in dat-file
-                          // and all eigenstates if MATRIX;
+  long long write_states;        // Prints groundstate in dat-file
+                                 // and all eigenstates if MATRIX;
+  long long write_magnetisation; // DLC TODO: Needs description
+                                 // Should only be used WITHOUT MSYM, Works only for MATRIX-mode, SJ 31/5/16
 
   // The following is all the old Test commands and verbose commands.
   // Putting them here, because they are making it difficult to see indentation.
@@ -39,11 +43,6 @@ struct FLAGS
   long long VERBOSE_TIME_LV2;
   long long VERBOSE;
 };
-
-// #define FIND_MAG //Debugging required! Should only be used WITHOUT MSYM SJ 20/11/17
-// #define WRITE_MAGNETISATION //Should only be used WITHOUT MSYM,
-//                               Works only for MATRIX-mode, SJ 31/5/16
-#define MOTIVE // spin positions
 
 // Dimensions of problem
 #define NCOUP 400

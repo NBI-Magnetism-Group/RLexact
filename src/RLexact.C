@@ -49,10 +49,6 @@ extern void WriteGSstate(komplex *);
 extern void WriteQvalue(long long *);
 extern void ReadGSdata(double *, long long *, komplex *);
 extern void ReadGSenergy(double *, long long *);
-#ifndef FIND_MAG
-extern void findmaggs();
-extern void WriteMaggs(long long *);
-#endif /*M_SYM*/
 extern double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
 // extern void CrossMatrix(long long*); //out of order, SJ 270616
 // extern void CrossLanczos(long long *, struct FLAGS*);
@@ -61,13 +57,9 @@ extern void InitSym();
 /* Global variables read from the input file */
 long long Nspins;
 /* Number of spins in the system */
-#ifdef MOTIVE
 long long Nspins_in_uc;
 double **spin_positions;
 long long Trans_Qmax[3];
-#else
-long long Trans_Qmax = {1, 1, 1};
-#endif // MOTIVE
 long long Ncoup;
 /* Actual number of couplings */
 long long Ncoupstr;
@@ -185,14 +177,10 @@ FILE *logfile;
 
 /* Output variables */
 double *energies;
-#ifdef FIND_MAG
 double *magnetisation;
-#endif /* FIND_MAG */
 double *cross;
 // double cross[MAX_LANCZOS];
-#ifdef FIND_MAG
 double maggs;
-#endif /*M_SYM*/
 
 /* ---------------------------------------------------------------------- */
 
@@ -217,6 +205,12 @@ int main(int argc, char *argv[])
 
   if (intro(&input_flags) == -1)
     return 1;
+  if (!input_flags.motive)
+  {
+    Trans_Qmax[0] = 1;
+    Trans_Qmax[1] = 1;
+    Trans_Qmax[2] = 1;
+  }
 
   srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
   time_stamp(&time_total, START, "diagonalization \n");
@@ -707,13 +701,14 @@ void Solve_Lanczos(struct FLAGS *input_flags)
   time_stamp(&time_single0, STOP, "dealing with the ground state ");
 #endif
 
-#ifdef FIND_MAG
-  if (mode == MODEGS || mode == MODEN)
+  if (input_flags->find_mag)
   {
-    // findmaggs();//Parameters are not necessary to state explicitly here, since these are only global parameters, available for all files.
-    // WriteMaggs(q);
+    if (mode == MODEGS || mode == MODEN)
+    {
+      // findmaggs();//Parameters are not necessary to state explicitly here, since these are only global parameters, available for all files.
+      // WriteMaggs(q);
+    }
   }
-#endif /*M_SYM*/
 
   if (input_flags->find_cross)
   {
@@ -972,9 +967,9 @@ void allocate(struct FLAGS *input_flags)
     energies = dvector(0, MAX_LANCZOS - 1);
     if (!input_flags->m_sym)
       mag = (long long *)malloc(sizeof(long long) * Nunique);
-#ifdef FIND_MAG
-    magnetisation = dvector(0, MAX_LANCZOS - 1);
-#endif /*FIND_MAG*/
+    if (input_flags->find_mag)
+      magnetisation = dvector(0, MAX_LANCZOS - 1);
+
     if (input_flags->find_cross)
       cross = dvector(0, MAX_LANCZOS - 1);
   }
@@ -1003,9 +998,8 @@ void allocate(struct FLAGS *input_flags)
 #endif /* TEST_ALLOCATE */
     if (!input_flags->m_sym)
       mag = (long long *)malloc(sizeof(long long) * Nunique);
-#ifdef FIND_MAG
-    magnetisation = dvector(0, Nunique - 1);
-#endif /*FIND_MAG*/
+    if (input_flags->find_mag)
+      magnetisation = dvector(0, Nunique - 1);
     if (input_flags->find_cross)
       cross = dvector(1, Nunique);
   }
@@ -1029,9 +1023,8 @@ void deallocate(struct FLAGS *input_flags)
     freekvector(smgs, 0, Nunique - 1);
     freekvector(spgs, 0, Nunique - 1);
     freedvector(energies, 0, MAX_LANCZOS - 1);
-#ifdef FIND_MAG
-    freedvector(magnetisation, 0, MAX_LANCZOS - 1);
-#endif /* M_SYM */
+    if (input_flags->find_mag)
+      freedvector(magnetisation, 0, MAX_LANCZOS - 1);
     if (input_flags->find_cross)
       freedvector(cross, 0, MAX_LANCZOS - 1);
   }
@@ -1048,22 +1041,22 @@ void deallocate(struct FLAGS *input_flags)
     freekmatrix(hamilton, 1, Longest_Matrix, 1, Longest_Matrix);
     freedvector(energies, 0, Longest_Matrix - 1); // There is something wrong with this vector can't deallocate
     free(uniq_k);
-    if(input_flags->find_cross){
-    freekvector(szxygs, 0, Longest_Matrix - 1);
-    freedvector(cross, 1, Longest_Matrix);
+    if (input_flags->find_cross)
+    {
+      freekvector(szxygs, 0, Longest_Matrix - 1);
+      freedvector(cross, 1, Longest_Matrix);
     }
 
     if (!input_flags->m_sym)
       free(mag);
-
-#ifdef FIND_MAG
-    freedvector(magnetisation, 0, Longest_Matrix - 1);
-#endif /* FIND_MAG */
+    if (input_flags->find_mag)
+      freedvector(magnetisation, 0, Longest_Matrix - 1);
   }
-#ifdef MOTIVE
-  for (int i = 0; i < Nspins_in_uc; i++)
-    free(spin_positions[i]);
-  free(spin_positions);
-#endif // MOTIVE
+  if (input_flags->motive)
+  {
+    for (int i = 0; i < Nspins_in_uc; i++)
+      free(spin_positions[i]);
+    free(spin_positions);
+  }
   return;
 }

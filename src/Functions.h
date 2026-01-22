@@ -10,6 +10,7 @@
 void WritehmQ(long long *, struct FLAGS *);
 void WriteResults(long long, struct FLAGS *);
 void WriteCross(long long, long long *, long long, struct FLAGS *);
+void WriteMaggs(long long *);
 void ReadInputFlags(char *, struct FLAGS *);
 long long intro(struct FLAGS *);
 long long ReadCoupPattern(char *, struct FLAGS *);
@@ -42,11 +43,16 @@ double NextLanczos(komplex *, komplex *, komplex *,
                    unsigned long long, long long *, struct FLAGS *);
 long long LanczosLoop(long long, long long *, komplex *, struct FLAGS *);
 double LowestLanczos(long long *, komplex *, long long *, long long, struct FLAGS *);
+double findmag(komplex *);
+void findmaggs();
 
 // =============================================================================
 // Functions in RLmatrix
 // =============================================================================
 double Matrix_gs(komplex **, long long *, long long *, komplex *, struct FLAGS *);
+void CalculateMatrixM(komplex **, double *);
+double CalculateM(komplex *);
+
 
 // =============================================================================
 // Functions in RLhamil

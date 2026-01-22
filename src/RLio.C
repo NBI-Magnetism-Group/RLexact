@@ -32,9 +32,6 @@ extern int rank, nprocs;
 /* Functions defined in this file */
 
 void TransformCoup(long long);
-#ifdef FIND_MAG
-void WriteMaggs(long long *);
-#endif // FIND_MAG
 void time_stamp(time_t *, long long, const char *);
 void Warning(const char *, long long);
 void LogMessageChar(const char *);
@@ -91,20 +88,16 @@ extern double Jr[NCOUP];
 extern double Jdip[NCOUP], geom_13[NCOUP], r_vector[NCOUP][3];
 extern long long symlist[NSYM];
 extern double *energies;
-#ifdef FIND_MAG
 extern double *magnetisation;
 extern double maggs;
-#endif /* FIND_MAG */
 extern long long Nq_choice;
 extern long long **q_choice;
 extern FILE *outfilezz;
 extern FILE *outfilexx, *outfileyy;
 extern FILE *outfilepm, *outfilemp;
 extern double *cross;
-#ifdef MOTIVE
 extern long long Nspins_in_uc;
 extern float **spin_positions;
-#endif // MOTIVE
 extern FILE *gscoinfile;
 extern FILE *outfile;
 extern FILE *logfile;
@@ -195,9 +188,8 @@ long long intro(struct FLAGS *input_flags)
     else
       OutMessageChar(" M-symmetry absent. \n");
     OutMessageChar(" Observables:");
-#ifdef FIND_MAG
-    OutMessageChar(" Magnetization,");
-#endif /* FIND_MAG */
+    if (input_flags->find_mag)
+      OutMessageChar(" Magnetization,");
 #ifdef CROSS
     OutMessageChar(" S^zz(q,w),");
     if (!input_flags->m_sym)
@@ -370,6 +362,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   input_flags->find_eigenstate = 1; // As default, find eigenstates
   input_flags->find_cross = 1;
   input_flags->find_cross_pm = 0;
+  input_flags->find_mag = 0;
 
   input_flags->write_energies = 1; // Output energies and states as default
   input_flags->write_states = 1;
@@ -382,6 +375,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   matchlines_wrapper(filedata, "Find_Eigenstate", &input_flags->find_eigenstate, true);
   matchlines_wrapper(filedata, "Find_cross", &input_flags->find_cross, true);
   matchlines_wrapper(filedata, "Find_cross_pm", &input_flags->find_cross_pm, true);
+  matchlines_wrapper(filedata, "Find_magnetisation", &input_flags->find_mag, true);
 
   matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true);
   matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true);
@@ -650,58 +644,58 @@ long long ReadCoupPattern(char *filename, struct FLAGS *input_flags)
   }
 #endif /* TEST_INPUT */
 
-#ifdef MOTIVE
-  if (rank == 0)
+  if (input_flags->motive)
   {
-    matchlines_wrapper(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
-  }
-  MPI_Bcast(&Nspins_in_uc, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+      matchlines_wrapper(filedata, "Number of spins in unit cell", &Nspins_in_uc, true);
+    }
+    MPI_Bcast(&Nspins_in_uc, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 
 #ifdef TEST_INPUT
-  LogMessageCharInt("Number of spins in unit cell: ", Nspins_in_uc);
-  LogMessageChar("\n");
+    LogMessageCharInt("Number of spins in unit cell: ", Nspins_in_uc);
+    LogMessageChar("\n");
 #endif // TEST_INPUT
 
-  spin_positions = (double **)malloc(Nspins_in_uc * sizeof(double *));
-  for (int i = 0; i < Nspins_in_uc; i++)
-  {
-    spin_positions[i] = (double *)malloc(3 * sizeof(double));
-  }
-  if (rank == 0)
-  {
-    long long *dummy = (long long *)malloc(Nspins_in_uc * sizeof(long long));
-    multimatch(filedata, filesize, "Relative position", spin_positions,
-               dummy, Nspins_in_uc);
-    free(dummy);
-  }
+    spin_positions = (double **)malloc(Nspins_in_uc * sizeof(double *));
+    for (int i = 0; i < Nspins_in_uc; i++)
+    {
+      spin_positions[i] = (double *)malloc(3 * sizeof(double));
+    }
+    if (rank == 0)
+    {
+      long long *dummy = (long long *)malloc(Nspins_in_uc * sizeof(long long));
+      multimatch(filedata, filesize, "Relative position", spin_positions,
+                 dummy, Nspins_in_uc);
+      free(dummy);
+    }
 
-  for (int i = 0; i < Nspins_in_uc; i++)
-  {
-    MPI_Bcast(spin_positions[i], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  }
+    for (int i = 0; i < Nspins_in_uc; i++)
+    {
+      MPI_Bcast(spin_positions[i], 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }
 
 #ifdef TEST_INPUT
-  for (i = 0; i < Nspins_in_uc; i++)
-  {
-    LogMessageChar3Vector("Spin pos.", spin_positions[i][X],
-                          spin_positions[i][Y],
-                          spin_positions[i][Z]);
-  }
+    for (i = 0; i < Nspins_in_uc; i++)
+    {
+      LogMessageChar3Vector("Spin pos.", spin_positions[i][X],
+                            spin_positions[i][Y],
+                            spin_positions[i][Z]);
+    }
 #endif // TEST_INPUT
 
-  if (rank == 0)
-  {
-    matchlines_wrapper(filedata, "Qmax translation", Trans_Qmax, true);
-  }
-  MPI_Bcast(Trans_Qmax, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0)
+    {
+      matchlines_wrapper(filedata, "Qmax translation", Trans_Qmax, true);
+    }
+    MPI_Bcast(Trans_Qmax, 3, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
 #ifdef TEST_INPUT
-  LogMessageChar3Vector("Qmax translation", Trans_Qmax[X],
-                        Trans_Qmax[Y],
-                        Trans_Qmax[Z]);
+    LogMessageChar3Vector("Qmax translation", Trans_Qmax[X],
+                          Trans_Qmax[Y],
+                          Trans_Qmax[Z]);
 
 #endif
-
-#endif // MOTIVE
+  }
 
   if (input_flags->m_sym)
   {
@@ -1237,19 +1231,20 @@ void WriteResults(long long N, struct FLAGS *input_flags)
     }
 
     fprintf(outfile, "energy= %9.6g ", energies[i]);
-#ifdef FIND_MAG
-    // throw away rounding errors
-    if (fabs(magnetisation[i]) < SMALL_NUMBER)
+    if (input_flags->find_mag)
     {
-      magnetisation[i] = 0;
-    }
+      // throw away rounding errors
+      if (fabs(magnetisation[i]) < SMALL_NUMBER)
+      {
+        magnetisation[i] = 0;
+      }
 #ifdef WRITE_MAGNETISATION
-    if (input_flags->use_exact_matrix)
-    {
-      fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
-    }
+      if (input_flags->use_exact_matrix)
+      {
+        fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
+      }
 #endif // WRITE_MAGNETISATION
-#endif /* FIND_MAG */
+    }
 
     fprintf(outfile, "\n");
   }
@@ -1270,7 +1265,7 @@ void WriteCross(long long Nener, long long *symvalue, long long flag, struct FLA
   } // SZZ
   else if (!input_flags->find_cross_pm)
   {
-     if (flag == 1)
+    if (flag == 1)
     {
       crossfile = outfilexx;
     } // SXX
@@ -1397,7 +1392,6 @@ void WriteEnergy(double re)
   return;
 }
 
-#ifdef FIND_MAG
 void WriteMaggs(long long *q)
 {
   int i;
@@ -1405,7 +1399,6 @@ void WriteMaggs(long long *q)
   fprintf(outfile, "\nMagnetization of groundstate %g\n", maggs);
   fprintf(outfile, "\n");
 }
-#endif // FIND_MAG
 
 void WriteQvalue(long long *qvec)
 {
