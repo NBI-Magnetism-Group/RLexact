@@ -1215,10 +1215,11 @@ void WriteResults(long long N, struct FLAGS *input_flags)
 {
   /* Output the energies and other observables of the eigenstates */
   long long i, q;
-#ifndef WRITE_MAGNETISATION
-  // otherwise the energy and magnetisation pairs get mixed up
-  Bubblesort(energies, NULL, N);
-#endif
+  if (!input_flags->write_magnetisation)
+  {
+    // otherwise the energy and magnetisation pairs get mixed up
+    Bubblesort(energies, NULL, N);
+  }
 
   fprintf(outfile, "[ \n");
   for (i = 0; i < N; i++)
@@ -1238,12 +1239,13 @@ void WriteResults(long long N, struct FLAGS *input_flags)
       {
         magnetisation[i] = 0;
       }
-#ifdef WRITE_MAGNETISATION
-      if (input_flags->use_exact_matrix)
+      if (input_flags->write_magnetisation)
       {
-        fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
+        if (input_flags->use_exact_matrix)
+        {
+          fprintf(outfile, ", mag_z= %9.6g ", magnetisation[i]);
+        }
       }
-#endif // WRITE_MAGNETISATION
     }
 
     fprintf(outfile, "\n");
