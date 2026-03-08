@@ -111,6 +111,7 @@ jobs:
         shell: bash
         env:
           EXAMPLES_ROOT: "RLexamples"
+          RESULTS_SUBDIR: ${{ matrix.os == 'ubuntu-22.04' && 'results_ubuntu' || 'results_macos' }}
           HEADER_GLOB: "*.h"  # pattern used by find -name
         run: |
           set -euo pipefail
@@ -121,7 +122,7 @@ jobs:
           fi
 
           # Find all headers (adjust -mindepth if you want to exclude top-level headers)
-          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" ! -path "*/results/*" | sort > headers.list
+          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" ! -path "*/results*/*" | sort > headers.list
 
           echo "Discovered $(wc -l < headers.list | tr -d ' ') header(s):"
           awk '{print " - " $0}' headers.list
@@ -131,7 +132,7 @@ jobs:
           # Inline verification function, per example folder
           verify_folder() {
             local folder="$1"
-            local results_dir="${folder%/}/results"
+            local results_dir="${folder%/}/${RESULTS_SUBDIR}"
             local status=0
 
             if [[ ! -d "$folder" ]]; then
