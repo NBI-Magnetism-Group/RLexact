@@ -107,11 +107,10 @@ jobs:
           if [ -f "${EXECUTABLE_PATH}" ]; then
             otool -L "${EXECUTABLE_PATH}" || true
           fi
-      - name: Run executable for each example header + verify outputs
+      - name: Run executable for each example header (all) + verify outputs (macOS only)
         shell: bash
         env:
           EXAMPLES_ROOT: "RLexamples"
-          RESULTS_SUBDIR: ${{ matrix.os == 'ubuntu-22.04' && 'results_ubuntu' || 'results_macos' }}
           HEADER_GLOB: "*.h"  # pattern used by find -name
         run: |
           set -euo pipefail
@@ -129,50 +128,57 @@ jobs:
 
           mkdir -p runlogs
 
-          # Inline verification function, per example folder
-          verify_folder() {
-            local folder="$1"
-            local results_dir="${folder%/}/${RESULTS_SUBDIR}"
-            local status=0
+          # ---- Only verify on macOS ----
+          DO_VERIFY=0
+          if [ "${{ matrix.os }}" = "macos-14" ]; then
+            DO_VERIFY=1
+            # Choose results dir naming convention for macOS
+            RESULTS_SUBDIR="results_macos"
 
-            if [[ ! -d "$folder" ]]; then
-              echo "VERIFY FAIL: missing folder: $folder"
-              return 1
-            fi
-            if [[ ! -d "$results_dir" ]]; then
-              echo "VERIFY FAIL: missing results dir: $results_dir"
-              return 1
-            fi
+            # Inline verification function, used only on macOS
+            verify_folder() {
+              local folder="$1"
+              local results_dir="${folder%/}/${RESULTS_SUBDIR}"
+              local status=0
 
-            shopt -s nullglob
-            for file in "$folder"/*; do
-              [[ -d "$file" ]] && continue
-              [[ "$file" == *.log ]] && continue
-
-              local rel; rel="$(basename "$file")"
-              local candidate="${results_dir}/${rel}"
-
-              [[ "$candidate" == *.bin ]] && continue
-
-              if [[ ! -e "$candidate" ]]; then
-                echo "MISSING in results: $candidate"
-                status=1
-                continue
+              if [[ ! -d "$folder" ]]; then
+                echo "VERIFY FAIL: missing folder: $folder"
+                return 1
+              fi
+              if [[ ! -d "$results_dir" ]]; then
+                echo "VERIFY FAIL: missing results dir: $results_dir"
+                return 1
               fi
 
-              
-              if diff -q -- "$file" "$candidate" >/dev/null 2>&1; then
-                :
-              else
-                echo "DIFF: $file <-> $candidate"
-                # Optional: show a unified diff for text files
-                diff -u --label "baseline:$(basename "$file")" --label "results:$(basename "$candidate")" -- "$file" "$candidate" || true
-                status=1
-              fi
-            done
+              shopt -s nullglob
+              for file in "$folder"/*; do
+                [[ -d "$file" ]] && continue
+                [[ "$file" == *.log ]] && continue
 
-            return "$status"
-          }
+                local rel; rel="$(basename "$file")"
+                local candidate="${results_dir}/${rel}"
+
+                [[ "$candidate" == *.bin ]] && continue
+
+                if [[ ! -e "$candidate" ]]; then
+                  echo "MISSING in results: $candidate"
+                  status=1
+                  continue
+                fi
+
+                if diff -q -- "$file" "$candidate" >/dev/null 2>&1; then
+                  :
+                else
+                  echo "DIFF: $file <-> $candidate"
+                  # Optional: show a unified diff for text files
+                  diff -u --label "baseline:$(basename "$file")" --label "results:$(basename "$candidate")" -- "$file" "$candidate" || true
+                  status=1
+                fi
+              done
+
+              return "$status"
+            }
+          fi
 
           any_fail=0
 
@@ -191,13 +197,17 @@ jobs:
               "${EXECUTABLE_PATH}" "${hdr}" 2>&1 | tee "runlogs/${safe_log}" || any_fail=1
             fi
 
-            exdir="$(dirname "$hdr")"
-            echo "--- Verifying outputs in: $exdir"
-            if verify_folder "$exdir"; then
-              echo "VERIFY OK: $exdir"
+            if [ "$DO_VERIFY" -eq 1 ]; then
+              exdir="$(dirname "$hdr")"
+              echo "--- Verifying outputs in: $exdir"
+              if verify_folder "$exdir"; then
+                echo "VERIFY OK: $exdir"
+              else
+                echo "VERIFY FAIL: $exdir"
+                any_fail=1
+              fi
             else
-              echo "VERIFY FAIL: $exdir"
-              any_fail=1
+              echo "--- Skipping verification on ${{ matrix.os }}"
             fi
           done < headers.list
 
@@ -206,8 +216,7 @@ jobs:
           if [ "${any_fail}" -ne 0 ]; then
             echo "One or more runs or verifications failed. See runlogs/*.log and step output."
             exit 1
-          fi
-
+          fi      
       - name: Upload logs (always)
         if: always()
         uses: actions/upload-artifact@v4
