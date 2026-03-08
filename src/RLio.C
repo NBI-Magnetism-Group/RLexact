@@ -325,6 +325,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
 
   input_flags->write_energies = 1; // Output energies and states as default
   input_flags->write_states = 1;
+  input_flags->motive = 1;
 
   matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true, input_flags);
   matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true, input_flags);
@@ -341,6 +342,8 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
 
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true, input_flags);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true, input_flags);
+  matchlines_wrapper(filedata, "motive", &input_flags->motive, true, input_flags);
+
   matchlines_wrapper(filedata, "VERBOSE", &input_flags->VERBOSE, true, input_flags);
 }
 
