@@ -44,6 +44,7 @@ struct FLAGS
   // ============================================================
 
   // --- From RLexact.C / RLexact.c ---
+  long long random_number_seed;
   long long TEST_GS_SEARCH;
   long long TEST_ALLOCATE;
   long long MAIN_LOOP_MESSAGES;

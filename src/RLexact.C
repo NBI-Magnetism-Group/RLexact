@@ -189,8 +189,10 @@ int main(int argc, char *argv[])
     Trans_Qmax[1] = 1;
     Trans_Qmax[2] = 1;
   }
-
-  srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
+  if (input_flags.random_number_seed)
+    srand(input_flags.random_number_seed);
+  else
+    srand(time(NULL)); // WARNING: DECOMMENT BEFORE USE
   time_stamp(&time_total, START, "diagonalization \n");
 
   if (input_flags.VERBOSE_TIME_LV1)
