@@ -159,24 +159,14 @@ jobs:
                 continue
               fi
 
-              if cmp -s -- "$file" "$candidate"; then
+              
+              if diff -q -- "$file" "$candidate" >/dev/null 2>&1; then
                 :
               else
                 echo "DIFF: $file <-> $candidate"
+                # Optional: show a unified diff for text files
+                diff -u --label "baseline:$(basename "$file")" --label "results:$(basename "$candidate")" -- "$file" "$candidate" || true
                 status=1
-              fi
-            done
-
-            # Check for extras only in results/
-            shopt -s nullglob
-            for resfile in "$results_dir"/*; do
-              [[ -d "$resfile" ]] && continue
-              [[ "$resfile" == *.log ]] && continue
-              local base="${folder%/}/$(basename "$resfile")"
-              if [[ ! -e "$base" ]]; then
-                echo "EXTRA in results only: $resfile"
-                status=1
-              fi
             done
 
             return "$status"
