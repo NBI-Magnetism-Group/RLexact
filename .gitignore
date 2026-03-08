@@ -11,6 +11,12 @@
 # *.smp
 # *.spm
 
+RLexamples/*/*.szz
+RLexamples/*/*.sxx
+RLexamples/*/*.syy
+RLexamples/*/*.log
+RLexamples/*/*.dat
+
 # Prerequisites
 *.d
 
