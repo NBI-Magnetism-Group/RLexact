@@ -1,4 +1,5 @@
 Ritz_conv 0.001
+random_number_seed 42
 Zero_vec_length 0.001
 Mode 0
 Unimode 0
