@@ -2,14 +2,14 @@
 *.bin
 
 # Output files
-*.log
-*.dat
-*.log
-*.sxx
-*.syy
-*.szz
-*.smp
-*.spm
+# *.log
+# *.dat
+# *.log
+# *.sxx
+# *.syy
+# *.szz
+# *.smp
+# *.spm
 
 # Prerequisites
 *.d

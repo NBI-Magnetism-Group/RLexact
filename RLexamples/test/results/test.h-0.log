@@ -1,0 +1,27 @@
+ RLio.C successful. 
+ Starting diagonalization 
+ ... Starting filling basic arrays ...  Added symmetry :  0  , round :  0  , state :  1  
+  Added symmetry :  1  , round :  0  , state :  1  
+  Added symmetry :  1  , round :  1  , state :  2  
+  With M-symmetry 
+  M_SYM encountered 1st 
+  Unique mode is:  0  Mode is:  0  Nspins%2 is:  0  twom is:  0  mstart =  0  mend =  0  
+  Longest_Matrix allocated  done, 4.4e-05 seconds used
+ 
+ Now treating the m =  0  subspace: 
+
+ Starting filling arrays for one m ...  IN FillUniqueObservables
+    done, 2e-06 seconds used
+Starting calculating for one m ...  
+ Nunique =  1 Starting writing to file ...  
+writing sparse matrix to file: begin  writing sparse matrix to file: end
+  .. done, 0.000597 seconds used
+Starting dealing with the ground state ... Starting finding the ground state ...  GS_energy after Allreduce -0.5  
+ 0  Nqvalue 1  Nsymvalue 1  
+ 1  Nqvalue 2  Nsymvalue 2  one m/h  done, 0.008402 seconds used
+ 
+  
+ Total execution done, 0.008464 seconds used
+ 
+ End of diagonalization program RLexact.
+  deallocated correctly! 
