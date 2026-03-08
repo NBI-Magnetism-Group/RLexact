@@ -20,7 +20,7 @@ writing sparse matrix to file: begin  writing sparse matrix to file: end
   GS_energy after Allreduce -9.8541  
  0  Nqvalue 1  Nsymvalue 1  
  1  Nqvalue 48  Nsymvalue 12  
- Total execution done, 715.668 seconds used
+ Total execution done, 725.066 seconds used
  
  End of diagonalization program RLexact.
   deallocated correctly! 
