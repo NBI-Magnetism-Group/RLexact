@@ -45,7 +45,7 @@ jobs:
 
       # ---------------- Linux setup ----------------
       - name: Install build dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-24.04'
         run: |
           set -euxo pipefail
           sudo apt-get update
@@ -93,7 +93,7 @@ jobs:
           fi
 
       - name: Show shared library deps (Linux)
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-24.04'
         run: |
           set -euxo pipefail
           if [ -f "${EXECUTABLE_PATH}" ]; then
@@ -111,7 +111,7 @@ jobs:
         shell: bash
         env:
           EXAMPLES_ROOT: "RLexamples"
-          RESULTS_SUBDIR: ${{ matrix.os == 'ubuntu-22.04' && 'results_ubuntu' || 'results_macos' }}
+          RESULTS_SUBDIR: ${{ matrix.os == 'ubuntu-24.04' && 'results_ubuntu' || 'results_macos' }}
           HEADER_GLOB: "*.h"  # pattern used by find -name
         run: |
           set -euo pipefail
