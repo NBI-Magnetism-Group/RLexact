@@ -2,6 +2,7 @@
 // as used by Asbjørn B. Preuss in his thesis (2025).
 
 Ritz_conv 0.000000001 //Lanczos precision
+random_number_seed 42 //Number that seeds the random number generator. Should be decommented in real life!
 Mode 0 //Perl magic for old cluster routines
 Unimode 0
 Number of spins 18
