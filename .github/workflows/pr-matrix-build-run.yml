@@ -167,6 +167,7 @@ jobs:
                 # Optional: show a unified diff for text files
                 diff -u --label "baseline:$(basename "$file")" --label "results:$(basename "$candidate")" -- "$file" "$candidate" || true
                 status=1
+              fi
             done
 
             return "$status"
