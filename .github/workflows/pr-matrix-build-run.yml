@@ -121,14 +121,14 @@ jobs:
           fi
 
           # Find all headers (adjust -mindepth if you want to exclude top-level headers)
-          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" | sort > headers.list
+          find "${EXAMPLES_ROOT}" -type f -name "${HEADER_GLOB}" ! -path "*/results/*" | sort > headers.list
 
           echo "Discovered $(wc -l < headers.list | tr -d ' ') header(s):"
           awk '{print " - " $0}' headers.list
 
           mkdir -p runlogs
 
-          # Inline verification function (your previous script logic), per example folder
+          # Inline verification function, per example folder
           verify_folder() {
             local folder="$1"
             local results_dir="${folder%/}/results"
