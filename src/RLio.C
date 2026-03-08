@@ -326,6 +326,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
   input_flags->write_energies = 1; // Output energies and states as default
   input_flags->write_states = 1;
   input_flags->motive = 1;
+  input_flags->random_number_seed = 0;
 
   matchlines_wrapper(filedata, "Use_Lanczos", &input_flags->use_lanczos, true, input_flags);
   matchlines_wrapper(filedata, "Use_Exact_Matrix", &input_flags->use_exact_matrix, true, input_flags);
@@ -339,6 +340,7 @@ void ReadInputFlags(char *filename, struct FLAGS *input_flags)
 
   matchlines_wrapper(filedata, "Write_Energies", &input_flags->write_energies, true, input_flags);
   matchlines_wrapper(filedata, "Write_States", &input_flags->write_states, true, input_flags);
+  matchlines_wrapper(filedata, "random_number_seed", &input_flags->random_number_seed, true, input_flags);
 
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV1", &input_flags->VERBOSE_TIME_LV1, true, input_flags);
   matchlines_wrapper(filedata, "VERBOSE_TIME_LV2", &input_flags->VERBOSE_TIME_LV2, true, input_flags);
