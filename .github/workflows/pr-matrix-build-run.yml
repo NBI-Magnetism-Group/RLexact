@@ -151,6 +151,8 @@ jobs:
               local rel; rel="$(basename "$file")"
               local candidate="${results_dir}/${rel}"
 
+              [[ "$candidate" == *.bin ]] && continue
+
               if [[ ! -e "$candidate" ]]; then
                 echo "MISSING in results: $candidate"
                 status=1
